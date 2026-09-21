@@ -64,7 +64,7 @@ else:
         shutil.copyfile(p, target/p.name)
 ''')
         self.executable(self.assets / self.asset, '''
-import http.server, json, os, pathlib, subprocess, sys, threading
+import http.server, json, os, pathlib, socketserver, subprocess, sys, threading
 home = pathlib.Path(os.environ['HOME'])
 config = home/'.config/tofa'
 mode = os.environ['FIXTURE_MODE']
@@ -99,6 +99,10 @@ if mode == 'timeout':
     import time
     time.sleep(60)
 if mode == 'preservation_failure': (home/'.codex/auth.json').write_text('changed')
+if mode == 'no_dns':
+    import socket
+    def unavailable(*args): raise RuntimeError('numeric loopback fixture must not need DNS')
+    socket.getfqdn = unavailable
 class Adapter(http.server.BaseHTTPRequestHandler):
     def log_message(self,*args): pass
     def do_POST(self):
@@ -107,7 +111,11 @@ class Adapter(http.server.BaseHTTPRequestHandler):
         for kind in ['response.output_text.delta','response.output_text.delta','response.completed']:
             self.wfile.write(('data: '+json.dumps({'type':kind,'delta':'PRIVATE_CONVERSATION'})+'\\n\\n').encode())
             self.wfile.flush()
-server = http.server.ThreadingHTTPServer(('127.0.0.1',0),Adapter)
+class Loopback(http.server.ThreadingHTTPServer):
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address
+server = Loopback(('127.0.0.1',0),Adapter)
 threading.Thread(target=server.serve_forever,daemon=True).start()
 os.environ['TOFA_API_KEY']='PRIVATE_LOCAL_TOKEN'
 provider='model_providers.nebius-tofa={base_url='+json.dumps('http://127.0.0.1:'+str(server.server_port))+'}'
@@ -228,6 +236,12 @@ sys.exit(0 if (pathlib.Path(os.environ['HOME'])/'synthetic-vault').exists() else
         self.assertEqual(report["reason"], "installed_version_mismatch")
         self.assertFalse((self.home / "login-count").exists())
 
+    def test_synthetic_loopback_qualification_does_not_depend_on_dns(self):
+        self.env["FIXTURE_MODE"] = "no_dns"
+        result, report = self.run_runner()
+        self.assertEqual(result.returncode, 0, json.dumps(report))
+        self.assertEqual(report["outcome"], "passed")
+
     def test_corrupt_script_is_rejected_before_install_or_login(self):
         with (self.assets / "install.sh").open("a") as out:
             out.write("\n# unexpected bytes\n")
@@ -299,6 +313,8 @@ sys.exit(0 if (pathlib.Path(os.environ['HOME'])/'synthetic-vault').exists() else
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(report["outcome"], "failed")
         self.assertFalse(report["cleanup"]["vault_credentials_removed"])
+        self.assertTrue(report["saved_login_reuse"]["passed"])
+        self.assertEqual(next(stage["status"] for stage in report["stages"] if stage["name"] == "purge"), "failed")
         self.assertTrue((self.config / "keyring-refs").is_dir())
 
     def test_live_timeout_stops_child_and_reports_failure(self):

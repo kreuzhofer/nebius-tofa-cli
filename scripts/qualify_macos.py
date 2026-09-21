@@ -345,8 +345,9 @@ def qualify(options, reports):
             save_report(reports, evidence)
         except OSError:
             print("Could not finish local reports; inspect remaining account state before rerunning.", file=sys.stderr)
-            return 1
-        print("Qualification " + evidence["outcome"] + ". Local JSON and Markdown reports saved; no upload performed.", flush=True)
+            evidence["outcome"] = "failed"
+        else:
+            print("Qualification " + evidence["outcome"] + ". Local JSON and Markdown reports saved; no upload performed.", flush=True)
     return 0 if evidence["outcome"] == "passed" else 1
 
 
