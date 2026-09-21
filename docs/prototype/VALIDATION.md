@@ -34,26 +34,38 @@ No Token Factory request or paid inference was performed.
 
 | Target | Cross-build | Native execution evidence |
 | --- | --- | --- |
-| macOS ARM64 | Passed, CGO disabled | Local CLI/PTY/Unix lifecycle tests |
+| macOS ARM64 | Passed, CGO disabled | Local and CI CLI/PTY/Unix lifecycle tests |
 | macOS x64 | Passed, CGO disabled | Not run locally |
 | Linux ARM64 | Passed, CGO disabled | Not run locally |
-| Linux x64 | Passed, CGO disabled | CI pending |
+| Linux x64 | Passed, CGO disabled | CI tests/vet, Unix lifecycle and terminal tests passed |
 | Windows ARM64 | Passed, CGO disabled | Not run locally |
-| Windows x64 | Passed, CGO disabled | CI pending |
+| Windows x64 | Passed, CGO disabled | CI tests/vet, real filesystem ACL checks, PowerShell parsing and offline installer lifecycle passed |
 
-The workflow runs Go tests/vet on macOS, Linux and Windows, Unix shell/PTY tests
-on Unix runners, and PowerShell syntax parsing on Windows. Its results must be
-recorded separately; a workflow definition is not a passed test. Windows installer
-execution, native credential-store interactions, PowerShell self-removal and fish
-startup behavior are not established by the current local evidence.
+[Native CI run](https://github.com/kreuzhofer/nebius-tofa-cli/actions/runs/35593768301)
+for implementation/test commit `24aaf3c` passed its macOS ARM64, Linux x64 and
+Windows x64 jobs. Runner architectures were read from the actual Go version logs.
+The subsequent README/evidence edits do not change executable behavior.
+
+The first Windows run exposed an overly strict textual ACL comparison. The fix
+checks the protected DACL's actual entry type and owner SID. Windows tests now cover
+real private file creation/readback and rejection of an Everyone-accessible key file.
+The native OS credential store remains substituted with a fake vault.
+
+The Windows offline lifecycle test substitutes downloads, uses a temporary
+LOCALAPPDATA and `-NoModifyPath`, and covers install/rerun, failed checksum retention,
+default preservation and purge without touching Credential Manager. Windows user
+PATH updates, asynchronous self-removal and fish startup execution remain unverified.
+Native CLI self-uninstall also passed locally in a temporary macOS installation.
 
 ## Still needed before compatibility/support claims
 
 1. Maintainer feedback on the CLI and code walkthrough.
 2. Native credential read/write/delete on each OS, including headless/locked/denied
-   stores and Windows ACL enforcement. Those checks require an isolated test account
+   stores. Windows file ACL enforcement has CI coverage; actual credential-store
+   checks require an isolated test account
    or explicitly authorized test store; this session did not modify user credentials.
-3. Windows install/update/uninstall and asynchronous self-removal; fish execution.
+3. Windows user PATH update and asynchronous self-removal; fish execution. The
+   Windows offline install/update/uninstall lifecycle now has passing CI coverage.
 4. A separately authorized paid-inference budget and test credentials, followed by
    a small candidate model set exercising real Codex streaming, tool calls and a
    continued conversation. Record exact model IDs, Codex versions and OS/CPU.

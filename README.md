@@ -6,6 +6,41 @@ This is an experimental, reviewable prototype on `prototype/direct-launcher`.
 There is no published release yet, and **no model/client combination is certified**.
 Claude, desktop integrations, protocol proxies and browser OAuth are outside this prototype.
 
+## Installation
+
+**No release is published yet.** The scripts below are ready for a published release,
+but cannot currently download one. For hands-on review now, use the locally built
+artifact or follow [Try the local build](#try-the-local-build).
+
+Once a release is available, installation is per user and needs no administrator
+privileges. The installer verifies SHA-256 checksums, updates your PATH and prints
+the exact command to activate tofa in your current terminal.
+
+### macOS and Linux
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/install.sh | sh
+```
+
+Installs into `~/.local/share/tofa/bin`. Follow the printed PATH activation command,
+then run `tofa auth login`. Bash, zsh and fish receive shell-specific instructions.
+
+To select a release, append `-s -- --version TAG` after `sh`. Use
+`--no-modify-path` to receive manual setup instructions instead of automatic edits.
+Rerun the installer to upgrade; saved preferences and credentials are retained.
+
+### Windows PowerShell
+
+```powershell
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/install.ps1')))
+```
+
+Installs into `%LOCALAPPDATA%\tofa\install\bin`. Follow the printed PowerShell PATH
+activation command, then run `tofa auth login`.
+
+Append `-Version TAG` to select a release, or `-NoModifyPath` for manual PATH setup.
+Rerun the installer to upgrade; saved preferences and credentials are retained.
+
 ## Try the local build
 
 Developers need Go 1.26 or newer. Users of a compiled artifact need no Go, Python,
@@ -67,44 +102,6 @@ be cleaned up. Do not delete it before logout/purge. Concurrent auth changes are
 rejected using `.auth-lock`. If a process was forcibly terminated, ensure no other
 auth operation is running, then remove that **empty** lock directory and retry.
 
-## Install, upgrade and uninstall
-
-The scripts are implemented and tested with local release fixtures. The following
-release commands become usable **after a release is published**; no release has
-been published by this work. `--version TAG` / `-Version TAG` selects a release;
-rerunning upgrades. The default is the latest published release.
-
-macOS/Linux:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/install.sh | sh
-curl -fsSL https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/uninstall.sh | sh
-# Also remove saved preferences and credentials:
-curl -fsSL https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/uninstall.sh | sh -s -- --purge
-```
-
-Windows PowerShell:
-
-```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/install.ps1')))
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/uninstall.ps1')))
-# Add -Purge to the uninstall invocation to remove saved data.
-```
-
-Install location: `~/.local/share/tofa/bin` on Unix and
-`%LOCALAPPDATA%\tofa\install\bin` on Windows. No administrator privileges are needed.
-Installers verify SHA-256 checksums, update the user's PATH and print the exact
-current-shell activation command. `--no-modify-path` / `-NoModifyPath` prints manual
-setup instead. Bash, zsh, fish and PowerShell are handled explicitly.
-
-An installed copy supports `tofa uninstall [--purge]`. The standalone scripts
-work even when the binary is broken. Default removal retains saved data; purge
-removes only tofa-owned files and recorded credentials. Unrelated files and Codex
-are preserved. Linux script purge needs `secret-tool` for native-store entries;
-if missing/unavailable, it retains references and reports incomplete cleanup.
-Windows CLI uninstall starts a helper that waits for the executable to exit and
-then reports completion; watch the helper's output for errors.
-
 ## Review and validation
 
 Read [the Go walkthrough](docs/prototype/REVIEW.md) and
@@ -126,3 +123,43 @@ also tests on native runners; test results must be checked before claiming cover
 
 Design decisions: [Wayfinder map](https://github.com/kreuzhofer/nebius-tofa-cli/issues/1).
 Dependencies and reuse: [third-party notices](docs/prototype/THIRD_PARTY.md).
+
+## Uninstallation
+
+Uninstall preserves saved preferences and credentials by default. It removes only
+tofa's installation and owned PATH changes; Codex and unrelated files are retained.
+
+### Using the CLI
+
+For an installed copy:
+
+```sh
+tofa uninstall
+```
+
+To also remove saved preferences and credentials, use `tofa uninstall --purge`
+instead. Windows starts a helper that waits for tofa to exit; watch its output for
+the completion result or cleanup errors.
+
+### macOS and Linux recovery script
+
+This works even if the installed binary is broken:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/uninstall.sh | sh
+```
+
+To also remove saved preferences and credentials, append `-s -- --purge` after `sh`.
+Linux native-store cleanup needs `secret-tool`; if it or the service is unavailable,
+the script retains recovery references and reports incomplete cleanup.
+
+### Windows PowerShell recovery script
+
+This works even if the installed binary is broken:
+
+```powershell
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/uninstall.ps1')))
+```
+
+Append `-Purge` to also remove saved preferences and credentials. Failed native-store
+cleanup is reported rather than treated as successful deletion.
