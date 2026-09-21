@@ -313,6 +313,11 @@ The tests use synthetic credentials, temporary directories and local HTTP server
 They never contact Token Factory or access native credential stores. The workflow
 also tests on native runners; test results must be checked before claiming coverage.
 
+For the complete pinned macOS prerelease lifecycle, including interactive login,
+saved-login reuse and sanitized local reports, see the
+[local qualification runner](docs/releases/qualification.md). Its offline tests
+use synthetic releases, clients and vaults; maintainer results remain separate.
+
 For opt-in real inference using saved credentials, see the
 [live compatibility harness](docs/prototype/LIVE-COMPATIBILITY.md). It runs three
 isolated Kimi sessions and records streaming, tools, checked file changes and
