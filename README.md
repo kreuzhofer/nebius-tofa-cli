@@ -3,7 +3,8 @@
 A standalone Go CLI that launches an **already installed Codex CLI** against
 Nebius Token Factory's native Responses endpoint. It does not run models locally.
 This is an experimental, reviewable prototype on `prototype/direct-launcher`.
-There is no published release yet, and **no model/client combination is certified**.
+There is no published release yet. Kimi-K3 with Codex 0.155.1 on macOS ARM64 passes
+the recorded live qualification; all launches still require `--allow-unverified`.
 Claude, desktop integrations, broader protocol translation and browser OAuth are
 outside this prototype.
 
@@ -17,6 +18,8 @@ feature change using the suggested launcher flow. Kimi launches now receive a
 temporary model catalog using Nebius's advertised context limit and capabilities,
 removing the missing-metadata warning in the installed-client check. Broader
 compatibility and platform checks are still tracked separately.
+Three automated live sessions now also pass streaming, tool execution, checked file
+changes and same-session follow-up, with normal settings/auth files preserved.
 See [the investigation](docs/research/codex-kimi-followup.md) and
 [current evidence](docs/prototype/VALIDATION.md#request-adapter-validation).
 

@@ -1,11 +1,10 @@
 # Prototype evidence — 2026-09-21
 
-Status: the accepted per-launch request adapter is implemented and passes local
-checks. The maintainer reports a successful live game build and follow-up change.
-The maintainer also confirms that ordinary Codex selects its original model after
-testing. Native macOS/Linux/Windows adapter checks now pass. The complete live
-compatibility record remains; the Wayfinder prototype decision is open. No model
-is certified.
+Status: the accepted per-launch request adapter passes native checks. The
+maintainer reports a successful live game build, follow-up change and ordinary
+Codex model restoration. Three automated live sessions now qualify Kimi-K3 with
+Codex 0.155.1 on macOS ARM64 for the recorded streaming/tool/continuation checks.
+The experimental launch gate remains; no other model/client/platform is qualified.
 
 ## Original direct-prototype evidence
 
@@ -69,9 +68,8 @@ Native CLI self-uninstall also passed locally in a temporary macOS installation.
    or explicitly authorized test store; this session did not modify user credentials.
 3. Windows user PATH update and asynchronous self-removal; fish execution. The
    Windows offline install/update/uninstall lifecycle now has passing CI coverage.
-4. Complete the live compatibility record: the maintainer's successful game-build
-   and follow-up report is recorded below. Capture the exact model/client/platform
-   combination and explicit streaming evidence before changing support claims.
+4. The exact live compatibility record is complete for Kimi-K3/Codex 0.155.1/macOS
+   ARM64; see the automated qualification below. Other combinations need their own evidence.
    The maintainer authorized in-scope live checks without a spending cap on
    2026-09-21, then approved the three-run Kimi harness and use of saved credentials.
 5. Ordinary Codex model selection after a real launched session is confirmed by
@@ -146,8 +144,8 @@ the default adapter route. Add `--direct` only for deliberate diagnostic bypass.
 - Native race/vet checks pass on macOS ARM64, Linux x64 and Windows x64.
   macOS x64, Linux ARM64 and Windows ARM64 have build evidence only.
 - The maintainer has completed the live build-and-follow-up exercise and confirmed
-  ordinary Codex selects its original model afterward. Capture the exact live
-  session version/platform and streaming behavior for the compatibility record.
+  ordinary Codex selects its original model afterward. The automated qualification
+  below adds exact live identifiers and streaming evidence.
   The later live-harness authorization supersedes the earlier budget prerequisite.
 - Immediate-child cancellation is implemented; Unix sends an interrupt then kills
   after two seconds, Windows kills the immediate child. Descendant containment,
@@ -156,7 +154,8 @@ the default adapter route. Add `--direct` only for deliberate diagnostic bypass.
   descendant exits. Immediate-child termination now also passes native Windows CI.
 - Kimi model metadata is supplied from the provider evidence described below.
   Other models require their own capability evidence. The supported-model registry
-  remains empty pending a repeatable live compatibility qualification process.
+  remains empty; the opt-in harness now provides repeatable qualification evidence
+  without changing the prototype's explicit unverified-model launch gate.
 
 ### Maintainer hands-on report
 
@@ -172,7 +171,8 @@ separate from the automated synthetic-response check above. The recommended flow
 used the adapted Kimi route; no fresh session log or exact launch command was
 provided, so the live model/client/platform identifiers are not independently
 captured. The locally observed client for the preceding automated check was
-Codex 0.155.1 on macOS ARM64. Explicit streaming behavior remains to confirm.
+Codex 0.155.1 on macOS ARM64. Streaming was unconfirmed at this checkpoint; the
+later automated qualification below supplies that evidence.
 
 Asked whether launching `codex` normally, without `tofa`, still used the usual
 provider and login, the maintainer replied: **"yes, it falls back to its original
@@ -219,3 +219,50 @@ prompt's license and notice files in the artifact bundle.
 These jobs do not install Codex: the optional real-client synthetic integration
 was run locally on macOS ARM64 with Codex 0.155.1, not across the CI matrix.
 No CI check performs real inference or accesses the native credential stores.
+
+## Automated live qualification
+
+The maintainer approved three independent Kimi runs, the real launcher command as
+the test boundary, streaming/tool/file/continuation checks, and read-only use of
+saved launcher credentials. Spending was already unrestricted for these checks.
+
+The [final sanitized report](evidence/kimi-codex-0.155.1-macos-arm64.json) passes
+**3/3 runs and 6/6 turns** on macOS ARM64 (Darwin 25.6.0), Codex CLI **0.155.1**,
+model **`moonshotai/Kimi-K3`**, using the default adapted route plus a test-only
+loopback SSE observer. All 22 observed Responses requests completed with HTTP 200.
+There were 16 successful shell-tool completions, six independently checked JSON
+results, and three continuations of the exact original sessions. Every turn
+exposed multiple nonempty text deltas before completion. No metadata warning occurred.
+
+Normal Codex config/auth and launcher config/file-credential states were unchanged.
+Scratch config remained unchanged and no scratch client auth file was created.
+The harness performs no login/logout or credential-store writes. It stores counts,
+statuses, timing and binary/script hashes, not credentials or conversation bodies.
+See [the harness guide](LIVE-COMPATIBILITY.md) for commands and limits.
+
+Launcher code: `e611742ed14eb83f78545f4e99b62cf5edd14aac`, built with Go 1.27.1 as
+`tofa v0.0.0-prototype-live-e611742`. Harness code matches `5490f0b`; the report
+contains exact launcher, client and harness SHA-256 values. Later fixture-only
+test changes do not alter the live harness or launcher.
+
+### Earlier rejected qualification attempts
+
+The [initial report](evidence/kimi-codex-0.155.1-macos-arm64-initial.json) remains
+available. Two observer assumptions caused false failures: Codex persists workspace
+trust in a fresh scratch config, and clients may close after `response.completed`.
+Both were reproduced offline before fixing the harness. One response in that
+attempt also terminated before completion; its cause was not established and the
+later successes do not erase it or establish a reliability SLA.
+
+The [second report](evidence/kimi-codex-0.155.1-macos-arm64-auth-change.json) passed
+all three functional runs but correctly failed the overall preservation check.
+The ordinary Codex auth file was modified during that interval; the report cannot
+attribute the writer. No restoration or credential edits were attempted. Reporting
+now identifies each changed file without disclosing its contents/hashes, and
+version probes also use scratch settings. The final full run passes preservation.
+
+Local checks pass: 11 offline harness tests, Go race tests, Go vet and Python
+syntax checks. Live checks apply only to this exact combination and small task;
+they do not establish general coding quality, images, long context, reasoning
+controls, other platforms, native credential write/delete behavior or descendants'
+lifecycle. The earlier maintainer game review provides complementary live evidence.

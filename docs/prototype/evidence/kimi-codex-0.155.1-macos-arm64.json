@@ -1,0 +1,308 @@
+{
+  "model": "moonshotai/Kimi-K3",
+  "route": "adapted with test-only loopback SSE observer",
+  "platform": "Darwin/arm64",
+  "os_release": "25.6.0",
+  "started_utc": "2026-09-21T14:48:17Z",
+  "launcher_sha256": "2faf28f34899492475aa91e90fdca02c6e390f308dcedcb2d64c933424d6e791",
+  "harness_sha256": "7807acbce2f7c947dcd77f701b664e5fcd27d54d348ad8924508be1d03516915",
+  "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+  "runs": [
+    {
+      "turns": [
+        {
+          "exit_code": 0,
+          "tools_succeeded": 3,
+          "turn_completed": true,
+          "client_error": false,
+          "metadata_warning": false,
+          "timed_out": false,
+          "files_correct": true,
+          "streams": [
+            {
+              "status": 200,
+              "text_deltas": 5,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 61282.065,
+              "completed_ms": 68113.167
+            },
+            {
+              "status": 200,
+              "text_deltas": 6,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 2530.13,
+              "completed_ms": 4108.059
+            },
+            {
+              "status": 200,
+              "text_deltas": 6,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 2099.818,
+              "completed_ms": 4227.452,
+              "client_closed_after_completion": true
+            },
+            {
+              "status": 200,
+              "text_deltas": 19,
+              "tool_deltas": 0,
+              "completed": true,
+              "first_delta_ms": 1073.969,
+              "completed_ms": 1915.252,
+              "client_closed_after_completion": true
+            }
+          ],
+          "streaming_observed": true,
+          "passed": true
+        },
+        {
+          "exit_code": 0,
+          "tools_succeeded": 3,
+          "turn_completed": true,
+          "client_error": false,
+          "metadata_warning": false,
+          "timed_out": false,
+          "files_correct": true,
+          "streams": [
+            {
+              "status": 200,
+              "text_deltas": 5,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 1721.929,
+              "completed_ms": 2848.529
+            },
+            {
+              "status": 200,
+              "text_deltas": 0,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 4518.859,
+              "completed_ms": 4520.308,
+              "client_closed_after_completion": true
+            },
+            {
+              "status": 200,
+              "text_deltas": 0,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 3058.11,
+              "completed_ms": 3124.332
+            },
+            {
+              "status": 200,
+              "text_deltas": 36,
+              "tool_deltas": 0,
+              "completed": true,
+              "first_delta_ms": 20729.355,
+              "completed_ms": 22595.138
+            }
+          ],
+          "streaming_observed": true,
+          "passed": true
+        }
+      ],
+      "same_session": true,
+      "scratch_config_preserved": true,
+      "scratch_auth_absent": true,
+      "scratch_settings_preserved": true,
+      "passed": true
+    },
+    {
+      "turns": [
+        {
+          "exit_code": 0,
+          "tools_succeeded": 3,
+          "turn_completed": true,
+          "client_error": false,
+          "metadata_warning": false,
+          "timed_out": false,
+          "files_correct": true,
+          "streams": [
+            {
+              "status": 200,
+              "text_deltas": 4,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 1642.519,
+              "completed_ms": 2863.945
+            },
+            {
+              "status": 200,
+              "text_deltas": 7,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 1410.017,
+              "completed_ms": 3401.074
+            },
+            {
+              "status": 200,
+              "text_deltas": 5,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 20853.807,
+              "completed_ms": 37744.558
+            },
+            {
+              "status": 200,
+              "text_deltas": 26,
+              "tool_deltas": 0,
+              "completed": true,
+              "first_delta_ms": 13907.247,
+              "completed_ms": 15487.827,
+              "client_closed_after_completion": true
+            }
+          ],
+          "streaming_observed": true,
+          "passed": true
+        },
+        {
+          "exit_code": 0,
+          "tools_succeeded": 2,
+          "turn_completed": true,
+          "client_error": false,
+          "metadata_warning": false,
+          "timed_out": false,
+          "files_correct": true,
+          "streams": [
+            {
+              "status": 200,
+              "text_deltas": 7,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 1551.06,
+              "completed_ms": 3973.145
+            },
+            {
+              "status": 200,
+              "text_deltas": 5,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 1016.73,
+              "completed_ms": 3864.779
+            },
+            {
+              "status": 200,
+              "text_deltas": 20,
+              "tool_deltas": 0,
+              "completed": true,
+              "first_delta_ms": 979.768,
+              "completed_ms": 33848.23
+            }
+          ],
+          "streaming_observed": true,
+          "passed": true
+        }
+      ],
+      "same_session": true,
+      "scratch_config_preserved": true,
+      "scratch_auth_absent": true,
+      "scratch_settings_preserved": true,
+      "passed": true
+    },
+    {
+      "turns": [
+        {
+          "exit_code": 0,
+          "tools_succeeded": 3,
+          "turn_completed": true,
+          "client_error": false,
+          "metadata_warning": false,
+          "timed_out": false,
+          "files_correct": true,
+          "streams": [
+            {
+              "status": 200,
+              "text_deltas": 5,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 1148.184,
+              "completed_ms": 1944.873
+            },
+            {
+              "status": 200,
+              "text_deltas": 8,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 1038.329,
+              "completed_ms": 2343.426
+            },
+            {
+              "status": 200,
+              "text_deltas": 8,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 1647.194,
+              "completed_ms": 3714.321
+            },
+            {
+              "status": 200,
+              "text_deltas": 20,
+              "tool_deltas": 0,
+              "completed": true,
+              "first_delta_ms": 5784.998,
+              "completed_ms": 7210.759
+            }
+          ],
+          "streaming_observed": true,
+          "passed": true
+        },
+        {
+          "exit_code": 0,
+          "tools_succeeded": 2,
+          "turn_completed": true,
+          "client_error": false,
+          "metadata_warning": false,
+          "timed_out": false,
+          "files_correct": true,
+          "streams": [
+            {
+              "status": 200,
+              "text_deltas": 6,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 21641.06,
+              "completed_ms": 22929.197,
+              "client_closed_after_completion": true
+            },
+            {
+              "status": 200,
+              "text_deltas": 0,
+              "tool_deltas": 1,
+              "completed": true,
+              "first_delta_ms": 3222.922,
+              "completed_ms": 3271.315
+            },
+            {
+              "status": 200,
+              "text_deltas": 21,
+              "tool_deltas": 0,
+              "completed": true,
+              "first_delta_ms": 806.396,
+              "completed_ms": 1682.375
+            }
+          ],
+          "streaming_observed": true,
+          "passed": true
+        }
+      ],
+      "same_session": true,
+      "scratch_config_preserved": true,
+      "scratch_auth_absent": true,
+      "scratch_settings_preserved": true,
+      "passed": true
+    }
+  ],
+  "launcher_version": "tofa v0.0.0-prototype-live-e611742",
+  "codex_version": "codex-cli 0.155.1",
+  "normal_files_preserved": {
+    "codex_config": true,
+    "codex_auth": true,
+    "launcher_config": true,
+    "launcher_file_credential": true
+  },
+  "normal_settings_preserved": true,
+  "passed": true
+}

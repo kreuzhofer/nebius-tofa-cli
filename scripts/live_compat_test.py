@@ -48,7 +48,9 @@ if mode == 'normal_auth_changed': pathlib.Path(normal_auth).write_text('{"fixtur
 provider = next(a for a in sys.argv if a.startswith('model_providers.'))
 endpoint = json.loads(re.search(r'base_url\\s*=\\s*("[^"]+")', provider).group(1))
 request = urllib.request.Request(endpoint+'/responses', data=b'{}', headers={'Authorization':'Bearer '+os.environ['TOFA_API_KEY']})
-with urllib.request.urlopen(request) as response:
+# This fixture must never consult system proxies for its loopback-only requests.
+opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+with opener.open(request, timeout=5) as response:
     if mode == 'client_closes_completed':
         while True:
             line = response.readline()
