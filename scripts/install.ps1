@@ -1,0 +1,59 @@
+param([string]$Version='latest', [switch]$NoModifyPath)
+$ErrorActionPreference='Stop'
+$Repo='kreuzhofer/nebius-tofa-cli'
+if ($Version -notmatch '^[A-Za-z0-9._-]+$') { throw 'Invalid release tag' }
+$Root=Join-Path $env:LOCALAPPDATA 'tofa\install'
+if ($env:TOFA_INSTALL_DIR) {$Root=$env:TOFA_INSTALL_DIR}
+if (![IO.Path]::IsPathRooted($Root)) {throw 'Install directory must be absolute'}
+function Assert-NotLink([string]$Path) {
+ if ((Test-Path -LiteralPath $Path) -and ((Get-Item -Force -LiteralPath $Path).Attributes -band [IO.FileAttributes]::ReparsePoint)) {throw "Refusing reparse point: $Path"}
+}
+Assert-NotLink $Root
+$Manifest=Join-Path $Root '.tofa-install'
+if ((Test-Path -LiteralPath $Root) -and !(Test-Path -LiteralPath $Manifest) -and @(Get-ChildItem -Force -LiteralPath $Root).Count) {throw 'Existing directory is not owned by tofa'}
+if ((Test-Path -LiteralPath $Manifest) -and ((Get-Content -Raw -LiteralPath $Manifest).Trim() -ne 'tofa-install-v1')) {throw 'Unknown install manifest'}
+$Arch=$env:PROCESSOR_ARCHITEW6432
+if (!$Arch) {$Arch=$env:PROCESSOR_ARCHITECTURE}
+switch ($Arch) {'ARM64' {$Arch='arm64'} 'AMD64' {$Arch='amd64'} default {throw "Unsupported architecture: $Arch"}}
+if ($Version -eq 'latest') {$Version=(Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest").tag_name}
+if ($Version -notmatch '^[A-Za-z0-9._-]+$') {throw 'Invalid resolved release tag'}
+$Asset="tofa_${Version}_windows_${Arch}.exe"
+$Base="https://github.com/$Repo/releases/download/$Version"
+if ($env:TOFA_RELEASE_BASE_URL) {$Base=$env:TOFA_RELEASE_BASE_URL}
+if ($Base -notmatch '^https://') {throw 'Release URL must use HTTPS'}
+$Temp=Join-Path ([IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $Temp | Out-Null
+try {
+ Invoke-WebRequest -UseBasicParsing "$Base/$Asset" -OutFile (Join-Path $Temp 'tofa.exe')
+ Invoke-WebRequest -UseBasicParsing "$Base/SHA256SUMS" -OutFile (Join-Path $Temp 'SHA256SUMS')
+ $Lines=@(Get-Content (Join-Path $Temp 'SHA256SUMS') | Where-Object {$_ -match ('^[a-fA-F0-9]{64}\s+'+[regex]::Escape($Asset)+'$')})
+ if ($Lines.Count -ne 1) {throw 'Missing or ambiguous checksum'}
+ $Expected=($Lines[0] -split '\s+')[0]
+ if ((Get-FileHash (Join-Path $Temp 'tofa.exe') -Algorithm SHA256).Hash -ne $Expected) {throw 'Checksum mismatch; existing installation retained'}
+ $Bin=Join-Path $Root 'bin'; Assert-NotLink $Bin
+ New-Item -ItemType Directory -Force -Path $Bin | Out-Null
+ $Target=Join-Path $Bin 'tofa.exe';Assert-NotLink $Target;Assert-NotLink $Manifest
+ Set-Content -LiteralPath $Manifest -Value 'tofa-install-v1' -Encoding Ascii
+ $Staged=Join-Path $Bin ([Guid]::NewGuid().ToString('N')+'.tmp')
+ Copy-Item -LiteralPath (Join-Path $Temp 'tofa.exe') -Destination $Staged
+ try {Move-Item -Force -LiteralPath $Staged -Destination $Target} finally {if(Test-Path -LiteralPath $Staged){Remove-Item -LiteralPath $Staged}}
+ $PathMarker=Join-Path $Root '.path-owned';Assert-NotLink $PathMarker
+ $PathSetupFailed=$false
+ if (!$NoModifyPath) {
+  try {
+  $UserPath=[Environment]::GetEnvironmentVariable('Path','User')
+  $Entries=@($UserPath -split ';' | Where-Object {$_})
+  if ($Entries -notcontains $Bin) {
+   [Environment]::SetEnvironmentVariable('Path',(($Entries+$Bin)-join ';'),'User')
+   Set-Content -LiteralPath $PathMarker -Value $Bin -Encoding UTF8
+  }
+  } catch { $PathSetupFailed=$true; Write-Warning "Automatic PATH setup failed: $($_.Exception.Message)" }
+ }
+ $Quoted=$Bin.Replace("'","''")
+ Write-Host "Installed tofa $Version in $Bin"
+ Write-Host "Activate in this PowerShell session:"
+ Write-Host "  `$env:Path = '$Quoted;' + `$env:Path"
+ if($NoModifyPath -or $PathSetupFailed){Write-Host "Persist and activate in one line:"
+ Write-Host "  [Environment]::SetEnvironmentVariable('Path', '$Quoted;' + [Environment]::GetEnvironmentVariable('Path','User'), 'User'); `$env:Path = '$Quoted;' + `$env:Path"}
+ Write-Host 'Then run: tofa auth login'
+} finally {Remove-Item -Recurse -Force -LiteralPath $Temp}
