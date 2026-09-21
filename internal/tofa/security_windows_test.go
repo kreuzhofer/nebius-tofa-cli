@@ -1,6 +1,7 @@
 package tofa_test
 
 import (
+	"bytes"
 	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
 	"golang.org/x/sys/windows"
 	"path/filepath"
@@ -9,9 +10,13 @@ import (
 
 func TestWindowsRejectsEveryoneAccessToPlaintextKey(t *testing.T) {
 	dir := t.TempDir()
-	s := tofa.Store{Dir: dir, Vault: &vault{values: map[string]string{}}}
-	if err := s.Login("project", "fixture-key", "file"); err != nil {
+	s := tofa.Store{Dir: dir, Vault: &vault{values: map[string]string{}, availability: tofa.ErrVaultAbsent}}
+	a := tofa.App{Dir: dir, Vault: s.Vault, Out: &bytes.Buffer{}, Prompt: func(string, bool) (string, error) { return "synthetic", nil }}
+	if err := a.Run([]string{"auth", "login"}); err != nil {
 		t.Fatal(err)
+	}
+	if _, _, err := s.Credentials(); err != nil {
+		t.Fatal("automatic file credentials are not owner-private", err)
 	}
 	sd, err := windows.SecurityDescriptorFromString("D:P(A;;FA;;;WD)")
 	if err != nil {

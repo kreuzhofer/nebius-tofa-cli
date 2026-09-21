@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -47,6 +48,11 @@ const help = `tofa — Token Factory launcher (prototype)
 No model/client combination is verified yet. Explicit --allow-unverified is
 required for experimental launches. Models in the catalog are not certified.
 Launch uses a per-launch Responses request adapter. --direct bypasses it explicitly.
+
+Login reuses a saved storage choice. Fresh logins prefer the native credential vault.
+Only an absent or unsupported vault facility selects an unencrypted credentials file
+automatically, with its location shown before input. Locked, denied, uncertain, or
+failed vault operations are errors. Override with --storage keyring or --storage file.
 `
 
 func (a *App) Run(args []string) error {
@@ -98,18 +104,53 @@ func (a *App) RunContext(ctx context.Context, args []string) error {
 			return errors.New("use tofa auth login or tofa auth logout")
 		}
 		fs := flags("auth login")
-		backend := fs.String("storage", "keyring", "")
+		backend := fs.String("storage", "", "")
 		if err := fs.Parse(args[2:]); err != nil {
 			return err
 		}
 		if fs.NArg() != 0 {
 			return errors.New("unexpected login argument")
 		}
-		if *backend != "keyring" && *backend != "file" {
+		explicit := false
+		fs.Visit(func(f *flag.Flag) { explicit = explicit || f.Name == "storage" })
+		if explicit && *backend != "keyring" && *backend != "file" {
 			return errors.New("storage must be keyring or file")
 		}
+		if !explicit {
+			c, err := s.Config()
+			if err != nil {
+				return err
+			}
+			*backend = c.Backend
+			if *backend == "" {
+				*backend = "keyring"
+				probe, ok := a.Vault.(interface{ Availability() error })
+				if !ok {
+					return errors.New("credential vault availability is unknown; choose --storage keyring or --storage file explicitly")
+				}
+				if err := probe.Availability(); errors.Is(err, ErrVaultAbsent) {
+					*backend = "file"
+					if _, err := fmt.Fprintln(a.Out, "Credential vault facility absent or unsupported; file storage selected automatically."); err != nil {
+						return err
+					}
+				} else if err != nil {
+					return errors.New("cannot determine credential vault availability; check the vault is unlocked and access is allowed, or explicitly choose --storage file")
+				}
+			} else {
+				if _, err := fmt.Fprintf(a.Out, "Reusing saved %s storage choice.\n", *backend); err != nil {
+					return err
+				}
+			}
+		}
 		if *backend == "file" {
-			fmt.Fprintln(a.Out, "Plaintext storage explicitly selected. File permissions restrict access; they do not encrypt the key.")
+			if explicit {
+				if _, err := fmt.Fprintln(a.Out, "Plaintext storage explicitly selected."); err != nil {
+					return err
+				}
+			}
+			if _, err := fmt.Fprintf(a.Out, "Credentials file: %s (unencrypted). File permissions restrict access; they do not encrypt the key.\n", filepath.Join(s.Dir, "credentials.yml")); err != nil {
+				return err
+			}
 		}
 		key, err := a.ask("API key", true)
 		if err != nil {

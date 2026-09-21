@@ -127,11 +127,23 @@ for the provider snapshot and remaining gaps.
 - macOS/Linux: `$XDG_CONFIG_HOME/tofa/config.yml`, default `~/.config/tofa/config.yml`.
   An XDG override must be absolute. macOS deliberately uses the same CLI convention.
 - Windows: `%LOCALAPPDATA%\tofa\config.yml`.
-- Default secret storage: macOS Keychain, Windows Credential Manager, Linux Secret Service.
-  Linux needs a working session bus and usable login collection.
-- Explicit plaintext fallback: `tofa auth login --storage file`, using a separate
-  `credentials.yml`. This has private Unix modes / Windows ACLs, **not encryption**.
-  Store failures never silently select this backend.
+- Fresh logins prefer macOS Keychain, Windows Credential Manager, or Linux Secret
+  Service. A read-only lookup of a fresh probe reference checks availability; it
+  does not save a test credential. The vault may request access or unlocking.
+- Automatic file storage is selected only when the vault facility is confirmed
+  absent or unsupported (for example, D-Bus reports no Secret Service, the macOS
+  keychain helper is missing, or the keyring library does not support the platform).
+  Before requesting the key, the launcher announces the choice, the path to
+  `credentials.yml` beside configuration, and that the key is **unencrypted**.
+  Private Unix modes / Windows ACLs restrict access; they do not encrypt the key.
+- Locked vaults, denied access, uncertain availability, and failed operations are
+  errors. A missing or broken Linux session bus does not prove Secret Service is
+  absent; restore the bus/store or explicitly use `tofa auth login --storage file`.
+  A Linux vault also needs a usable login collection.
+- Re-login reuses the saved backend unless `--storage keyring` or `--storage file`
+  overrides it. Explicit keyring selection fails if the vault is unavailable and
+  never falls back to files. Normal launches use the saved backend without probing
+  availability or migrating credentials as the environment changes.
 - `auth logout` removes saved local keys and retains preferences. It does not revoke
   your Nebius API key. Failed native-store cleanup retains recovery references.
 
