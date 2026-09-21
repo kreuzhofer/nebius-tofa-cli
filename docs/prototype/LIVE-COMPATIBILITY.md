@@ -34,6 +34,8 @@ and records only HTTP status, delta counts and elapsed times. Each turn must sho
 at least two nonempty text deltas before a response completes. This proves observed
 incremental events, not a latency SLA or a benchmark of the uninstrumented route.
 The production launcher and its upstream connection are unchanged.
+The numeric loopback listener binds without reverse DNS; a slow resolver must not
+prevent this local observer from starting.
 
 Client closure after a completed response is recorded separately from a transport
 failure before completion. The scratch workspace's canonical path is predeclared
@@ -67,7 +69,8 @@ SSE with dummy tokens. They cover successful repeated runs, incorrect files,
 failed tools, a wrong resumed session, absent/empty streaming, metadata warnings,
 timeout reporting, completed-response disconnects, scratch trust recording, changed
 normal auth files, and
-report redaction. They never read real credentials or call
+report redaction. A regression supplies unavailable reverse DNS and still requires
+successful observation. They never read real credentials or call
 Token Factory. Unix CI runs these tests; it never runs the live harness.
 
 The harness follows [official Codex non-interactive execution and explicit session

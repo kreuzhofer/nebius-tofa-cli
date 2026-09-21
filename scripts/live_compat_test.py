@@ -23,7 +23,13 @@ class LiveCompatibilityTests(unittest.TestCase):
             normal_client.mkdir()
             normal_auth = normal_client / "auth.json"
             normal_auth.write_text('{"fixture":"before"}')
-            trace_path = root / "fixture-trace.txt"
+            if mode == "no_dns":
+                (root / "sitecustomize.py").write_text(
+                    "import socket, sys\n"
+                    "if '--observe' in sys.argv:\n"
+                    "    def unavailable(*args):\n"
+                    "        raise RuntimeError('loopback listener must not require reverse DNS')\n"
+                    "    socket.getfqdn = unavailable\n")
             launcher.write_text("#!" + sys.executable + "\n" + '''
 import json, os, subprocess, sys
 if sys.argv[1:] == ['--version']:
@@ -34,10 +40,7 @@ os.environ['TOFA_API_KEY'] = 'local-fixture-token'
 sys.exit(subprocess.call(['codex', '-c', provider] + args))
 ''')
             client.write_text("#!" + sys.executable + "\nmode = " + repr(mode)
-                              + "\nnormal_auth = " + repr(str(normal_auth)) + "\n"
-                              + "import faulthandler\ntrace = open(" + repr(str(trace_path)) + ", 'w')\n"
-                              + "trace.write('[DEBUG-live-fixture] client entered\\n'); trace.flush()\n"
-                              + "faulthandler.dump_traceback_later(3, file=trace)\n" + '''
+                              + "\nnormal_auth = " + repr(str(normal_auth)) + "\n" + '''
 import json, os, pathlib, re, sys, urllib.request
 if sys.argv[1:] == ['--version']:
     print('codex-cli fixture'); sys.exit()
@@ -104,6 +107,8 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
             try:
                 env = {**os.environ, "HOME": str(root), "CODEX_HOME": str(root / "normal-codex"),
                        "FIXTURE_ENDPOINT": f"http://127.0.0.1:{server.server_port}"}
+                if mode == "no_dns":
+                    env["PYTHONPATH"] = str(root)
                 report = root / "evidence.json"
                 result = subprocess.run([sys.executable, str(HARNESS), "--launcher", str(launcher),
                                          "--codex", str(client), "--runs", str(runs), "--timeout", str(timeout), "--output", str(report)],
@@ -111,8 +116,7 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
                 evidence = json.loads(report.read_text())
                 self.assertEqual(len(evidence["runs"]), runs)
                 if mode != "timeout":
-                    self.assertEqual(len(seen), runs * 2, json.dumps(evidence) +
-                                     (trace_path.read_text() if trace_path.exists() else "no observer trace"))
+                    self.assertEqual(len(seen), runs * 2, json.dumps(evidence))
                     self.assertEqual(set(seen), {"Bearer local-fixture-token"})
                 self.assertNotIn("PRIVATE_BODY", report.read_text())
                 self.assertNotIn("local-fixture-token", report.read_text())
@@ -173,6 +177,11 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
         self.assertFalse(evidence["normal_files_preserved"]["codex_auth"])
         self.assertTrue(evidence["normal_files_preserved"]["codex_config"])
         self.assertNotIn('"fixture"', json.dumps(evidence))
+
+    def test_loopback_listener_does_not_require_reverse_dns(self):
+        result, evidence = self.fixture("no_dns")
+        self.assertEqual(result.returncode, 0)
+        self.assertTrue(evidence["passed"])
 
     def test_timeout_records_failure_without_retry(self):
         started = time.monotonic()

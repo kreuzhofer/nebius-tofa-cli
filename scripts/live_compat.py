@@ -18,6 +18,7 @@ import re
 import shlex
 import shutil
 import signal
+import socketserver
 import subprocess
 import sys
 import tempfile
@@ -37,6 +38,14 @@ assertions against input.json. Work only in this workspace. Finish with a short
 explanation. Do not install dependencies or inspect credentials/environment variables."""
 EXPECTED = [{"count": 4, "total": 18, "max": 9},
             {"count": 4, "total": 18, "max": 9, "min": -2, "average": 4.5}]
+
+
+class LoopbackServer(http.server.ThreadingHTTPServer):
+    def server_bind(self):
+        # HTTPServer performs getfqdn here. A numeric loopback-only listener has
+        # no DNS dependency; reverse lookup can stall on native macOS runners.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address
 
 
 def write_json(path, value):
@@ -129,7 +138,7 @@ def observe(args):
             finally:
                 connection.close()
 
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Observer)
+    server = LoopbackServer(("127.0.0.1", 0), Observer)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     replacement = json.dumps(f"http://127.0.0.1:{server.server_port}")
     args[index] = args[index][:match.start(1)] + replacement + args[index][match.end(1):]

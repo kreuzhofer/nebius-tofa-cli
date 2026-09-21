@@ -242,8 +242,10 @@ See [the harness guide](LIVE-COMPATIBILITY.md) for commands and limits.
 
 Launcher code: `e611742ed14eb83f78545f4e99b62cf5edd14aac`, built with Go 1.27.1 as
 `tofa v0.0.0-prototype-live-e611742`. Harness code matches `5490f0b`; the report
-contains exact launcher, client and harness SHA-256 values. Later fixture-only
-test changes do not alter the live harness or launcher.
+contains exact launcher, client and harness SHA-256 values. A later observer
+startup fix removes a needless reverse-DNS lookup when binding numeric loopback;
+an offline regression injects unavailable DNS to cover it. The report pins the
+pre-startup-fix harness; the launcher, forwarding and qualification logic are unchanged.
 
 ### Earlier rejected qualification attempts
 
@@ -261,7 +263,7 @@ attribute the writer. No restoration or credential edits were attempted. Reporti
 now identifies each changed file without disclosing its contents/hashes, and
 version probes also use scratch settings. The final full run passes preservation.
 
-Local checks pass: 11 offline harness tests, Go race tests, Go vet and Python
+Local checks pass: Go race tests, Go vet and Python
 syntax checks. Live checks apply only to this exact combination and small task;
 they do not establish general coding quality, images, long context, reasoning
 controls, other platforms, native credential write/delete behavior or descendants'
