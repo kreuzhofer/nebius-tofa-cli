@@ -1,0 +1,87 @@
+"""Synthetic external executables; no real credentials, inference or GitHub access."""
+import http.server
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import socket
+import socketserver
+import subprocess
+import sys
+import threading
+import urllib.request
+
+role = sys.argv.pop(1).lower()
+args = sys.argv[1:]
+if role == "codex.exe":
+    if args == ["--version"]:
+        print("codex-cli 0.100.0"); sys.exit()
+    assert os.environ["USERPROFILE"] == os.environ["HOME"]
+    assert Path(os.environ["LOCALAPPDATA"]).is_relative_to(Path(os.environ["HOME"]))
+    assert "FIXTURE_ROOT" not in os.environ
+    provider = next(a for a in args if a.startswith("model_providers."))
+    endpoint = json.loads(re.search(r'base_url\s*=\s*("[^"]+")', provider)[1])
+    request = urllib.request.Request(endpoint + "/responses", data=b"{}", headers={"Authorization": "Bearer " + os.environ["TOFA_API_KEY"]})
+    with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=5) as response:
+        response.read()
+    values = {"count": 4, "total": 18, "max": 9}
+    if "resume" in args: values.update(min=-2, average=4.5)
+    Path("summary.json").write_text(json.dumps(values))
+    print(json.dumps({"type": "thread.started", "thread_id": "11111111-1111-4111-8111-111111111111"}))
+    print(json.dumps({"type": "item.completed", "item": {"type": "command_execution", "status": "completed", "exit_code": 0}}))
+    print(json.dumps({"type": "turn.completed"}))
+    sys.exit()
+
+root = Path(os.environ["FIXTURE_ROOT"])
+mode = os.environ["FIXTURE_MODE"]
+assets = root / "assets"
+if role == "gh.exe":
+    if mode == "download_failure": sys.exit(1)
+    if args[0] == "api":
+        print(json.dumps({"sha": "1234567890abcdef1234567890abcdef12345678"} if "/commits/" in args[1]
+                         else {"tag_name": "v0.1.0-rc.1", "draft": False, "prerelease": True}))
+    else:
+        target = Path(args[args.index("--dir") + 1])
+        for source in assets.iterdir(): shutil.copyfile(source, target / source.name)
+    sys.exit()
+
+config = root / "local/tofa"
+if args == ["--version"]:
+    print("tofa v0.1.0-rc.1"); sys.exit()
+if args[:2] == ["auth", "login"]:
+    (config / "config.yml").write_text("credential_backend: file\n")
+    (config / "credentials.yml").write_text("PRIVATE_KEY")
+    with (root / "logins").open("a") as out: out.write("login\n")
+    sys.exit()
+if args == ["doctor"]:
+    print("Credential backend: file (access not tested)"); sys.exit()
+if args[0] == "uninstall":
+    helper = Path(os.environ["TEMP"]) / "tofa-uninstall-fixture.ps1"
+    helper.write_text((assets / "uninstall.ps1").read_text() + "\nRemove-Item -LiteralPath $PSCommandPath\n")
+    command = ["powershell.exe", "-NoProfile", "-File", str(helper), "-WaitPid", str(os.getppid())]
+    if "--purge" in args: command += ["-Purge"]
+    subprocess.Popen(command)
+    print("Uninstaller started; it will report completion after tofa exits.")
+    sys.exit()
+assert (config / "credentials.yml").read_text() == "PRIVATE_KEY"
+def no_dns(*args): raise RuntimeError("numeric loopback must not resolve DNS")
+socket.getfqdn = no_dns
+class Adapter(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *args): pass
+    def do_POST(self):
+        self.rfile.read(int(self.headers["Content-Length"]))
+        self.send_response(200); self.end_headers()
+        for kind in ("response.output_text.delta", "response.output_text.delta", "response.completed"):
+            self.wfile.write(("data: " + json.dumps({"type": kind, "delta": "PRIVATE_CONVERSATION"}) + "\n\n").encode())
+            self.wfile.flush()
+class Loopback(http.server.ThreadingHTTPServer):
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address
+server = Loopback(("127.0.0.1", 0), Adapter)
+threading.Thread(target=server.serve_forever, daemon=True).start()
+os.environ["TOFA_API_KEY"] = "PRIVATE_LOCAL_TOKEN"
+provider = "model_providers.nebius-tofa={base_url=" + json.dumps("http://127.0.0.1:" + str(server.server_port)) + "}"
+code = subprocess.call(["codex.exe", "-c", provider] + args[args.index("--") + 1:])
+server.shutdown(); server.server_close(); sys.exit(code)

@@ -63,6 +63,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: ./scripts/windows_lifecycle_test.ps1 -Dist dist -Version $env:VERSION
+      - name: Offline Windows qualification lifecycle
+        if: runner.os == 'Windows'
+        run: python scripts/qualify_windows_test.py -v
   artifacts:
     runs-on: ubuntu-latest
     timeout-minutes: 15
