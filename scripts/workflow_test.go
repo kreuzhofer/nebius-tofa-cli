@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -48,9 +49,32 @@ func TestReleaseWorkflow(t *testing.T) {
 	if !ok {
 		t.Fatal("missing publication job")
 	}
-	if !reflect.DeepEqual(publish.Needs, []string{"artifacts", "native"}) ||
-		publish.If != "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && needs.artifacts.result == 'success' && needs.native.result == 'success'" {
-		t.Fatal("publication must require a tag push and every required job to succeed")
+	sort.Strings(publish.Needs)
+	if !reflect.DeepEqual(publish.Needs, []string{"artifacts", "native"}) {
+		t.Fatal("publication must depend on every required job")
+	}
+	// Evaluate the boolean/string expression against the event and job-result
+	// boundary, allowing equivalent term ordering and parenthesization. Python's
+	// operators implement the subset of Actions expressions used by this gate.
+	conditionCheck := exec.Command("python3", "-c", `
+import itertools, sys
+from types import SimpleNamespace as NS
+expression = sys.argv[1].removeprefix('${{').removesuffix('}}').strip()
+expression = expression.replace('&&', ' and ').replace('||', ' or ')
+for event, ref, native, artifacts in itertools.product(
+        ['push', 'pull_request', 'workflow_dispatch'],
+        ['refs/heads/main', 'refs/tags/v0.1.0-rc.1'],
+        ['success', 'failure', 'cancelled', 'skipped', ''],
+        ['success', 'failure', 'cancelled', 'skipped', '']):
+    context = dict(github=NS(event_name=event, ref=ref),
+                   needs=NS(native=NS(result=native), artifacts=NS(result=artifacts)),
+                   startsWith=lambda value, prefix: value.startswith(prefix))
+    actual = eval(expression, {'__builtins__': {}}, context)
+    expected = event == 'push' and ref.startswith('refs/tags/') and native == artifacts == 'success'
+    assert actual == expected, (event, ref, native, artifacts, actual)
+`, publish.If)
+	if output, err := conditionCheck.CombinedOutput(); err != nil {
+		t.Fatalf("publication gate permits or rejects the wrong conditions: %v\n%s", err, output)
 	}
 	if !reflect.DeepEqual(publish.Permissions, map[string]string{"contents": "write"}) {
 		t.Fatal("only publication needs contents: write")
