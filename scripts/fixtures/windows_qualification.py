@@ -104,7 +104,8 @@ if args[0] == "uninstall":
     if mode == "helper_failure": source = "throw 'PRIVATE_HELPER_FAILURE'\n"
     if mode == "helper_cancel": source = "exit 77\n"
     if mode == "helper_timeout":
-        source = "$PID | Set-Content -LiteralPath '" + str(root / "helper.pid").replace("'", "''") + "'\nStart-Sleep -Seconds 60\n" + source
+        delay = "$PID | Set-Content -LiteralPath '" + str(root / "helper.pid").replace("'", "''") + "'\nStart-Sleep -Seconds 60\n"
+        source = source.replace("$ErrorActionPreference='Stop'", "$ErrorActionPreference='Stop'\n" + delay, 1)
     source += "\nRemove-Item -LiteralPath $PSCommandPath\n"
     if mode == "helper_completed_failure": source += "exit 77\n"
     helper.write_text(source)

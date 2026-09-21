@@ -23,6 +23,13 @@ import windows_process
 
 
 def command(args, supervisor, timeout, env=None, interactive=False, visible=False, require_descendant_success=False):
+    # PowerShell7 -> Python -> powershell.exe inherits incompatible PS7 modules.
+    # Let Windows PowerShell rebuild its own defaults in this child only, also
+    # covering the launcher's asynchronous helper. The account environment stays
+    # unchanged. Microsoft documents this intermediate-process boundary at:
+    # https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_psmodulepath
+    env = {key: value for key, value in (os.environ if env is None else env).items()
+           if key.upper() != "PSMODULEPATH"}
     process = subprocess.Popen(windows_process.supervised(args, supervisor, require_descendant_success=require_descendant_success), env=env,
                                stdin=None if interactive else subprocess.DEVNULL,
                                stdout=None if interactive or visible else subprocess.PIPE,

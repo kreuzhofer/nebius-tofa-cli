@@ -274,6 +274,19 @@ class Fixture {
             qualify_windows.command([sys.executable, "-c", "import sys,time; sys.stdout.buffer.write(b'x'*2000000); sys.stdout.flush(); time.sleep(60)"], supervisor, 30)
         self.assertLess(time.monotonic() - started, 10)
 
+    def test_windows_powershell_reconstructs_its_own_module_path(self):
+        import qualify_windows
+        import windows_process
+        supervisor = windows_process.build_supervisor(self.root / "supervisor")
+        # Reproduce PowerShell7 -> Python -> Windows PowerShell inheritance.
+        # A PS7-only module path makes native Get-FileHash disappear without
+        # boundary normalization, before the installer can verify its bytes.
+        env = {k: v for k, v in self.env.items() if k.upper() != "PSMODULEPATH"}
+        env["PSModulePath"] = str(Path(shutil.which("pwsh.exe")).parent / "Modules")
+        output, errors = qualify_windows.command(["powershell.exe", "-NoProfile", "-Command", "(Get-Command Get-FileHash -ErrorAction Stop).Name"], supervisor, 20, env=env)
+        self.assertEqual(output, "Get-FileHash")
+        self.assertFalse(errors)
+
     def test_actual_candidate_cli_helper_is_awaited_through_native_supervisor(self):
         import qualify_windows
         import windows_process

@@ -128,6 +128,12 @@ local assets. Published scripts and binaries remain unchanged. The runner never
 changes execution policy. If policy or signing blocks a script/helper, retain the
 failed report and record the block for investigation.
 
+For its child processes, the runner removes inherited `PSModulePath` so Windows
+PowerShell reconstructs its own module defaults. This addresses the documented
+[PowerShell 7 → Python → Windows PowerShell inheritance behavior](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath#starting-windows-powershell-from-powershell-7),
+which otherwise can make `Get-FileHash` unavailable. The parent/account environment
+and published installer remain unchanged.
+
 Preservation includes ordinary Codex config/auth, unrelated installation/config
 files, unrelated user PATH entries and machine PATH. Credential Manager checks
 address only tofa's recorded targets and free returned allocations without reading
