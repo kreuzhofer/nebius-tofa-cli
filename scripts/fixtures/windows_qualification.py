@@ -11,10 +11,13 @@ import subprocess
 import sys
 import threading
 import urllib.request
+import time
+import ctypes
+from ctypes import wintypes
 
 role = sys.argv.pop(1).lower()
 args = sys.argv[1:]
-if role == "codex.exe":
+if role in ("codex.exe", "actual-client.exe"):
     if args == ["--version"]:
         print("codex-cli 0.100.0"); sys.exit()
     assert os.environ["USERPROFILE"] == os.environ["HOME"]
@@ -47,24 +50,57 @@ if role == "gh.exe":
     sys.exit()
 
 config = root / "local/tofa"
+backend = os.environ.get("FIXTURE_BACKEND", "file")
+reference = os.environ["FIXTURE_REFERENCE"]
+def vault_write():
+    class Credential(ctypes.Structure):
+        _fields_ = [("Flags", wintypes.DWORD), ("Type", wintypes.DWORD), ("TargetName", wintypes.LPWSTR),
+                    ("Comment", wintypes.LPWSTR), ("LastWritten", wintypes.FILETIME),
+                    ("CredentialBlobSize", wintypes.DWORD), ("CredentialBlob", ctypes.POINTER(ctypes.c_byte)),
+                    ("Persist", wintypes.DWORD), ("AttributeCount", wintypes.DWORD),
+                    ("Attributes", ctypes.c_void_p), ("TargetAlias", wintypes.LPWSTR), ("UserName", wintypes.LPWSTR)]
+    secret = ctypes.create_string_buffer(b"PRIVATE_KEY")
+    credential = Credential(Type=1, TargetName="io.nebius.tofa.prototype:" + reference, Persist=2,
+                            CredentialBlobSize=11, CredentialBlob=ctypes.cast(secret, ctypes.POINTER(ctypes.c_byte)))
+    api = ctypes.WinDLL("advapi32", use_last_error=True)
+    assert api.CredWriteW(ctypes.byref(credential), 0)
+def vault_delete():
+    api = ctypes.WinDLL("advapi32", use_last_error=True)
+    api.CredDeleteW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD]
+    assert api.CredDeleteW("io.nebius.tofa.prototype:" + reference, 1, 0) or ctypes.get_last_error() == 1168
+if args == ["__vault_cleanup"]:
+    vault_delete(); sys.exit()
 if args == ["--version"]:
     print("tofa v0.1.0-rc.1"); sys.exit()
 if args[:2] == ["auth", "login"]:
-    (config / "config.yml").write_text("credential_backend: file\n")
-    (config / "credentials.yml").write_text("PRIVATE_KEY")
+    (config / "config.yml").write_text("credential_backend: " + backend + "\n")
+    if backend == "keyring":
+        vault_write()
+        (config / "keyring-refs").mkdir(exist_ok=True)
+        (config / "keyring-refs" / reference).write_text("reference")
+    else: (config / "credentials.yml").write_text("PRIVATE_KEY")
     with (root / "logins").open("a") as out: out.write("login\n")
     sys.exit()
 if args == ["doctor"]:
-    print("Credential backend: file (access not tested)"); sys.exit()
+    print("Credential backend: " + backend + " (access not tested)"); sys.exit()
 if args[0] == "uninstall":
     helper = Path(os.environ["TEMP"]) / "tofa-uninstall-fixture.ps1"
-    helper.write_text((assets / "uninstall.ps1").read_text() + "\nRemove-Item -LiteralPath $PSCommandPath\n")
+    source = (assets / "uninstall.ps1").read_text()
+    if mode == "lost_login": (config / "credentials.yml").unlink()
+    if mode == "helper_failure": source = "throw 'PRIVATE_HELPER_FAILURE'\n"
+    if mode == "helper_cancel": source = "exit 77\n"
+    if mode == "helper_timeout": source = "Start-Sleep -Seconds 60\n" + source
+    helper.write_text(source + "\nRemove-Item -LiteralPath $PSCommandPath\n")
     command = ["powershell.exe", "-NoProfile", "-File", str(helper), "-WaitPid", str(os.getppid())]
     if "--purge" in args: command += ["-Purge"]
     subprocess.Popen(command)
     print("Uninstaller started; it will report completion after tofa exits.")
     sys.exit()
-assert (config / "credentials.yml").read_text() == "PRIVATE_KEY"
+assert (config / "keyring-refs" / reference).exists() if backend == "keyring" else (config / "credentials.yml").read_text() == "PRIVATE_KEY"
+if mode == "preservation_failure": (root / ".codex/auth.json").write_text("changed")
+if mode == "live_timeout":
+    (root / "live-started").touch()
+    time.sleep(60)
 def no_dns(*args): raise RuntimeError("numeric loopback must not resolve DNS")
 socket.getfqdn = no_dns
 class Adapter(http.server.BaseHTTPRequestHandler):

@@ -1,6 +1,6 @@
 # Local prerelease qualification
 
-The macOS runner qualifies the downloaded candidate in your **normal account**.
+The macOS and Windows runners qualify the downloaded candidate in your **normal account**.
 It installs the selected release, prompts for real login, checks Codex with
 `moonshotai/Kimi-K3`, uninstalls preserving login, reinstalls and proves saved-login
 reuse, then asks separately before purging local tofa state. It never uploads reports.
@@ -58,7 +58,8 @@ recorded separately in the validation issue.
 
 ## Evidence and recovery
 
-The command reserves a new JSON file and matching `.md` summary, both mode 0600,
+The command reserves a new JSON file and matching `.md` summary (mode 0600 on macOS;
+the destination directory's Windows ACL on Windows),
 before changing account state, and fills them with evidence when the run ends.
 It rejects unwritable destinations and refuses to overwrite earlier evidence. Exit zero requires every lifecycle
 stage, preservation assertion and final cleanup assertion to pass. Attach both
@@ -90,6 +91,50 @@ the remaining installed launcher's `uninstall` command to recover, after prepari
 credentials. Unexplained failures cannot count as passes. A forced kill, power
 loss or filesystem failure can prevent final reports/cleanup; inspect remaining
 private temporary directories before rerunning. Reports stay local even on failure.
+
+## Windows 11 amd64
+
+Use Python 3.9+, authenticated `gh`, Windows PowerShell 5.1, the Windows .NET
+Framework C# compiler, and an installed Codex CLI. The compiler comes with the
+Windows .NET Framework; the runner compiles a temporary process helper without
+building or modifying the candidate. No Go installation is needed. The helper
+uses Windows Job Objects to contain the client tree and await asynchronous
+uninstall helpers. Deadlines, Ctrl-C and Ctrl-Break terminate that tree.
+
+From the checkout, run in your normal account:
+
+```powershell
+python scripts/qualify_windows.py --version v0.1.0-rc.1 `
+  --output (Join-Path $env:USERPROFILE ('tofa-windows-rc1-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.json'))
+```
+
+The same `READY`, interactive login, `FOUND` and `PURGE` gates apply. At `FOUND`,
+open a new terminal and run `Get-Command tofa` and `tofa --version`, comparing
+the path and version with the runner's prompt. The runner independently reads
+persistent user/machine PATH from the registry and launches a fresh process with
+that environment. Existing terminals can retain stale PATH after cleanup.
+
+Direct `codex.exe` installations and standard npm `codex.cmd` installations are
+supported. The npm wrapper resolves to `node.exe` and the package's `codex.js`
+entrypoint, so provider arguments never pass through `cmd.exe`. Use
+`--codex C:\path\to\codex.exe` for an unfamiliar package-manager layout. The
+observer shim is native `.exe`; the actual client receives scratch HOME,
+USERPROFILE, APPDATA, LOCALAPPDATA, CODEX_HOME and temporary directories. The
+launcher keeps its normal account's saved-credential access.
+
+Downloads use authenticated `gh`. The exact matching PowerShell installer runs
+with a child-scope download function that copies only the two expected verified
+local assets. Published scripts and binaries remain unchanged. The runner never
+changes execution policy. If policy or signing blocks a script/helper, retain the
+failed report and record the block for investigation.
+
+Preservation includes ordinary Codex config/auth, unrelated installation/config
+files, unrelated user PATH entries and machine PATH. Credential Manager checks
+address only tofa's recorded targets and free returned allocations without reading
+credential blobs. Cleanup must include helper completion, owned executable/files,
+PATH and saved file/vault credentials. A CLI exit before its helper finishes, a
+failed helper, cancellation, or retained state cannot pass. Failure leaves account
+state for deliberate recovery instead of automatically purging it.
 
 ## Shared report v1
 
@@ -133,3 +178,11 @@ launcher, synthetic Codex, and a synthetic Keychain command. They never access t
 real account's saved credentials, native vault, GitHub or Token Factory. macOS and
 Linux CI exercise offline orchestration; synthetic Keychain checks run on macOS.
 Linux file-backend portability is not evidence of real Linux qualification.
+
+Native Windows CI additionally runs `scripts/windows_process_test.py` and
+`scripts/qualify_windows_test.py`. These use controlled GitHub downloads,
+synthetic Codex/launcher boundaries, temporary account directories and unique
+synthetic Credential Manager entries on disposable runners. They exercise
+process-tree cancellation, shell-free npm discovery, persistent PATH, helper
+failure/deadline handling, sanitized reports and the actual candidate's CLI
+uninstaller. They do not establish either required human qualification result.

@@ -7,6 +7,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
+import signal
+import uuid
 import unittest
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -78,11 +81,16 @@ class Fixture {
                 else: winreg.SetValueEx(key, "Path", 0, self.original_path[1], self.original_path[0])
         self.addCleanup(restore)
         self.report = self.root / "report.json"
-        self.env = {**os.environ, "USERPROFILE": str(self.root), "HOME": str(self.root),
+        # Windows launcher/installers discover state through LOCALAPPDATA, not
+        # HOME. Leave HOME untouched: no uninstall or purge is run with a
+        # shadowed HOME. Only the real client's non-destructive scratch sandbox
+        # receives a private HOME from live_compat.client_environment.
+        self.env = {**os.environ, "USERPROFILE": str(self.root),
                     "LOCALAPPDATA": str(self.local), "APPDATA": str(self.root / "roaming"),
                     "CODEX_HOME": str(self.root / ".codex"), "TEMP": str(self.root / "helpers"),
                     "TMP": str(self.root / "helpers"), "PATH": str(self.bin) + os.pathsep + os.environ["PATH"],
                     "FIXTURE_ROOT": str(self.root), "FIXTURE_MODE": "success", "TOFA_INSTALL_DIR": ""}
+        self.env["FIXTURE_REFERENCE"] = uuid.uuid4().hex
         for name in ("gh.exe", "codex.exe"):
             shutil.copyfile(self.exe, self.bin / name)
         self.asset = "tofa_" + VERSION + "_windows_amd64.exe"
@@ -124,6 +132,133 @@ class Fixture {
         self.assertTrue(report["live"]["same_session"])
         self.assertTrue(report["saved_login_reuse"]["passed"])
         self.assertTrue(all(stage["status"] == "passed" for stage in report["stages"]))
+
+    def test_npm_cmd_is_resolved_without_shell_argument_parsing(self):
+        native = self.bin / "actual-client.exe"
+        (self.bin / "codex.exe").rename(native)
+        wrapper = self.bin / "codex.cmd"
+        wrapper.write_text("@echo This wrapper must not execute & exit /b 77\n")
+        script = self.bin / "node_modules/@openai/codex/bin/codex.js"
+        script.parent.mkdir(parents=True)
+        script.write_text("const {spawnSync}=require('child_process'); const r=spawnSync(" + json.dumps(str(native)) + ",process.argv.slice(2),{stdio:'inherit'}); process.exit(r.status ?? 1);\n")
+        result, report = self.run_runner()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr + json.dumps(report))
+        self.assertTrue(report["saved_login_reuse"]["passed"])
+
+    def test_corrupt_matching_installer_fails_before_login(self):
+        with (self.assets / "install.ps1").open("a") as stream: stream.write("# changed\n")
+        result, report = self.run_runner()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(report["reason"], "checksum_mismatch")
+        self.assertFalse((self.root / "logins").exists())
+
+    def test_download_failure_retains_sanitized_report(self):
+        self.env["FIXTURE_MODE"] = "download_failure"
+        result, report = self.run_runner()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(report["outcome"], "failed")
+        self.assertTrue(report["cleanup"]["scratch_removed"])
+
+    def test_declined_recovery_and_purge_are_incomplete(self):
+        for answers in ("NO\n", "READY\nFOUND\nNO\n"):
+            with self.subTest(answers=answers):
+                if self.report.exists():
+                    self.report.unlink(); self.report.with_suffix(".md").unlink()
+                result, report = self.run_runner(answers)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(report["outcome"], "incomplete")
+                if answers.startswith("READY"):
+                    self.assertTrue(report["saved_login_reuse"]["passed"])
+                    self.assertFalse(report["cleanup"]["file_credentials_removed"])
+
+    def test_changed_ordinary_auth_fails_preservation(self):
+        self.env["FIXTURE_MODE"] = "preservation_failure"
+        result, report = self.run_runner()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(report["reason"], "preservation_failed")
+        self.assertFalse(report["preservation"]["codex_auth"])
+
+    def test_preserve_uninstall_losing_login_cannot_reinstall(self):
+        self.env["FIXTURE_MODE"] = "lost_login"
+        result, report = self.run_runner()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(report["reason"], "saved_state_changed")
+        self.assertEqual((self.root / "logins").read_text(), "login\n")
+
+    def test_helper_failure_or_cancel_never_reports_cleanup_success(self):
+        for mode in ("helper_failure", "helper_cancel"):
+            with self.subTest(mode=mode):
+                if self.report.exists():
+                    self.report.unlink(); self.report.with_suffix(".md").unlink()
+                self.env["FIXTURE_MODE"] = mode
+                result, report = self.run_runner()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(report["reason"], "uninstall_helper_failed")
+                self.assertFalse(report["cleanup"]["helpers_completed"])
+                self.assertFalse(report["cleanup"]["binary_removed"])
+
+    def test_helper_deadline_stops_descendants_and_cannot_pass(self):
+        self.env["FIXTURE_MODE"] = "helper_timeout"
+        result, report = self.run_runner(timeout=5)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(report["reason"], "process_timeout")
+        self.assertFalse(report["cleanup"]["helpers_completed"])
+        self.assertTrue(report["cleanup"]["scratch_removed"])
+        time.sleep(0.5)
+        self.assertFalse((self.root / "late-cleanup").exists())
+
+    def test_interruption_stops_live_tree_and_saves_incomplete_report(self):
+        self.env["FIXTURE_MODE"] = "live_timeout"
+        with subprocess.Popen([sys.executable, str(SCRIPTS / "qualify_windows.py"), "--version", VERSION,
+                               "--output", str(self.report)], env=self.env, stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP) as process:
+            process.stdin.write("READY\nFOUND\n"); process.stdin.flush()
+            deadline = time.monotonic() + 40
+            while not (self.root / "live-started").exists() and time.monotonic() < deadline:
+                time.sleep(0.05)
+            self.assertTrue((self.root / "live-started").exists())
+            process.send_signal(signal.CTRL_BREAK_EVENT)
+            process.communicate(timeout=15)
+            self.assertNotEqual(process.returncode, 0)
+        report = json.loads(self.report.read_text())
+        self.assertEqual(report["outcome"], "incomplete")
+        self.assertEqual(report["reason"], "interrupted")
+        self.assertTrue(report["cleanup"]["scratch_removed"])
+
+    def test_synthetic_vault_reuse_and_purge(self):
+        self.env["FIXTURE_BACKEND"] = "keyring"
+        self.addCleanup(subprocess.run, [sys.executable, str(SCRIPTS / "fixtures/windows_qualification.py"), "tofa.exe", "__vault_cleanup"], env=self.env, check=True)
+        result, report = self.run_runner()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr + json.dumps(report))
+        self.assertEqual(report["backend"], "keyring")
+        self.assertTrue(report["cleanup"]["vault_credentials_removed"])
+
+    def test_actual_candidate_cli_helper_is_awaited_through_native_supervisor(self):
+        import qualify_windows
+        import windows_process
+        candidate = SCRIPTS.parent / "dist" / ("tofa_" + os.environ["VERSION"] + "_windows_amd64.exe")
+        self.assertTrue(candidate.is_file())
+        target = self.install / "bin/tofa.exe"
+        target.parent.mkdir(parents=True)
+        marker = self.install / ".tofa-install"
+        reference = "0123456789abcdef0123456789abcdef"
+        config = self.config / "config.yml"
+        credentials = self.config / "credentials.yml"
+        config.write_text("version: 1\nproject_id: synthetic\ncredential_backend: file\ncredential_ref: '" + reference + "'\n")
+        credentials.write_text("'" + reference + "': synthetic-key\n")
+        supervisor = windows_process.build_supervisor(self.root / "supervisor")
+        for purge in (False, True):
+            shutil.copyfile(candidate, target)
+            marker.write_text("tofa-install-v1\n")
+            output, errors = qualify_windows.command([str(target), "uninstall"] + (["--purge"] if purge else []), supervisor, 30, env=self.env)
+            self.assertFalse(errors, output)
+            self.assertIn("Uninstaller started;", output)
+            self.assertIn("Existing terminals may retain the old PATH entry.", output)
+            self.assertFalse(target.exists())
+            self.assertEqual(config.exists(), not purge)
+            self.assertEqual(credentials.exists(), not purge)
+            self.assertFalse(list((self.root / "helpers").glob("tofa-uninstall-*.ps1")))
 
 
 if __name__ == "__main__":
