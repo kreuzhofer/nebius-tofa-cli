@@ -231,7 +231,7 @@ func (a *App) ask(label string, secret bool) (string, error) {
 	}
 	return strings.TrimSpace(b.String()), nil
 }
-func (a *App) launch(ctx context.Context, s Store, args []string) error {
+func (a *App) launch(ctx context.Context, s Store, args []string) (result error) {
 	if len(args) == 0 || args[0] != "codex" {
 		return errors.New("only Codex CLI is available in this prototype")
 	}
@@ -287,15 +287,36 @@ func (a *App) launch(ctx context.Context, s Store, args []string) error {
 	if !found {
 		return errors.New("selected model is not available in this project's catalog")
 	}
+	catalog, err := prepareModelCatalog(*model)
+	if err != nil {
+		return err
+	}
+	if catalog != "" {
+		defer func() {
+			if err := os.Remove(catalog); err != nil {
+				fmt.Fprintln(a.Out, "Could not remove temporary model catalog:", catalog)
+				if result == nil {
+					result = errors.New("temporary model catalog cleanup failed")
+				}
+			}
+		}()
+		fmt.Fprintln(a.Out, "Model metadata: bundled Kimi-K3 catalog (provider snapshot 2026-09-21).")
+	}
+	run := func(ctx context.Context, args, env []string) error {
+		if catalog != "" {
+			args = append([]string{"-c", "model_catalog_json=" + strconv.Quote(catalog)}, args...)
+		}
+		if runner == nil {
+			return runClient(ctx, args, env)
+		}
+		return runner(args, env)
+	}
 	fmt.Fprintf(a.Out, "Launching Codex with %s (unverified), project %s.\n", *model, c.ProjectID)
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if *direct {
 		fmt.Fprintln(a.Out, "Route: direct Token Factory connection (--direct); no request adaptation.")
-		if runner == nil {
-			return runClient(ctx, child, childEnv(key))
-		}
-		return runner(child, childEnv(key))
+		return run(ctx, child, childEnv(key))
 	}
 	adapter, err := a.startAdapter(ctx, c.ProjectID, key)
 	if err != nil {
@@ -308,11 +329,7 @@ func (a *App) launch(ctx context.Context, s Store, args []string) error {
 		return err
 	}
 	fmt.Fprintln(a.Out, "Route: per-launch Responses request adapter (assistant-history repair).")
-	if runner == nil {
-		err = runClient(adapter.context, child, childEnv(adapter.token))
-	} else {
-		err = runner(child, childEnv(adapter.token))
-	}
+	err = run(adapter.context, child, childEnv(adapter.token))
 	cleanupErr := adapter.close()
 	if serveErr := <-adapter.done; serveErr != nil {
 		return errors.New("request adapter stopped unexpectedly; Codex launch cancelled")

@@ -13,8 +13,10 @@ per-launch loopback adapter that supplies missing assistant-message `status` and
 output-text `annotations`, preserving existing values. An offline test with Codex
 0.155.1 exercises a tool call and continued conversation using synthetic responses.
 The maintainer also reports a successful live browser-game build and follow-up
-feature change using the suggested launcher flow. The separate model-metadata
-warning remains; broader compatibility and platform checks are still pending.
+feature change using the suggested launcher flow. Kimi launches now receive a
+temporary model catalog using Nebius's advertised context limit and capabilities,
+removing the missing-metadata warning in the installed-client check. Broader
+compatibility and platform checks are still tracked separately.
 See [the investigation](docs/research/codex-kimi-followup.md) and
 [current evidence](docs/prototype/VALIDATION.md#request-adapter-validation).
 
@@ -105,6 +107,17 @@ the direct child immediately. Detached descendants are not guaranteed to termina
 Existing Codex
 skills, hooks and policy still apply. Web search is disabled for this unverified
 provider. `doctor` is local only and does not read a key or trigger inference.
+
+For `moonshotai/Kimi-K3`, a launch-scoped model catalog supplies Nebius's advertised
+1,024,000-token context limit and text/image modalities, with Codex's pinned default
+coding instructions preserved. Optional reasoning-effort, reasoning-summary and
+verbosity controls are not advertised because their Kimi Responses behavior is
+not yet established. This does not disable Kimi's own reasoning. The catalog is
+removed on normal exit/failure; abrupt process termination can leave a nonsecret
+`tofa-model-catalog-*.json` file in the OS temporary directory. Other model IDs keep
+their existing metadata behavior. All models still require `--allow-unverified`.
+See [the metadata research](https://github.com/kreuzhofer/nebius-tofa-cli/blob/03d47a502c09debc36a2072c3aa3a929beb6c38d/docs/research/kimi-provider-metadata.md)
+for the provider snapshot and remaining gaps.
 
 ## Credentials and preferences
 

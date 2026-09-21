@@ -152,8 +152,9 @@ the default adapter route. Add `--direct` only for deliberate diagnostic bypass.
   detached processes and abrupt launcher death need further platform evidence.
   The embedded endpoint ends with the launcher; that does not prove every client
   descendant exits. Windows termination behavior is cross-compiled, not run here.
-- Model metadata remains independent. No fabricated catalog suppresses its warning,
-  and the supported-model set remains empty until live compatibility is established.
+- Kimi model metadata is supplied from the provider evidence described below.
+  Other models require their own capability evidence. The supported-model registry
+  remains empty pending a repeatable live compatibility qualification process.
 
 ### Maintainer hands-on report
 
@@ -177,3 +178,32 @@ model when launched"**. This confirms the ordinary model selection is preserved
 after the live test; it describes a separate ordinary Codex launch, not an
 automatic route fallback inside `tofa`. No user authentication files were inspected
 and no agent-initiated inference was run.
+
+## Kimi metadata and native-CI follow-up
+
+The metadata warning is reproduced independently with a single synthetic response
+in Codex 0.155.1. A context override alone leaves the warning intact; an exact-slug
+catalog entry removes it. The [pinned research and diagnostic](https://github.com/kreuzhofer/nebius-tofa-cli/tree/03d47a502c09debc36a2072c3aa3a929beb6c38d)
+distinguish this client lookup from real model inference and provider capabilities.
+
+The implementation now supplies a per-launch Kimi catalog grounded in Nebius's
+public model record: context/max-context 1,024,000 and text/image modalities.
+It preserves the pinned default Codex coding instructions and does not advertise
+unverified reasoning-effort, summary or verbosity controls. The provider-specific
+output ceiling and detailed Responses reasoning contract remain unknown; neither
+is invented. The metadata does not itself certify a model/client combination.
+
+Local `go test -race ./...`, `go vet ./...`, the six-artifact build and terminal
+checks pass with these changes. The installed Codex 0.155.1 synthetic integration
+now explicitly checks that the metadata warning is absent, coding instructions
+remain, tool execution succeeds and a follow-up completes. HTTP-boundary checks
+also cover catalog cleanup on success/failure, explicit creation failure and
+leaving unknown model IDs alone.
+
+The [first adapter CI run](https://github.com/kreuzhofer/nebius-tofa-cli/actions/runs/35605720621)
+passed Windows but caught a shutdown edge case on Linux/macOS: an idle TCP
+connection could outlast graceful shutdown and incorrectly report a failed launch.
+A deterministic idle-connection regression reproduced the failure. The fix cancels
+upstream work and closes all launch-owned connections when the client exits;
+repeated local race tests pass. A new native run is required before replacing
+the remaining native-validation limitations above.

@@ -3,6 +3,8 @@ set -eu
 version=${1:-v0.0.0-prototype}
 case "$version" in ''|*[!A-Za-z0-9._-]*) echo 'Invalid version' >&2;exit 1;; esac
 mkdir -p dist
+cp internal/tofa/assets/codex-LICENSE dist/LICENSE-CODEX.txt
+cp internal/tofa/assets/codex-NOTICE dist/NOTICE-CODEX.txt
 for platform in darwin linux windows;do
  for arch in amd64 arm64;do
   suffix=;[ "$platform" != windows ] || suffix=.exe

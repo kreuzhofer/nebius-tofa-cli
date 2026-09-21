@@ -27,4 +27,22 @@ Configuration references:
 - [Token Factory Responses](https://docs.tokenfactory.nebius.com/api-reference/inference/create-a-response)
 
 These establish configuration/API contracts, not live compatibility. Local Codex
-0.154.0 help was inspected; inference was not run.
+0.154.0 help was inspected; subsequent synthetic integration tests use 0.155.1.
+No assistant-initiated remote inference was run.
+
+## Vendored Codex instructions
+
+`internal/tofa/assets/codex-prompt.md` is an unmodified copy of
+[`codex-rs/models-manager/prompt.md`](https://github.com/openai/codex/blob/be2951ea34f0d295ed0becf97079f92fa5f6950e/codex-rs/models-manager/prompt.md)
+from Codex `rust-v0.155.1`, commit `be2951ea34f0d295ed0becf97079f92fa5f6950e`.
+SHA-256: `ac8ae107a0d72fe3476b430afb161ea4e67da2e446d778aefc44828160559807`.
+It preserves the existing fallback model's coding instructions when a scoped Kimi
+catalog replaces the fallback descriptor.
+
+The upstream [Apache-2.0 license](../../internal/tofa/assets/codex-LICENSE) and
+[NOTICE](../../internal/tofa/assets/codex-NOTICE) are retained verbatim alongside
+the prompt. `scripts/build.sh` includes copies as `LICENSE-CODEX.txt` and
+`NOTICE-CODEX.txt` in the artifact directory. Only the prompt is reused here;
+the full upstream notice is preserved, not a claim that this launcher embeds
+Codex's UI or its other components. Full notices for the Go dependency graph
+remain a separate prerequisite for published installable releases.

@@ -30,7 +30,8 @@ func TestInstalledCodexToolAndContinuationThroughAdapter(t *testing.T) {
 	var requests, histories, toolResults atomic.Int32
 	upstream := func(writer http.ResponseWriter, request *http.Request) {
 		var payload struct {
-			Input []struct {
+			Instructions string `json:"instructions"`
+			Input        []struct {
 				Type    string `json:"type"`
 				Role    string `json:"role"`
 				Status  string `json:"status"`
@@ -46,6 +47,11 @@ func TestInstalledCodexToolAndContinuationThroughAdapter(t *testing.T) {
 		}
 		if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
 			t.Error(err)
+			writer.WriteHeader(400)
+			return
+		}
+		if !strings.Contains(payload.Instructions, "You are a coding agent running in the Codex CLI") {
+			t.Error("default coding instructions missing")
 			writer.WriteHeader(400)
 			return
 		}
@@ -143,6 +149,9 @@ func TestInstalledCodexToolAndContinuationThroughAdapter(t *testing.T) {
 		command := exec.CommandContext(ctx, clientPath, args...)
 		command.Dir, command.Env = root, isolated
 		output, err := command.CombinedOutput()
+		if strings.Contains(string(output), "Model metadata for") {
+			t.Error("Codex still reports missing model metadata")
+		}
 		if err != nil {
 			t.Log(string(output))
 		}

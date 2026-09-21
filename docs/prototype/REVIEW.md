@@ -96,3 +96,26 @@ Read `adapter_test.go` for local HTTP behavior, `process_test.go` for executable
 startup/exit/cancellation, and `codex_integration_test.go` for the optional installed
 client check. That check runs only with `TOFA_TEST_CODEX`, uses scratch client
 configuration, and serves synthetic tool/text responses; it never calls a model.
+
+## Kimi model metadata
+
+`metadata.go` creates a temporary, selected-model-only catalog for each Kimi
+launch. `app.go` injects its path through `model_catalog_json`, removes it on exit,
+and reports creation/write/cleanup failures. Ordinary Codex configuration is not
+edited. Unknown model IDs receive no invented catalog.
+
+Provider facts come from the [public Token Factory catalog](https://tokenfactory.nebius.com/api/public/models_info):
+the exact context integer is 1,024,000, with text/image input, function calling and
+Responses support. It differs from Moonshot's author-model context figure. The
+remaining fields are explicit launcher policy: retain unified execution, the
+existing 10,000-byte tool-output truncation and 95% effective-context convention;
+do not advertise unverified reasoning-effort, summary or verbosity controls.
+No output cap is invented. Existing explicit user configuration remains subject
+to Codex's own override rules.
+
+A catalog without `model_messages` would lose the default coding instructions.
+The exact Codex 0.155.1 default prompt is therefore embedded, with its upstream
+license and notice retained; see `THIRD_PARTY.md`. This is a pinned compatibility
+snapshot, not automatic tracking of future Codex behavior. The optional installed
+client test asserts both absence of the metadata warning and preservation of
+coding instructions while executing a synthetic tool call and follow-up.
