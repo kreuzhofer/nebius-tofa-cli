@@ -287,3 +287,28 @@ without reverse DNS, retaining HTTP server address metadata. A regression inject
 unavailable DNS fails before this change and passes afterward. Temporary stack
 instrumentation has been removed. Fixture requests also explicitly bypass ambient
 proxy discovery to keep synthetic traffic local.
+
+## Native Windows candidate installation lifecycle
+
+[CI run 35640269120](https://github.com/kreuzhofer/nebius-tofa-cli/actions/runs/35640269120)
+at `7cf7893` passes the actual-candidate lifecycle on Windows amd64 with Go 1.27.1.
+The matching bundled PowerShell installer installs `v0.0.0-ci`, and a fresh process
+reconstructs PATH from the machine/user stores and verifies resolution, version
+and help. Repeated installation adds no duplicate entry. Real CLI uninstall starts
+its asynchronous helper; the test waits with a deadline, checks completion and
+verifies files and PATH before accepting success. Ordinary uninstall preserves
+synthetic settings/credentials, reinstall retains them, and explicit purge removes
+owned state while keeping unrelated files and synthetic credentials.
+
+The same run passes corrupt-upgrade rejection, blocked-purge failure and retry,
+and recovery-helper cancellation/timeout checks at the public `-WaitPid` boundary.
+The harness confirms test-file cleanup and restores user PATH without changing
+execution policy. All inference and native credential-store operations are excluded.
+Native race/vet checks, macOS/Linux lifecycle checks and six-target distribution
+checks also pass. Windows ARM64 still has build evidence only.
+
+The first native run rejected Git Bash's binary checksum markers. A local
+regression reproduced the incompatible manifest before the builder was changed to
+hash binary bytes explicitly and normalize marker formatting. A separate
+test-first fix preserves Windows installation ownership when unrelated files remain,
+allowing ordinary uninstall followed by reinstall. Purge relinquishes ownership.
