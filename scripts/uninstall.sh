@@ -59,8 +59,16 @@ if [ -e "$root/.tofa-install" ];then
    cat "$temp" > "$rc";rm "$temp"
   done < "$root/.path-files"
  fi
- rm -f "$root/bin/tofa" "$root/.tofa-install" "$root/.path-files"
+ rm -f "$root/bin/tofa" "$root/.path-files"
  rmdir "$root/bin" 2>/dev/null || :
+ remaining=$(ls -A "$root")
+ if [ "$purge" = no ] && [ "$remaining" != .tofa-install ];then
+  # Unrelated files keep the directory alive. Retain proof of ownership so a
+  # later installer can reuse it without accepting arbitrary unowned directories.
+  printf '%s\n' 'Retained install ownership marker beside unrelated files so tofa can be reinstalled.'
+ else
+  rm -f "$root/.tofa-install"
+ fi
  rmdir "$root" 2>/dev/null || :
 elif [ -e "$root/bin/tofa" ];then fail 'binary has no tofa ownership manifest; refusing removal'
 fi

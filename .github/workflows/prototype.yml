@@ -26,6 +26,12 @@ jobs:
         if: runner.os != 'Windows'
       - run: python3 scripts/install_test.py
         if: runner.os != 'Windows'
+      - name: Build versioned candidate bundle
+        if: runner.os != 'Windows'
+        run: sh scripts/build.sh v0.0.0-ci
+      - name: Native candidate installation lifecycle
+        if: runner.os != 'Windows'
+        run: python3 scripts/lifecycle_test.py dist v0.0.0-ci -v
       - run: python3 scripts/terminal_test.py ./tofa
         if: runner.os != 'Windows'
       - name: Offline live-harness qualification checks

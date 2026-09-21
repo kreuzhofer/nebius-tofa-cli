@@ -200,6 +200,8 @@ go vet ./...
 sh scripts/build.sh v0.0.0-prototype
 python3 scripts/build_test.py
 python3 scripts/install_test.py
+# Native macOS/Linux lifecycle against the bundle built above:
+python3 scripts/lifecycle_test.py dist v0.0.0-prototype -v
 # Unix only, against a compiled local binary:
 python3 scripts/terminal_test.py ./tofa
 # Optional: installed Codex, scratch config, synthetic local responses only:
@@ -212,6 +214,12 @@ Python is a **development test tool**, not a runtime or installer dependency.
 The build tests require Go and run on macOS/Linux. They inspect all six targets'
 embedded versions and build metadata, execute the native binary, verify every
 checksum and bundled notice, and install from a controlled local release source.
+The native lifecycle checks install the actual candidate using its bundled script
+and check fresh interactive zsh (macOS) or bash (Linux) discovery, version/help,
+repeated installation, CLI uninstall, reinstall and explicit purge. They also
+verify that corrupt downloads and failed cleanup report errors, retain retryable
+state, and preserve unrelated files. These checks run in the native CI jobs;
+fish startup and other shell modes remain outside this coverage.
 Run `./scripts/windows_test.ps1` in native Windows PowerShell for the offline
 installer and recovery-script tests. Its `-InstallerOnly` switch checks downloads
 and checksum rejection without running the Windows recovery script.
@@ -231,6 +239,10 @@ Dependencies and reuse: [third-party notices](docs/prototype/THIRD_PARTY.md).
 
 Uninstall preserves saved preferences and credentials by default. It removes only
 tofa's installation and owned PATH changes; Codex and unrelated files are retained.
+On macOS/Linux, if unrelated files keep the install directory nonempty, ordinary
+uninstall retains its ownership marker so a later install can reuse that directory.
+Explicit purge removes that marker as well. To reinstall after purge, select an
+empty install directory or move the unrelated files out of the old one first.
 
 ### Using the CLI
 
