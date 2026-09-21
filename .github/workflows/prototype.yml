@@ -35,6 +35,10 @@ jobs:
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
             if ($errors) { throw ($errors | Out-String) }
           }
+      - name: Offline Windows installer lifecycle
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/windows_test.ps1
   artifacts:
     runs-on: ubuntu-latest
     steps:

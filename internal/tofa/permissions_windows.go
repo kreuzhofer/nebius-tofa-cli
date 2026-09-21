@@ -4,6 +4,7 @@ import (
 	"errors"
 	"golang.org/x/sys/windows"
 	"os"
+	"unsafe"
 )
 
 func ownerDescriptor() (*windows.SECURITY_DESCRIPTOR, error) {
@@ -29,12 +30,31 @@ func checkPrivate(path string, info os.FileInfo) error {
 	if err != nil {
 		return err
 	}
-	want, err := ownerDescriptor()
+
+	control, _, err := got.Control()
 	if err != nil {
 		return err
 	}
-	if got.String() != want.String() {
-		return errors.New("config/credential file ACL is not the expected private tofa ACL; restore owner-only permissions")
+	acl, _, err := got.DACL()
+	if err != nil {
+		return err
+	}
+	if control&windows.SE_DACL_PROTECTED == 0 || acl == nil || acl.AceCount != 1 {
+		return errors.New("file must have a protected owner-only ACL")
+	}
+	var ace *windows.ACCESS_ALLOWED_ACE
+	if err = windows.GetAce(acl, 0, &ace); err != nil {
+		return err
+	}
+	user, err := windows.GetCurrentProcessToken().GetTokenUser()
+	if err != nil {
+		return err
+	}
+	// Windows stores the variable-length SID starting at SidStart; this is the
+	// documented ACCESS_ALLOWED_ACE layout, not Go-owned memory to dereference freely.
+	sid := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
+	if ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE || ace.Header.AceFlags&windows.INHERIT_ONLY_ACE != 0 || !sid.IsValid() || !sid.Equals(user.User.Sid) {
+		return errors.New("file ACL grants access beyond the current user")
 	}
 	return nil
 }

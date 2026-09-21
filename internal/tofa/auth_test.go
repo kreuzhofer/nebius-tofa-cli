@@ -125,10 +125,8 @@ func TestConfigSaveFailureKeepsPreviousCredential(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Simulate a filesystem replacement during the native-store write, before config commit.
-	original, err := os.ReadFile(filepath.Join(dir, "config.yml"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	// Move the original aside during sabotage so restoring it also preserves ACLs.
+	var err error
 	s.Vault = &sabotageVault{vault: v, path: filepath.Join(dir, "config.yml")}
 	if err := s.Login("replacement", "new-key", "keyring"); err == nil {
 		t.Fatal("expected configuration save failure")
@@ -137,7 +135,7 @@ func TestConfigSaveFailureKeepsPreviousCredential(t *testing.T) {
 		t.Fatal("replacement key was not rolled back")
 	}
 	os.Remove(filepath.Join(dir, "config.yml"))
-	if err = os.WriteFile(filepath.Join(dir, "config.yml"), original, 0600); err != nil {
+	if err = os.Rename(filepath.Join(dir, "config.yml.backup"), filepath.Join(dir, "config.yml")); err != nil {
 		t.Fatal(err)
 	}
 	s.Vault = v
@@ -156,7 +154,7 @@ func (v *sabotageVault) Set(ref, key string) error {
 	if err := v.vault.Set(ref, key); err != nil {
 		return err
 	}
-	if err := os.Remove(v.path); err != nil {
+	if err := os.Rename(v.path, v.path+".backup"); err != nil {
 		return err
 	}
 	return os.Mkdir(v.path, 0700)
