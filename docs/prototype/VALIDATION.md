@@ -3,8 +3,9 @@
 Status: the accepted per-launch request adapter is implemented and passes local
 checks. The maintainer reports a successful live game build and follow-up change.
 The maintainer also confirms that ordinary Codex selects its original model after
-testing. Native Linux/Windows adapter checks and the complete compatibility record
-remain; the Wayfinder prototype decision is open. No model is certified.
+testing. Native macOS/Linux/Windows adapter checks now pass. The complete live
+compatibility record remains; the Wayfinder prototype decision is open. No model
+is certified.
 
 ## Original direct-prototype evidence
 
@@ -128,7 +129,7 @@ above tested the direct prototype, not the adapter changes.
 | Scratch Codex configuration/login | Config sentinel unchanged; no auth file created |
 | Compiled CLI terminal input checks | Passed, including masking and interruption |
 | Six OS/CPU binaries, CGO disabled | Cross-build passed |
-| Windows/Linux x64 test executables | Cross-compiled; not executed here |
+| Native macOS ARM64, Linux x64 and Windows x64 | Race suite and vet passed in CI; see the pinned run below |
 
 The optional installed-client test selects the Kimi model ID but serves every
 response locally. The tool executes only `printf tofa-fixture-tool` in a scratch
@@ -141,8 +142,8 @@ the default adapter route. Add `--direct` only for deliberate diagnostic bypass.
 
 ### Remaining adapter acceptance checks
 
-- Execute the new suite on native Linux and Windows runners. Six successful
-  cross-builds and the old native CI results do not substitute for this.
+- Native race/vet checks pass on macOS ARM64, Linux x64 and Windows x64.
+  macOS x64, Linux ARM64 and Windows ARM64 have build evidence only.
 - The maintainer has completed the live build-and-follow-up exercise and confirmed
   ordinary Codex selects its original model afterward. Capture the exact live
   session version/platform and streaming behavior for the compatibility record.
@@ -151,7 +152,7 @@ the default adapter route. Add `--direct` only for deliberate diagnostic bypass.
   after two seconds, Windows kills the immediate child. Descendant containment,
   detached processes and abrupt launcher death need further platform evidence.
   The embedded endpoint ends with the launcher; that does not prove every client
-  descendant exits. Windows termination behavior is cross-compiled, not run here.
+  descendant exits. Immediate-child termination now also passes native Windows CI.
 - Kimi model metadata is supplied from the provider evidence described below.
   Other models require their own capability evidence. The supported-model registry
   remains empty pending a repeatable live compatibility qualification process.
@@ -205,5 +206,15 @@ passed Windows but caught a shutdown edge case on Linux/macOS: an idle TCP
 connection could outlast graceful shutdown and incorrectly report a failed launch.
 A deterministic idle-connection regression reproduced the failure. The fix cancels
 upstream work and closes all launch-owned connections when the client exits;
-repeated local race tests pass. A new native run is required before replacing
-the remaining native-validation limitations above.
+repeated local race tests pass.
+
+[Native CI for the adapter and metadata implementation](https://github.com/kreuzhofer/nebius-tofa-cli/actions/runs/35607849384)
+at commit `d60376888c9508faaee0625ee40580f816785c09` passes the race suite and vet
+on macOS ARM64, Linux x64 and Windows x64. Architectures were verified in each
+job's Go version log. Unix installer and terminal checks pass on macOS/Linux;
+PowerShell parsing and offline installer lifecycle checks pass on Windows.
+The six-target artifact build and upload also pass, including the vendored Codex
+prompt's license and notice files in the artifact bundle.
+These jobs do not install Codex: the optional real-client synthetic integration
+was run locally on macOS ARM64 with Codex 0.155.1, not across the CI matrix.
+No CI check performs real inference or accesses the native credential stores.
