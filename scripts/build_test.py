@@ -83,7 +83,14 @@ class BuildTest(unittest.TestCase):
                              (self.source / "internal/tofa/assets" / f"codex-{name}").read_bytes())
         goroot = pathlib.Path(subprocess.check_output(["go", "env", "GOROOT"], text=True).strip())
         self.assertEqual((dist / "LICENSE-GO.txt").read_bytes(), (goroot / "LICENSE").read_bytes())
+        self.assertEqual((dist / "PATENTS-GO.txt").read_bytes(), (goroot / "PATENTS").read_bytes())
         notices = (dist / "THIRD_PARTY_NOTICES.txt").read_text()
+        # Go's root BSD license does not replace notices retained in its sources.
+        runtime_notice = (goroot / "src/runtime/memmove_amd64.s").read_text().split("\n\n")[0]
+        self.assertIn(runtime_notice, notices)
+        for copyright in ("2015-2020 The fiat-crypto Authors", "1993 by Sun Microsystems",
+                          "2004 by Sun Microsystems", "2000 by Stephen L. Moshier"):
+            self.assertIn(copyright, notices)
         modules = set()
         for binary in dist.glob("tofa_*"):
             info = subprocess.check_output(["go", "version", "-m", str(binary)], text=True)

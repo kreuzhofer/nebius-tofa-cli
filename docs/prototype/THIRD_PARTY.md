@@ -24,6 +24,9 @@ the project license and the build toolchain's Go license/patent grant into `dist
 `scripts/build_test.py` checks notices against the union of module dependencies in
 all six produced binaries. Keep notices and module versions aligned when upgrading
 dependencies. `go.sum` is an integrity file, not a license notice bundle.
+The same file retains additional notices from Go's runtime memory operations,
+fiat-crypto arithmetic and math sources. These were audited against Go 1.27.1;
+re-audit source-level notices when updating the build toolchain.
 
 Configuration references:
 
