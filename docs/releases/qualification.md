@@ -10,6 +10,8 @@ Use the runner from this repository checkout; candidate bytes and matching
 installation scripts always come from the selected release. The runner does not
 rebuild or replace published assets. Changed release files require a new candidate.
 
+For `v0.1.0-rc.1`, use the [pinned two-machine handoff and evidence checklist](v0.1.0-rc.1.md#required-real-machine-qualification-handoff).
+
 ## Before running
 
 Use macOS ARM64 with Python 3.9+, `curl`, the GitHub CLI (`gh`) and an installed
