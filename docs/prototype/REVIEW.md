@@ -97,6 +97,13 @@ startup/exit/cancellation, and `codex_integration_test.go` for the optional inst
 client check. That check runs only with `TOFA_TEST_CODEX`, uses scratch client
 configuration, and serves synthetic tool/text responses; it never calls a model.
 
+`scripts/live_compat.py` adds opt-in qualification through the built executable and
+installed Codex. Read [the harness guide](LIVE-COMPATIBILITY.md) for its scratch
+workspaces, test-only SSE observer, independent file assertions and report limits.
+`scripts/live_compat_test.py` verifies its verdicts offline at executable/HTTP
+boundaries, including false-positive and false-negative regressions. No production
+Go interface changes are needed for this harness.
+
 ## Kimi model metadata
 
 `metadata.go` creates a temporary, selected-model-only catalog for each Kimi

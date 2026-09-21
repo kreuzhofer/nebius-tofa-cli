@@ -72,7 +72,8 @@ Native CLI self-uninstall also passed locally in a temporary macOS installation.
 4. Complete the live compatibility record: the maintainer's successful game-build
    and follow-up report is recorded below. Capture the exact model/client/platform
    combination and explicit streaming evidence before changing support claims.
-   Any agent-initiated paid checks still need a separately authorized budget.
+   The maintainer authorized in-scope live checks without a spending cap on
+   2026-09-21, then approved the three-run Kimi harness and use of saved credentials.
 5. Ordinary Codex model selection after a real launched session is confirmed by
    the maintainer. File/environment isolation also passes locally with a fake
    client. These checks do not independently inspect every login/provider setting.
@@ -147,7 +148,7 @@ the default adapter route. Add `--direct` only for deliberate diagnostic bypass.
 - The maintainer has completed the live build-and-follow-up exercise and confirmed
   ordinary Codex selects its original model afterward. Capture the exact live
   session version/platform and streaming behavior for the compatibility record.
-  No agent-initiated paid inference is authorized.
+  The later live-harness authorization supersedes the earlier budget prerequisite.
 - Immediate-child cancellation is implemented; Unix sends an interrupt then kills
   after two seconds, Windows kills the immediate child. Descendant containment,
   detached processes and abrupt launcher death need further platform evidence.

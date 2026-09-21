@@ -159,12 +159,19 @@ python3 scripts/install_test.py
 python3 scripts/terminal_test.py ./tofa
 # Optional: installed Codex, scratch config, synthetic local responses only:
 TOFA_TEST_CODEX="$(command -v codex)" go test ./internal/tofa -run TestInstalledCodexToolAndContinuationThroughAdapter -v
+# Unix only, offline validation of the live-test harness:
+python3 scripts/live_compat_test.py
 ```
 
 Python is a **development test tool**, not a runtime or installer dependency.
 The tests use synthetic credentials, temporary directories and local HTTP servers.
 They never contact Token Factory or access native credential stores. The workflow
 also tests on native runners; test results must be checked before claiming coverage.
+
+For opt-in real inference using saved credentials, see the
+[live compatibility harness](docs/prototype/LIVE-COMPATIBILITY.md). It runs three
+isolated Kimi sessions and records streaming, tools, checked file changes and
+continuation evidence. Live runs are separate from the offline commands above.
 
 Design decisions: [Wayfinder map](https://github.com/kreuzhofer/nebius-tofa-cli/issues/1).
 Dependencies and reuse: [third-party notices](docs/prototype/THIRD_PARTY.md).

@@ -27,6 +27,9 @@ jobs:
         if: runner.os != 'Windows'
       - run: python3 scripts/terminal_test.py ./tofa
         if: runner.os != 'Windows'
+      - name: Offline live-harness qualification checks
+        if: runner.os != 'Windows'
+        run: python3 scripts/live_compat_test.py
       - name: Parse PowerShell installers
         if: runner.os == 'Windows'
         shell: pwsh
