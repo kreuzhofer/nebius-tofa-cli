@@ -223,6 +223,16 @@ fish startup and other shell modes remain outside this coverage.
 Run `./scripts/windows_test.ps1` in native Windows PowerShell for the offline
 installer and recovery-script tests. Its `-InstallerOnly` switch checks downloads
 and checksum rejection without running the Windows recovery script.
+Windows CI also builds the versioned bundle and runs
+`./scripts/windows_lifecycle_test.ps1 -Dist dist -Version v0.0.0-ci` against the
+actual executable through its matching installer. It checks persistent user PATH
+and fresh-process discovery, repeated install, real asynchronous CLI uninstall,
+retained-state reinstall and purge. It waits for helper completion with a deadline
+and checks cleanup results; launcher exit alone is not success. Failed purge,
+helper cancellation, timeout and corrupt downloads must remain observable.
+This check is restricted to disposable GitHub Actions Windows runners because it
+temporarily changes user PATH. It restores PATH and removes its synthetic state
+in `finally`, stops outstanding helpers, and never changes execution policy.
 The tests use synthetic credentials, temporary directories and local HTTP servers.
 They never contact Token Factory or access native credential stores. The workflow
 also tests on native runners; test results must be checked before claiming coverage.
@@ -239,7 +249,7 @@ Dependencies and reuse: [third-party notices](docs/prototype/THIRD_PARTY.md).
 
 Uninstall preserves saved preferences and credentials by default. It removes only
 tofa's installation and owned PATH changes; Codex and unrelated files are retained.
-On macOS/Linux, if unrelated files keep the install directory nonempty, ordinary
+If unrelated files keep the install directory nonempty, ordinary
 uninstall retains its ownership marker so a later install can reuse that directory.
 Explicit purge removes that marker as well. To reinstall after purge, select an
 empty install directory or move the unrelated files out of the old one first.

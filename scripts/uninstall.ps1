@@ -49,8 +49,12 @@ if(Test-Path -LiteralPath $Manifest){
  }
  $Exe=Join-Path $Bin 'tofa.exe';Assert-NotLink $Exe
  if(Test-Path -LiteralPath $Exe){Remove-Item -LiteralPath $Exe}
- Remove-Item -LiteralPath $Manifest
  if((Test-Path -LiteralPath $Bin) -and !(Get-ChildItem -Force -LiteralPath $Bin)){Remove-Item -LiteralPath $Bin}
+ # Retain ownership for reinstall when unrelated files keep the directory alive.
+ # Explicit purge relinquishes ownership even if those files remain.
+ if($Purge -or !(Get-ChildItem -Force -LiteralPath $Root | Where-Object {$_.Name -ne '.tofa-install'})) {
+  Remove-Item -LiteralPath $Manifest
+ }
  if(!(Get-ChildItem -Force -LiteralPath $Root)){Remove-Item -LiteralPath $Root}
 }elseif(Test-Path -LiteralPath (Join-Path $Root 'bin\tofa.exe')){throw 'Binary has no tofa ownership manifest; refusing removal'}
 if($Purge){Write-Host 'Removed tofa and saved credentials/preferences. Unrelated files retained.'}

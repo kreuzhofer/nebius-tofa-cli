@@ -27,7 +27,7 @@ jobs:
       - run: python3 scripts/install_test.py
         if: runner.os != 'Windows'
       - name: Build versioned candidate bundle
-        if: runner.os != 'Windows'
+        shell: bash
         run: sh scripts/build.sh v0.0.0-ci
       - name: Native candidate installation lifecycle
         if: runner.os != 'Windows'
@@ -41,7 +41,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          foreach ($file in @('scripts/install.ps1','scripts/uninstall.ps1')) {
+          foreach ($file in @('scripts/install.ps1','scripts/uninstall.ps1','scripts/windows_test.ps1','scripts/windows_lifecycle_test.ps1')) {
             $tokens = $null; $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
             if ($errors) { throw ($errors | Out-String) }
@@ -50,6 +50,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: ./scripts/windows_test.ps1
+      - name: Native Windows candidate installation lifecycle
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/windows_lifecycle_test.ps1 -Dist dist -Version v0.0.0-ci
   artifacts:
     runs-on: ubuntu-latest
     steps:

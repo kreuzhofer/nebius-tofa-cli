@@ -66,12 +66,20 @@ try {
  Set-Content -LiteralPath (Join-Path $Config 'config.yml') -Value 'version: 1'
  Set-Content -LiteralPath (Join-Path $Config 'credentials.yml') -Value 'fixture: synthetic-key'
  Set-Content -LiteralPath (Join-Path $Config 'unrelated.txt') -Value 'keep'
+ Set-Content -LiteralPath (Join-Path $Temp 'tofa/install/unrelated.txt') -Value 'keep installation neighbor'
  & (Join-Path $Scripts 'uninstall.ps1')
  Assert (!(Test-Path -LiteralPath $Binary)) 'Binary retained'
  Assert (Test-Path -LiteralPath (Join-Path $Config 'credentials.yml')) 'Default uninstall deleted credential'
+ $global:TofaFixtureCorrupt=$false
+ & (Join-Path $Scripts 'install.ps1') -Version v0.0.0-test -NoModifyPath
+ Assert (Test-Path -LiteralPath $Binary) 'Retained installation cannot be reused'
+ Assert ((Get-Content -Raw -LiteralPath (Join-Path $Temp 'tofa/install/unrelated.txt')).Trim() -eq 'keep installation neighbor') 'Reinstall changed unrelated file'
+ Assert ((Get-Content -Raw -LiteralPath (Join-Path $Config 'credentials.yml')).Trim() -eq 'fixture: synthetic-key') 'Reinstall changed saved credential'
  & (Join-Path $Scripts 'uninstall.ps1') -Purge
  Assert (!(Test-Path -LiteralPath (Join-Path $Config 'credentials.yml'))) 'Purge retained credential'
  Assert (Test-Path -LiteralPath (Join-Path $Config 'unrelated.txt')) 'Purge deleted unrelated file'
+ Assert (Test-Path -LiteralPath (Join-Path $Temp 'tofa/install/unrelated.txt')) 'Purge deleted installation neighbor'
+ Assert (!(Test-Path -LiteralPath $Manifest)) 'Purge retained ownership marker'
  Write-Host 'Offline Windows installer lifecycle passed.'
 }finally{
  Remove-Item Function:\Invoke-WebRequest
