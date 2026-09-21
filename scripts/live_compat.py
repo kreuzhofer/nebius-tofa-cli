@@ -3,7 +3,8 @@
 Uses saved launcher credentials. Runs three scratch coding sessions by default.
 The Codex shim observes SSE between the client and the launcher's loopback adapter;
 it never receives the Nebius key. Only counts/status/timing leave scratch storage.
-macOS/Linux only; Python is a developer-test dependency, not a launcher dependency.
+Python is a qualification dependency, not a launcher dependency. Windows uses a
+temporary native observer shim and Job Object supervisor from windows_process.
 """
 import argparse
 import hashlib
@@ -57,6 +58,21 @@ def write_json(path, value):
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+
+
+def client_environment(home, codex_home):
+    names = ("PATH", "TMPDIR", "LANG", "LC_ALL")
+    if os.name == "nt":
+        names += ("SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT")
+    env = {name: os.environ[name] for name in names if name in os.environ}
+    env.update(HOME=str(home), CODEX_HOME=str(codex_home), OTEL_SDK_DISABLED="true")
+    if os.name == "nt":
+        for name, suffix in (("USERPROFILE", ""), ("LOCALAPPDATA", "local"), ("APPDATA", "roaming"),
+                             ("TEMP", "tmp"), ("TMP", "tmp")):
+            path = home / suffix
+            path.mkdir(parents=True, exist_ok=True)
+            env[name] = str(path)
+    return env
 
 
 def observe(args):
@@ -144,11 +160,11 @@ def observe(args):
     args[index] = args[index][:match.start(1)] + replacement + args[index][match.end(1):]
     # The launcher keeps its normal HOME for credential storage. Only the actual
     # client gets the scratch HOME, configuration and allowlisted environment.
-    env = {name: os.environ[name] for name in ("PATH", "TMPDIR", "LANG", "LC_ALL") if name in os.environ}
-    env.update(HOME=os.environ["TOFA_LIVE_HOME"], CODEX_HOME=os.environ["TOFA_LIVE_CODEX_HOME"],
-               TOFA_API_KEY=token, OTEL_SDK_DISABLED="true")
+    env = client_environment(Path(os.environ["TOFA_LIVE_HOME"]), Path(os.environ["TOFA_LIVE_CODEX_HOME"]))
+    env["TOFA_API_KEY"] = token
+    client = json.loads(os.environ["TOFA_LIVE_CODEX"]) if os.name == "nt" else [os.environ["TOFA_LIVE_CODEX"]]
     try:
-        result = subprocess.call([os.environ["TOFA_LIVE_CODEX"]] + args, env=env)
+        result = subprocess.call(client + args, env=env)
     finally:
         server.shutdown()
         server.server_close()
@@ -157,6 +173,10 @@ def observe(args):
 
 
 def stop(process):
+    if os.name == "nt":
+        import windows_process
+        windows_process.stop(process)
+        return
     try:
         os.killpg(process.pid, signal.SIGTERM)
         process.wait(timeout=3)
@@ -172,8 +192,11 @@ def turn(command, env, workspace, prompt, timeout):
     summary = {"exit_code": None, "tools_succeeded": 0, "turn_completed": False,
                "client_error": False, "metadata_warning": False, "timed_out": False}
     thread_ids = []
+    if os.name == "nt":
+        import windows_process
+        command = windows_process.supervised(command, env["TOFA_LIVE_SUPERVISOR"])
     process = subprocess.Popen(command, cwd=workspace, env=env, stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=os.name != "nt")
 
     def consume(stream, events):
         size = 0
@@ -181,7 +204,8 @@ def turn(command, env, workspace, prompt, timeout):
             size += len(line)
             if size > 8 * 1024 * 1024:
                 summary["output_limit"] = True
-                os.killpg(process.pid, signal.SIGTERM)
+                if os.name == "nt": process.kill()
+                else: os.killpg(process.pid, signal.SIGTERM)
                 break
             if b"Model metadata for" in line:
                 summary["metadata_warning"] = True
@@ -245,14 +269,22 @@ def run_one(options, root):
     original_input = digest(workspace / "input.json")
     shim = root / "bin"
     shim.mkdir()
-    shim_path = shim / "codex"
-    shim_path.write_text("#!/bin/sh\nexec " + shlex.quote(sys.executable) + " "
-                         + shlex.quote(str(Path(__file__).resolve())) + ' --observe "$@"\n')
-    shim_path.chmod(0o700)
+    if os.name == "nt":
+        import windows_process
+        supervisor = getattr(options, "supervisor", None) or windows_process.build_supervisor(root)
+        shutil.copyfile(supervisor, shim / "codex.exe")
+    else:
+        shim_path = shim / "codex"
+        shim_path.write_text("#!/bin/sh\nexec " + shlex.quote(sys.executable) + " "
+                             + shlex.quote(str(Path(__file__).resolve())) + ' --observe "$@"\n')
+        shim_path.chmod(0o700)
     env = dict(os.environ)
     env.update(PATH=str(shim) + os.pathsep + os.environ.get("PATH", ""),
                TOFA_LIVE_HOME=str(scratch_home), TOFA_LIVE_CODEX_HOME=str(client_home),
-               TOFA_LIVE_CODEX=options.codex)
+               TOFA_LIVE_CODEX=json.dumps(options.codex) if os.name == "nt" else options.codex)
+    if os.name == "nt":
+        env.update(TOFA_LIVE_PYTHON=sys.executable, TOFA_LIVE_HARNESS=str(Path(__file__).resolve()),
+                   TOFA_LIVE_SUPERVISOR=str(supervisor))
     base = [options.launcher, "launch", "codex", "--model", MODEL, "--allow-unverified", "--",
             "--ask-for-approval", "never", "--sandbox", "workspace-write", "exec"]
     turns = []

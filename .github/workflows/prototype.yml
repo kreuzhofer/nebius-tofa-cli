@@ -50,7 +50,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          foreach ($file in @('scripts/install.ps1','scripts/uninstall.ps1','scripts/windows_test.ps1','scripts/windows_lifecycle_test.ps1')) {
+          foreach ($file in @('scripts/install.ps1','scripts/uninstall.ps1','scripts/windows_test.ps1','scripts/windows_lifecycle_test.ps1','scripts/qualify_windows_install.ps1')) {
             $tokens = $null; $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
             if ($errors) { throw ($errors | Out-String) }
@@ -66,6 +66,9 @@ jobs:
       - name: Offline Windows qualification lifecycle
         if: runner.os == 'Windows'
         run: python scripts/qualify_windows_test.py -v
+      - name: Windows process ownership and discovery
+        if: runner.os == 'Windows'
+        run: python scripts/windows_process_test.py -v
   artifacts:
     runs-on: ubuntu-latest
     timeout-minutes: 15
