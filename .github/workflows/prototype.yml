@@ -2,6 +2,7 @@ name: Prototype checks
 on:
   push:
     branches: [main, prototype/direct-launcher]
+    paths-ignore: ["docs/**", "README.md"]
   pull_request:
   workflow_dispatch:
 permissions:

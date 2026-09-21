@@ -7,18 +7,18 @@ $OriginalBase=$env:TOFA_RELEASE_BASE_URL
 $OriginalRoot=$env:TOFA_INSTALL_DIR
 function Assert($Condition,[string]$Message){if(!$Condition){throw $Message}}
 New-Item -ItemType Directory -Path $Temp | Out-Null
-$script:Payload=[Text.Encoding]::UTF8.GetBytes('fixture executable')
-$script:Corrupt=$false
+$global:TofaFixtureBytes=[Text.Encoding]::UTF8.GetBytes('fixture executable')
+$global:TofaFixtureCorrupt=$false
 function global:Invoke-WebRequest {
  param([switch]$UseBasicParsing,[string]$Uri,[string]$OutFile)
  if($Uri.EndsWith('/SHA256SUMS')){
   $Hash=[Security.Cryptography.SHA256]::Create()
-  try{$Sum=([BitConverter]::ToString($Hash.ComputeHash($script:Payload))).Replace('-','').ToLower()}finally{$Hash.Dispose()}
+  try{$Sum=([BitConverter]::ToString($Hash.ComputeHash($global:TofaFixtureBytes))).Replace('-','').ToLower()}finally{$Hash.Dispose()}
   $Arch=if($env:PROCESSOR_ARCHITEW6432){$env:PROCESSOR_ARCHITEW6432}else{$env:PROCESSOR_ARCHITECTURE}
   $Arch=if($Arch -eq 'ARM64'){'arm64'}else{'amd64'}
   Set-Content -LiteralPath $OutFile -Value "$Sum  tofa_v0.0.0-test_windows_$Arch.exe" -Encoding Ascii
  }else{
-  if($script:Corrupt){[IO.File]::WriteAllText($OutFile,'corrupt')}else{[IO.File]::WriteAllBytes($OutFile,$script:Payload)}
+  if($global:TofaFixtureCorrupt){[IO.File]::WriteAllText($OutFile,'corrupt')}else{[IO.File]::WriteAllBytes($OutFile,$global:TofaFixtureBytes)}
  }
 }
 try {
@@ -27,7 +27,7 @@ try {
  $Binary=Join-Path $Temp 'tofa\install\bin\tofa.exe'
  Assert (Test-Path -LiteralPath $Binary) 'Binary not installed'
  & (Join-Path $Scripts 'install.ps1') -Version v0.0.0-test -NoModifyPath
- $script:Corrupt=$true;$Rejected=$false
+ $global:TofaFixtureCorrupt=$true;$Rejected=$false
  try{& (Join-Path $Scripts 'install.ps1') -Version v0.0.0-test -NoModifyPath}catch{$Rejected=$true}
  Assert $Rejected 'Corrupt upgrade accepted'
  Assert ((Get-Content -Raw -LiteralPath $Binary) -eq 'fixture executable') 'Failed upgrade changed binary'
@@ -44,6 +44,7 @@ try {
  Write-Host 'Offline Windows installer lifecycle passed.'
 }finally{
  Remove-Item Function:\Invoke-WebRequest
+ Remove-Variable TofaFixtureBytes,TofaFixtureCorrupt -Scope Global
  $env:LOCALAPPDATA=$OriginalLocal;$env:TOFA_RELEASE_BASE_URL=$OriginalBase;$env:TOFA_INSTALL_DIR=$OriginalRoot
  Remove-Item -LiteralPath $Temp -Recurse -Force
 }
