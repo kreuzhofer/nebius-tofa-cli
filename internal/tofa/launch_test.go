@@ -45,7 +45,7 @@ func TestExplicitUnverifiedLaunchScopesOnlyChild(t *testing.T) {
 	if err := app.Run([]string{"launch", "codex", "--model", "example/model"}); err == nil {
 		t.Fatal("unverified model accepted by default")
 	}
-	if err := app.Run([]string{"launch", "codex", "--model", "example/model", "--allow-unverified", "--project-id", "override", "--", "hello"}); err != nil {
+	if err := app.Run([]string{"launch", "codex", "--model", "example/model", "--allow-unverified", "--direct", "--project-id", "override", "--", "hello"}); err != nil {
 		t.Fatal(err)
 	}
 	if calls != 1 {

@@ -1,17 +1,18 @@
 package tofa
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
-	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
+	"time"
 )
 
-func childArgs(model, project string, extra []string) ([]string, error) {
+func childArgs(model, project, endpoint string, extra []string) ([]string, error) {
 	// These flags can replace the selected model, provider or authentication.
 	for _, arg := range extra {
 		for _, prefix := range []string{"--config", "--profile", "--model", "--oss", "--local-provider", "--remote", "-c", "-p", "-m"} {
@@ -20,7 +21,11 @@ func childArgs(model, project string, extra []string) ([]string, error) {
 			}
 		}
 	}
-	provider := `{ name = "Nebius Token Factory", base_url = "` + Endpoint + `", env_key = "TOFA_API_KEY", wire_api = "responses", requires_openai_auth = false, supports_websockets = false, query_params = { ai_project_id = ` + strconv.Quote(project) + ` } }`
+	query := ""
+	if project != "" {
+		query = `, query_params = { ai_project_id = ` + strconv.Quote(project) + ` }`
+	}
+	provider := `{ name = "Nebius Token Factory", base_url = ` + strconv.Quote(endpoint) + `, env_key = "TOFA_API_KEY", wire_api = "responses", requires_openai_auth = false, supports_websockets = false, request_max_retries = 0, stream_max_retries = 0` + query + ` }`
 	args := []string{"-c", "model=" + strconv.Quote(model), "-c", `model_provider="nebius-tofa"`, "-c", "model_providers.nebius-tofa=" + provider, "-c", `web_search="disabled"`}
 	return append(args, extra...), nil
 }
@@ -36,34 +41,25 @@ func childEnv(key string) []string {
 	}
 	return append(env, "TOFA_API_KEY="+key)
 }
-func runClient(args, env []string) error {
+func runClient(ctx context.Context, args, env []string) error {
 	path, err := exec.LookPath("codex")
 	if err != nil {
 		return errors.New("Codex CLI is not installed or not on PATH; install it before launching")
 	}
-	cmd := exec.Command(path, args...)
+	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Env = env
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Cancel = func() error {
+		if runtime.GOOS == "windows" {
+			return cmd.Process.Kill()
+		}
+		return cmd.Process.Signal(os.Interrupt)
+	}
+	cmd.WaitDelay = 2 * time.Second
 	if err = cmd.Start(); err != nil {
 		return errors.New("could not start Codex CLI")
 	}
-	signals := make(chan os.Signal, 1)
-	done := make(chan struct{})
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(signals)
-	go func() {
-		for {
-			select {
-			case sig := <-signals:
-				_ = cmd.Process.Signal(sig)
-			case <-done:
-				return
-			}
-		}
-	}()
-	err = cmd.Wait()
-	close(done)
-	return err
+	return cmd.Wait()
 }

@@ -1,10 +1,12 @@
 # Prototype evidence — 2026-09-21
 
-Status: first hands-on testing found a conversation-continuation blocker; the
-Wayfinder prototype decision remains open. No claim of working live Codex inference or universal native-store
-availability is made.
+Status: the accepted per-launch request adapter is implemented and passes local
+checks. The maintainer reports a successful live game build and follow-up change.
+The maintainer also confirms that ordinary Codex selects its original model after
+testing. Native Linux/Windows adapter checks and the complete compatibility record
+remain; the Wayfinder prototype decision is open. No model is certified.
 
-## Local evidence
+## Original direct-prototype evidence
 
 Development host: macOS ARM64. Temporary official Go 1.27.1 toolchain, downloaded
 with its SHA-256 verified. The user's system Go/PATH was not changed.
@@ -30,7 +32,7 @@ These tests intentionally never access native key stores or real API credentials
 A fake vault establishes the launcher's behavior around failure, not OS integration.
 No Token Factory request or paid inference was performed.
 
-## Build and native-execution matrix
+## Original direct-prototype build and native-execution matrix
 
 | Target | Cross-build | Native execution evidence |
 | --- | --- | --- |
@@ -44,7 +46,7 @@ No Token Factory request or paid inference was performed.
 [Native CI run](https://github.com/kreuzhofer/nebius-tofa-cli/actions/runs/35593768301)
 for implementation/test commit `24aaf3c` passed its macOS ARM64, Linux x64 and
 Windows x64 jobs. Runner architectures were read from the actual Go version logs.
-The subsequent README/evidence edits do not change executable behavior.
+That run predates the request adapter and does not establish its native coverage.
 
 The first Windows run exposed an overly strict textual ACL comparison. The fix
 checks the protected DACL's actual entry type and owner SID. Windows tests now cover
@@ -66,19 +68,20 @@ Native CLI self-uninstall also passed locally in a temporary macOS installation.
    or explicitly authorized test store; this session did not modify user credentials.
 3. Windows user PATH update and asynchronous self-removal; fish execution. The
    Windows offline install/update/uninstall lifecycle now has passing CI coverage.
-4. A separately authorized paid-inference budget and test credentials, followed by
-   a small candidate model set exercising real Codex streaming, tool calls and a
-   continued conversation. Record exact model IDs, Codex versions and OS/CPU.
-5. Confirm ordinary Codex login/provider behavior after a real launched session.
-   File/environment isolation passes locally with a fake client; that is not proof
-   of every Codex runtime behavior.
+4. Complete the live compatibility record: the maintainer's successful game-build
+   and follow-up report is recorded below. Capture the exact model/client/platform
+   combination and explicit streaming evidence before changing support claims.
+   Any agent-initiated paid checks still need a separately authorized budget.
+5. Ordinary Codex model selection after a real launched session is confirmed by
+   the maintainer. File/environment isolation also passes locally with a fake
+   client. These checks do not independently inspect every login/provider setting.
 6. Before publishing installable releases: dependency license bundle, release assets
    and checksums. Public curl installation is not yet demonstrated because no release
    was published. Production signing/hardening remains outside this prototype.
 
 Model compatibility registry: **empty**. Every catalog entry is marked unverified;
-`--allow-unverified` is required. Browser authorization and local protocol adaptation
-remain deferred research/product work, not hidden fallbacks.
+`--allow-unverified` is required. Browser authorization and broader protocol
+translation remain deferred. The narrow Responses adapter is now implemented.
 
 ## First hands-on compatibility finding
 
@@ -97,6 +100,80 @@ serialization failure. Both runs finish with the expected diagnostic exit 1 and
 not part of the passing Go/installer suite and does not run a real model.
 
 See [the source/schema investigation](../research/codex-kimi-followup.md) for pins,
-remaining metadata questions and an engineering inquiry. The proposed temporary
-request adapter is under discussion; it has not been implemented. The API-key
-asterisk change is independent and does not resolve this compatibility blocker.
+remaining metadata questions and an engineering inquiry. The accepted temporary
+request adapter is implemented as described below. The API-key asterisk change is
+independent of this compatibility repair.
+
+## Request adapter validation
+
+Validated locally on macOS ARM64 with Go 1.27.1 and installed Codex CLI 0.155.1.
+The adapter implementation is on `prototype/direct-launcher`; the older CI run
+above tested the direct prototype, not the adapter changes.
+
+| Check | Current result |
+| --- | --- |
+| Full `go test -race ./...`, including optional installed-client check | Passed |
+| `go vet ./...` | Passed |
+| Missing history `status` / `annotations` regression | Passed against a local validator returning 422 for missing fields |
+| Existing/null values, large integers, unknown fields, tool/reasoning history | Preserved in HTTP-boundary tests |
+| Local bearer authentication, fixed upstream/project, credential isolation | Passed; upstream key absent from child arguments/environment |
+| Route/method/encoding/body limits | Passed; rejected requests never reach upstream |
+| Streaming and client/launch cancellation | Passed; first event arrives before upstream completes; cancellation reaches upstream |
+| Redirect rejection, no retry of 422/429/500/503 | Passed with local upstream fixtures |
+| Parallel launches | Distinct listener ports and tokens; cross-launch token rejected |
+| Child exit, listener/child startup failure, unexpected listener failure | Endpoint cleanup and explicit errors passed |
+| Unresponsive direct child | Cancellation and adapter failure force exit within deadline; normal exit 23 preserved |
+| Unix SIGINT / SIGTERM | Passed in isolated launcher subprocesses; unresponsive child terminated and adapter closed |
+| Installed Codex 0.155.1, synthetic `moonshotai/Kimi-K3` responses | Tool output round trip and resumed conversation passed; history accepted by strict local validator |
+| Scratch Codex configuration/login | Config sentinel unchanged; no auth file created |
+| Compiled CLI terminal input checks | Passed, including masking and interruption |
+| Six OS/CPU binaries, CGO disabled | Cross-build passed |
+| Windows/Linux x64 test executables | Cross-compiled; not executed here |
+
+The optional installed-client test selects the Kimi model ID but serves every
+response locally. The tool executes only `printf tofa-fixture-tool` in a scratch
+directory. These checks use synthetic keys, a fake credential store and scratch
+client configuration. They do not call Token Factory or any inference service,
+access saved user credentials, or certify Kimi's actual model behavior.
+
+The updated macOS binary is `dist/tofa_v0.0.0-prototype_darwin_arm64`. It announces
+the default adapter route. Add `--direct` only for deliberate diagnostic bypass.
+
+### Remaining adapter acceptance checks
+
+- Execute the new suite on native Linux and Windows runners. Six successful
+  cross-builds and the old native CI results do not substitute for this.
+- The maintainer has completed the live build-and-follow-up exercise and confirmed
+  ordinary Codex selects its original model afterward. Capture the exact live
+  session version/platform and streaming behavior for the compatibility record.
+  No agent-initiated paid inference is authorized.
+- Immediate-child cancellation is implemented; Unix sends an interrupt then kills
+  after two seconds, Windows kills the immediate child. Descendant containment,
+  detached processes and abrupt launcher death need further platform evidence.
+  The embedded endpoint ends with the launcher; that does not prove every client
+  descendant exits. Windows termination behavior is cross-compiled, not run here.
+- Model metadata remains independent. No fabricated catalog suppresses its warning,
+  and the supported-model set remains empty until live compatibility is established.
+
+### Maintainer hands-on report
+
+After receiving the rebuilt-launch command for `moonshotai/Kimi-K3`, the maintainer
+reported that discovery succeeded while the metadata warning remained. They then
+tested in an empty repository using the suggested browser-game exercise: build a
+Breakout game, followed by a request for a temporary paddle-widening power-up.
+Their result: **"both completed successfully, game works as expected"**.
+
+This is user-reported live evidence for a useful coding task, tool use and a
+successful follow-up without the previously reported continuation failure. It is
+separate from the automated synthetic-response check above. The recommended flow
+used the adapted Kimi route; no fresh session log or exact launch command was
+provided, so the live model/client/platform identifiers are not independently
+captured. The locally observed client for the preceding automated check was
+Codex 0.155.1 on macOS ARM64. Explicit streaming behavior remains to confirm.
+
+Asked whether launching `codex` normally, without `tofa`, still used the usual
+provider and login, the maintainer replied: **"yes, it falls back to its original
+model when launched"**. This confirms the ordinary model selection is preserved
+after the live test; it describes a separate ordinary Codex launch, not an
+automatic route fallback inside `tofa`. No user authentication files were inspected
+and no agent-initiated inference was run.

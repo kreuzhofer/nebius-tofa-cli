@@ -1,0 +1,201 @@
+package tofa
+
+import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"time"
+)
+
+const maxAdapterBody = 16 << 20
+
+type requestAdapter struct {
+	endpoint string
+	token    string
+	server   *http.Server
+	cancel   context.CancelFunc
+	context  context.Context
+	done     chan error
+}
+
+func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAdapter, error) {
+	endpoint := a.Endpoint
+	if endpoint == "" {
+		endpoint = Endpoint
+	}
+	upstream, err := url.Parse(endpoint + "/responses")
+	if err != nil || upstream.Host == "" || upstream.User != nil || upstream.RawQuery != "" || upstream.Fragment != "" || (upstream.Scheme != "http" && upstream.Scheme != "https") {
+		return nil, errors.New("invalid adapter upstream endpoint")
+	}
+	query := url.Values{"ai_project_id": {project}}
+	upstream.RawQuery = query.Encode()
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		return nil, errors.New("could not generate adapter credential")
+	}
+	listen := a.Listen
+	if listen == nil {
+		listen = net.Listen
+	}
+	listener, err := listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		return nil, errors.New("could not start loopback request adapter")
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	adapter := &requestAdapter{endpoint: "http://" + listener.Addr().String(), token: hex.EncodeToString(secret), cancel: cancel, context: ctx, done: make(chan error, 1)}
+	transport := http.DefaultTransport
+	if a.HTTP != nil && a.HTTP.Transport != nil {
+		transport = a.HTTP.Transport
+	}
+	proxy := &httputil.ReverseProxy{
+		Rewrite: func(request *httputil.ProxyRequest) {
+			target := *upstream
+			request.Out.URL = &target
+			request.Out.Host = upstream.Host
+			request.Out.Header = make(http.Header)
+			request.Out.Header.Set("Authorization", "Bearer "+key)
+			request.Out.Header.Set("Content-Type", "application/json")
+			request.Out.Header.Set("Accept", "text/event-stream, application/json")
+			request.Out.GetBody = nil
+			request.Out.Trailer = nil
+			request.Out.TransferEncoding = nil
+		},
+		Transport:     transport,
+		FlushInterval: -1,
+		ErrorLog:      log.New(io.Discard, "", 0),
+		ErrorHandler: func(writer http.ResponseWriter, request *http.Request, err error) {
+			http.Error(writer, "request adapter: upstream connection failed; request was not retried", http.StatusBadGateway)
+		},
+		ModifyResponse: func(response *http.Response) error {
+			if response.StatusCode >= 300 && response.StatusCode < 400 {
+				return errors.New("upstream redirect rejected")
+			}
+			return nil
+		},
+	}
+	adapter.server = &http.Server{
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		MaxHeaderBytes:    32 << 10,
+		ErrorLog:          log.New(io.Discard, "", 0),
+		BaseContext:       func(net.Listener) context.Context { return ctx },
+		Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if subtle.ConstantTimeCompare([]byte(request.Header.Get("Authorization")), []byte("Bearer "+adapter.token)) != 1 {
+				http.Error(writer, "request adapter: unauthorized", http.StatusUnauthorized)
+				return
+			}
+			if request.URL.Path != "/responses" || request.URL.RawPath != "" || request.URL.RawQuery != "" {
+				http.Error(writer, "request adapter: unsupported route", http.StatusNotFound)
+				return
+			}
+			if request.Method != http.MethodPost {
+				writer.Header().Set("Allow", http.MethodPost)
+				http.Error(writer, "request adapter: POST required", http.StatusMethodNotAllowed)
+				return
+			}
+			if request.Header.Get("Content-Encoding") != "" && request.Header.Get("Content-Encoding") != "identity" {
+				http.Error(writer, "request adapter: encoded requests are unsupported", http.StatusUnsupportedMediaType)
+				return
+			}
+			body, err := io.ReadAll(http.MaxBytesReader(writer, request.Body, maxAdapterBody))
+			if err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					http.Error(writer, "request adapter: request exceeds 16 MiB", http.StatusRequestEntityTooLarge)
+				} else {
+					http.Error(writer, "request adapter: could not read request", http.StatusBadRequest)
+				}
+				return
+			}
+			body, err = normalizeHistory(body)
+			if err != nil {
+				http.Error(writer, "request adapter: expected a JSON object", http.StatusBadRequest)
+				return
+			}
+			request.Body = io.NopCloser(bytes.NewReader(body))
+			request.ContentLength = int64(len(body))
+			proxy.ServeHTTP(writer, request)
+		}),
+	}
+	go func() {
+		err := adapter.server.Serve(listener)
+		if errors.Is(err, http.ErrServerClosed) {
+			err = nil
+		}
+		if err != nil {
+			cancel()
+		}
+		adapter.done <- err
+	}()
+	return adapter, nil
+}
+
+func (adapter *requestAdapter) close() error {
+	adapter.cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := adapter.server.Shutdown(ctx); err != nil {
+		adapter.server.Close()
+		return errors.New("request adapter cleanup exceeded its deadline; connections closed")
+	}
+	return nil
+}
+
+func normalizeHistory(body []byte) ([]byte, error) {
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(body, &payload); err != nil || payload == nil {
+		return nil, errors.New("invalid JSON object")
+	}
+	var items []json.RawMessage
+	if json.Unmarshal(payload["input"], &items) != nil {
+		return body, nil
+	}
+	changed := false
+	for index, raw := range items {
+		var item map[string]json.RawMessage
+		if json.Unmarshal(raw, &item) != nil || string(item["type"]) != `"message"` || string(item["role"]) != `"assistant"` {
+			continue
+		}
+		var content []json.RawMessage
+		if json.Unmarshal(item["content"], &content) != nil || content == nil {
+			continue
+		}
+		itemChanged := false
+		if _, exists := item["status"]; !exists {
+			item["status"] = json.RawMessage(`"completed"`)
+			itemChanged = true
+		}
+		for partIndex, partRaw := range content {
+			var part map[string]json.RawMessage
+			if json.Unmarshal(partRaw, &part) != nil || string(part["type"]) != `"output_text"` {
+				continue
+			}
+			if _, exists := part["annotations"]; !exists {
+				part["annotations"] = json.RawMessage(`[]`)
+				content[partIndex], _ = json.Marshal(part)
+				itemChanged = true
+			}
+		}
+		if itemChanged {
+			item["content"], _ = json.Marshal(content)
+			items[index], _ = json.Marshal(item)
+			changed = true
+		}
+	}
+	if !changed {
+		return body, nil
+	}
+	payload["input"], _ = json.Marshal(items)
+	return json.Marshal(payload)
+}

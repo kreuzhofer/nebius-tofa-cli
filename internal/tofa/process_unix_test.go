@@ -4,14 +4,18 @@ package tofa_test
 
 import (
 	"bytes"
+	"context"
 	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 )
 
 func TestRealChildReceivesScopedEnvironmentAndExitStatus(t *testing.T) {
@@ -42,7 +46,7 @@ func TestRealChildReceivesScopedEnvironmentAndExitStatus(t *testing.T) {
 	defer server.Close()
 	var out bytes.Buffer
 	app := tofa.App{Dir: dir, Vault: v, Out: &out, Endpoint: server.URL, HTTP: server.Client()}
-	err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified", "--", "hello"})
+	err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified", "--direct", "--", "hello"})
 	exit, ok := err.(*exec.ExitError)
 	if !ok || exit.ExitCode() != 23 {
 		t.Fatalf("lost child exit code: %v", err)
@@ -64,5 +68,82 @@ func TestRealChildReceivesScopedEnvironmentAndExitStatus(t *testing.T) {
 	after, err := os.ReadFile(codexConfig)
 	if err != nil || !bytes.Equal(after, sentinel) {
 		t.Fatal("normal client config changed")
+	}
+}
+
+func TestUnixLaunchSignalsStopChildAndAdapter(t *testing.T) {
+	if os.Getenv("TOFA_TEST_SIGNAL_LAUNCH") == "1" {
+		capture := fakeInstalledClient(t, "ignore")
+		app, _ := adapterFixture(t, nil, nil)
+		app.RunClient = nil
+		var address string
+		app.Listen = func(network, bind string) (net.Listener, error) {
+			listener, err := net.Listen(network, bind)
+			if err == nil {
+				address = listener.Addr().String()
+				go func() {
+					for {
+						if _, err := os.Stat(capture); err == nil {
+							os.WriteFile(os.Getenv("TOFA_TEST_SIGNAL_READY"), []byte(address), 0600)
+							return
+						}
+						time.Sleep(10 * time.Millisecond)
+					}
+				}()
+			}
+			return listener, err
+		}
+		if err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"}); err == nil {
+			t.Fatal("signal cancellation returned success")
+		}
+		connection, err := net.DialTimeout("tcp", address, time.Second)
+		if err == nil {
+			connection.Close()
+			t.Fatal("adapter survived signal cleanup")
+		}
+		return
+	}
+	for _, interrupt := range []os.Signal{os.Interrupt, syscall.SIGTERM} {
+		t.Run(interrupt.String(), func(t *testing.T) {
+			executable, err := os.Executable()
+			if err != nil {
+				t.Fatal(err)
+			}
+			ready := filepath.Join(t.TempDir(), "ready")
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			command := exec.CommandContext(ctx, executable, "-test.run=^TestUnixLaunchSignalsStopChildAndAdapter$")
+			command.Env = append(os.Environ(), "TOFA_TEST_SIGNAL_LAUNCH=1", "TOFA_TEST_SIGNAL_READY="+ready)
+			var output bytes.Buffer
+			command.Stdout, command.Stderr = &output, &output
+			if err := command.Start(); err != nil {
+				t.Fatal(err)
+			}
+			finished := make(chan error, 1)
+			go func() { finished <- command.Wait() }()
+			for {
+				if _, err := os.Stat(ready); err == nil {
+					break
+				}
+				select {
+				case err := <-finished:
+					t.Fatalf("signal fixture exited before ready: %v %s", err, output.String())
+				case <-ctx.Done():
+					t.Fatal("signal fixture did not become ready")
+				case <-time.After(10 * time.Millisecond):
+				}
+			}
+			if err := command.Process.Signal(interrupt); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case err := <-finished:
+				if err != nil {
+					t.Fatalf("signal fixture failed: %v %s", err, output.String())
+				}
+			case <-time.After(6 * time.Second):
+				t.Fatal("signal cleanup exceeded deadline")
+			}
+		})
 	}
 }

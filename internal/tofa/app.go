@@ -1,11 +1,13 @@
-// Package tofa implements the experimental direct Token Factory launcher.
+// Package tofa implements the experimental Token Factory launcher.
 package tofa
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -25,27 +27,36 @@ type App struct {
 	// Endpoint and HTTP exist for local protocol tests. The CLI never overrides the endpoint.
 	Endpoint  string
 	HTTP      *http.Client
+	Listen    func(network, address string) (net.Listener, error)
 	RunClient func(args, env []string) error
 	Prompt    func(label string, secret bool) (string, error)
 	Uninstall func(purge bool) error
 }
 
-const help = `tofa — direct Token Factory launcher (prototype)
+const help = `tofa — Token Factory launcher (prototype)
 
   tofa                                      Interactive launcher
   tofa auth login [--storage keyring|file]   Save API key and project ID
   tofa auth logout                          Remove locally saved credentials
   tofa models [--project-id ID]              List available models
-  tofa launch codex --model ID [--project-id ID] [--allow-unverified] [-- ARGS]
+  tofa launch codex --model ID [--project-id ID] [--allow-unverified] [--direct] [-- ARGS]
   tofa doctor                               Check local prerequisites; no inference
   tofa uninstall [--purge]                   Remove installation; optionally saved data
   tofa --version
 
 No model/client combination is verified yet. Explicit --allow-unverified is
 required for experimental launches. Models in the catalog are not certified.
+Launch uses a per-launch Responses request adapter. --direct bypasses it explicitly.
 `
 
 func (a *App) Run(args []string) error {
+	return a.RunContext(context.Background(), args)
+}
+
+func (a *App) RunContext(ctx context.Context, args []string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if a.Out == nil {
 		a.Out = os.Stdout
 	}
@@ -69,7 +80,7 @@ func (a *App) Run(args []string) error {
 	}
 	s := Store{Dir: a.Dir, Vault: a.Vault}
 	if len(args) == 0 {
-		return a.interactive(s)
+		return a.interactive(ctx, s)
 	}
 	switch args[0] {
 	case "auth":
@@ -145,7 +156,7 @@ func (a *App) Run(args []string) error {
 		}
 		return nil
 	case "launch":
-		return a.launch(s, args[1:])
+		return a.launch(ctx, s, args[1:])
 	case "doctor":
 		if len(args) != 1 {
 			return errors.New("doctor takes no arguments")
@@ -220,7 +231,7 @@ func (a *App) ask(label string, secret bool) (string, error) {
 	}
 	return strings.TrimSpace(b.String()), nil
 }
-func (a *App) launch(s Store, args []string) error {
+func (a *App) launch(ctx context.Context, s Store, args []string) error {
 	if len(args) == 0 || args[0] != "codex" {
 		return errors.New("only Codex CLI is available in this prototype")
 	}
@@ -228,6 +239,7 @@ func (a *App) launch(s Store, args []string) error {
 	model := fs.String("model", "", "")
 	project := fs.String("project-id", "", "")
 	allow := fs.Bool("allow-unverified", false, "")
+	direct := fs.Bool("direct", false, "")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -251,7 +263,7 @@ func (a *App) launch(s Store, args []string) error {
 	if !validText(c.ProjectID, 256) {
 		return errors.New("invalid project ID")
 	}
-	child, err := childArgs(*model, c.ProjectID, extra)
+	child, err := childArgs(*model, c.ProjectID, Endpoint, extra)
 	if err != nil {
 		return err
 	}
@@ -260,7 +272,6 @@ func (a *App) launch(s Store, args []string) error {
 		if _, err = exec.LookPath("codex"); err != nil {
 			return errors.New("Codex CLI not found on PATH; install it first")
 		}
-		runner = runClient
 	}
 	models, err := a.models(c.ProjectID, key)
 	if err != nil {
@@ -277,9 +288,44 @@ func (a *App) launch(s Store, args []string) error {
 		return errors.New("selected model is not available in this project's catalog")
 	}
 	fmt.Fprintf(a.Out, "Launching Codex with %s (unverified), project %s.\n", *model, c.ProjectID)
-	return runner(child, childEnv(key))
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if *direct {
+		fmt.Fprintln(a.Out, "Route: direct Token Factory connection (--direct); no request adaptation.")
+		if runner == nil {
+			return runClient(ctx, child, childEnv(key))
+		}
+		return runner(child, childEnv(key))
+	}
+	adapter, err := a.startAdapter(ctx, c.ProjectID, key)
+	if err != nil {
+		return err
+	}
+	defer adapter.close()
+	child, err = childArgs(*model, "", adapter.endpoint, extra)
+	if err != nil {
+		adapter.close()
+		return err
+	}
+	fmt.Fprintln(a.Out, "Route: per-launch Responses request adapter (assistant-history repair).")
+	if runner == nil {
+		err = runClient(adapter.context, child, childEnv(adapter.token))
+	} else {
+		err = runner(child, childEnv(adapter.token))
+	}
+	cleanupErr := adapter.close()
+	if serveErr := <-adapter.done; serveErr != nil {
+		return errors.New("request adapter stopped unexpectedly; Codex launch cancelled")
+	}
+	if cleanupErr != nil {
+		return cleanupErr
+	}
+	if err == nil && ctx.Err() != nil {
+		return ctx.Err()
+	}
+	return err
 }
-func (a *App) interactive(s Store) error {
+func (a *App) interactive(ctx context.Context, s Store) error {
 	if a.Prompt == nil && !term.IsTerminal(int(os.Stdin.Fd())) {
 		return errors.New("choose a command for noninteractive use; run tofa --help")
 	}
@@ -313,7 +359,7 @@ func (a *App) interactive(s Store) error {
 	if err != nil || n < 1 || n > len(models) {
 		return errors.New("invalid model selection")
 	}
-	return a.launch(s, []string{"codex", "--model", models[n-1].ID, "--allow-unverified"})
+	return a.launch(ctx, s, []string{"codex", "--model", models[n-1].ID, "--allow-unverified"})
 }
 
 // Intercept cancellation while terminal echo is disabled, restoring state before

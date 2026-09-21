@@ -11,6 +11,8 @@ credential and launch boundaries. This is a prototype, not a production release.
    [the accepted contract](https://github.com/kreuzhofer/nebius-tofa-cli/issues/8#issuecomment-5759296520).
 3. `internal/tofa/launch.go`: exact Codex arguments/environment and process lifecycle.
    No persistent Codex configuration is written.
+   `internal/tofa/adapter.go`: the per-launch loopback endpoint, scoped upstream
+   credentials, streaming, and the two missing assistant-history defaults.
 4. `internal/tofa/catalog.go`: project-scoped authenticated model discovery. It
    rejects redirects and omits response bodies from errors to avoid leaking keys.
 5. `internal/tofa/storage.go`: preferences, credential storage and recovery.
@@ -45,7 +47,8 @@ does not establish any of those properties; the tests cover selected boundaries.
 - There is no certified model registry yet. All catalog entries remain unverified,
   and experimental launch requires explicit permission. Do not flip a boolean to
   certify a model without a recorded Codex-version/model/platform live test.
-- Provider endpoint is fixed to Token Factory. No proxy, OAuth or client installer.
+- Provider endpoint is fixed to Token Factory. The narrow Responses adapter is
+  embedded; no separate proxy executable, OAuth or client installer is required.
 - Tests substitute the native vault; they do not establish actual Keychain,
   Credential Manager or Secret Service availability.
 - Per-user files assume a trusted OS account. They do not isolate secrets from
@@ -60,3 +63,35 @@ does not establish any of those properties; the tests cover selected boundaries.
 Hands-on feedback should cover whether prompts are clear, the experimental-model
 choice is understandable, errors give enough direction, and normal Codex behavior
 is preserved. That feedback is needed before the prototype decision can close.
+
+## Request adapter review
+
+The [accepted adapter contract](https://github.com/kreuzhofer/nebius-tofa-cli/issues/13#issuecomment-5760243951)
+supersedes the original direct-only route. Start with the route announcement and
+`--direct` bypass in `app.go`. The Nebius key enters the child environment only in
+direct mode; the default child receives a random token valid for its launch alone.
+
+`json.RawMessage` holds JSON without converting numbers through floating point.
+Normalization changes missing fields only on assistant messages in top-level
+history, and preserves existing values, including explicit nulls, tool results,
+reasoning items, and unknown fields. Provider validation still decides whether
+the remainder of a request is valid.
+
+`httputil.ReverseProxy` supplies response streaming and client-disconnect
+cancellation. Its rewrite pins the upstream URL/project and replaces incoming
+headers, so the child cannot redirect the stored credential. HTTP redirects are
+rejected. No request or response bodies are logged by the adapter. The
+[official Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+documents the provider endpoint, environment-key and retry settings used here.
+
+`context.Context` carries cancellation from the launch or a failed listener to
+active requests and the child process. `exec.CommandContext`, a custom `Cancel`,
+and `WaitDelay` give the immediate child bounded termination. This does not promise
+that all descendants terminate: process groups/job objects and detached processes
+require separate platform evidence. The server separately allows two seconds for
+handlers to finish before closing remaining connections.
+
+Read `adapter_test.go` for local HTTP behavior, `process_test.go` for executable
+startup/exit/cancellation, and `codex_integration_test.go` for the optional installed
+client check. That check runs only with `TOFA_TEST_CODEX`, uses scratch client
+configuration, and serves synthetic tool/text responses; it never calls a model.

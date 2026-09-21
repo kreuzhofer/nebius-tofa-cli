@@ -4,13 +4,19 @@ A standalone Go CLI that launches an **already installed Codex CLI** against
 Nebius Token Factory's native Responses endpoint. It does not run models locally.
 This is an experimental, reviewable prototype on `prototype/direct-launcher`.
 There is no published release yet, and **no model/client combination is certified**.
-Claude, desktop integrations, protocol proxies and browser OAuth are outside this prototype.
+Claude, desktop integrations, broader protocol translation and browser OAuth are
+outside this prototype.
 
-**Known compatibility failure:** a user test with Codex 0.154.0 and Kimi-K3 answered
-once, then failed on conversation history validation. The same client-side field
-omission is reproduced locally independently of the model metadata warning. See
-[the investigation](docs/research/codex-kimi-followup.md). The current binary does
-not yet repair this request shape.
+**Compatibility adapter:** a user test with Codex 0.154.0 and Kimi-K3 answered once,
+then failed on conversation history validation. Launch now starts a private,
+per-launch loopback adapter that supplies missing assistant-message `status` and
+output-text `annotations`, preserving existing values. An offline test with Codex
+0.155.1 exercises a tool call and continued conversation using synthetic responses.
+The maintainer also reports a successful live browser-game build and follow-up
+feature change using the suggested launcher flow. The separate model-metadata
+warning remains; broader compatibility and platform checks are still pending.
+See [the investigation](docs/research/codex-kimi-followup.md) and
+[current evidence](docs/prototype/VALIDATION.md#request-adapter-validation).
 
 ## Installation
 
@@ -73,13 +79,30 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 
 ```sh
 ./tofa launch codex --model '<id>' --allow-unverified --project-id '<project>' -- --no-alt-screen
+./tofa launch codex --model '<id>' --allow-unverified --direct
 ./tofa auth logout
 ```
 
-The launcher supplies settings through child-process arguments and `TOFA_API_KEY`
-in the child environment. It does not edit Codex's configuration or login files.
-The child and tools it starts can access its environment; the OS credential store
-protects persistence, not secrets while the agent is using them. Existing Codex
+The default route is announced before launch. Each launch binds its own
+`127.0.0.1` port and gives Codex a random local bearer token through `TOFA_API_KEY`.
+The saved Nebius key stays in the launcher, which forwards only to the fixed Token
+Factory endpoint and selected project. The adapter accepts only `POST /responses`,
+limits bodies to 16 MiB, streams responses, propagates cancellation and does not
+retry requests or follow redirects. Codex request/stream retries are also disabled.
+Unsupported routes and oversized or encoded requests fail explicitly.
+
+`--direct` explicitly bypasses the adapter for diagnosis; this route passes the
+Nebius key in the child environment and leaves history unchanged. Routes never
+switch automatically. The child and its tools can read their environment; the
+local token permits requests during that launch and is not an isolation boundary
+against other software running under the same OS account.
+
+The launcher supplies settings through child-process arguments and does not edit
+Codex's configuration or login files. On exit it cancels active upstream requests
+and closes its endpoint. Interrupts and adapter failures cancel the child; Unix
+allows two seconds before killing an unresponsive child, while Windows terminates
+the direct child immediately. Detached descendants are not guaranteed to terminate.
+Existing Codex
 skills, hooks and policy still apply. Web search is disabled for this unverified
 provider. `doctor` is local only and does not read a key or trigger inference.
 
@@ -121,6 +144,8 @@ sh scripts/build.sh v0.0.0-prototype
 python3 scripts/install_test.py
 # Unix only, against a compiled local binary:
 python3 scripts/terminal_test.py ./tofa
+# Optional: installed Codex, scratch config, synthetic local responses only:
+TOFA_TEST_CODEX="$(command -v codex)" go test ./internal/tofa -run TestInstalledCodexToolAndContinuationThroughAdapter -v
 ```
 
 Python is a **development test tool**, not a runtime or installer dependency.
