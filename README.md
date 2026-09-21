@@ -26,9 +26,63 @@ See [the investigation](docs/research/codex-kimi-followup.md) and
 ## Installation
 
 Select the explicit [v0.1.0-rc.1 prerelease](https://github.com/kreuzhofer/nebius-tofa-cli/releases/tag/v0.1.0-rc.1).
+This repository is currently private: GitHub access is required, and anonymous
+`curl`/PowerShell download URLs return 404. Use the authenticated instructions
+below. The direct HTTPS installer examples later in this section apply when the
+repository is publicly accessible; the installers themselves do not authenticate
+to private GitHub releases.
+
 Installation is per user and needs no administrator
 privileges. The installer verifies SHA-256 checksums, updates your PATH and prints
 the exact command to activate tofa in your current terminal.
+
+### Download from the private repository
+
+Authenticate the GitHub CLI (`gh auth login`) with an account that can access this
+repository. This is GitHub authentication, separate from `tofa auth login` for
+Token Factory. Keep the release pinned; do not select `latest` for a prerelease.
+
+On macOS/Linux, download the complete bundle, verify it, then use the matching
+installer with the downloaded assets:
+
+```sh
+version=v0.1.0-rc.1
+release_dir=$(mktemp -d)
+gh release download "$version" --repo kreuzhofer/nebius-tofa-cli --dir "$release_dir" &&
+  (cd "$release_dir" && shasum -a 256 -c SHA256SUMS) &&
+  TOFA_RELEASE_BASE_URL="file://$release_dir" sh "$release_dir/install.sh" --version "$version"
+```
+
+Follow the printed PATH activation command (or open a fresh terminal), then run:
+
+```sh
+tofa --version
+tofa auth login
+tofa launch codex --model 'moonshotai/Kimi-K3' --allow-unverified
+```
+
+On Windows amd64, download and verify the standalone executable, then launch it
+directly. This path needs no installer or PATH changes. Keep `$Download` until you
+are finished using this executable; replace `amd64` with `arm64` for Windows ARM64
+(cross-build evidence only).
+
+```powershell
+$Version = 'v0.1.0-rc.1'
+$Asset = "tofa_${Version}_windows_amd64.exe"
+$Download = Join-Path $env:TEMP ([guid]::NewGuid().ToString('N'))
+gh release download $Version --repo kreuzhofer/nebius-tofa-cli --dir $Download --pattern $Asset --pattern SHA256SUMS
+if ($LASTEXITCODE -ne 0) { throw 'Release download failed' }
+$Lines = @(Select-String -Path (Join-Path $Download 'SHA256SUMS') -Pattern ('^[0-9a-f]{64}  ' + [regex]::Escape($Asset) + '$'))
+if ($Lines.Count -ne 1) { throw 'Missing or ambiguous checksum' }
+$Binary = Join-Path $Download $Asset
+if ((Get-FileHash -LiteralPath $Binary -Algorithm SHA256).Hash.ToLowerInvariant() -ne $Lines[0].Line.Split(' ')[0]) { throw 'Checksum mismatch' }
+& $Binary --version
+& $Binary auth login
+& $Binary launch codex --model 'moonshotai/Kimi-K3' --allow-unverified
+```
+
+Both paths require an already installed Codex CLI. Release downloads and checksums
+are verified separately from live Token Factory qualification.
 
 ### macOS and Linux
 
