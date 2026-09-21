@@ -12,6 +12,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from types import SimpleNamespace
 
@@ -21,21 +22,43 @@ from release import prerelease
 import windows_process
 
 
-def command(args, supervisor, timeout, env=None, interactive=False):
-    process = subprocess.Popen(windows_process.supervised(args, supervisor), env=env,
+def command(args, supervisor, timeout, env=None, interactive=False, visible=False, require_descendant_success=False):
+    process = subprocess.Popen(windows_process.supervised(args, supervisor, require_descendant_success=require_descendant_success), env=env,
                                stdin=None if interactive else subprocess.DEVNULL,
-                               stdout=None if interactive else subprocess.PIPE,
-                               stderr=None if interactive else subprocess.PIPE)
+                               stdout=None if interactive or visible else subprocess.PIPE,
+                               stderr=None if interactive or visible else subprocess.PIPE)
+    chunks = [bytearray(), bytearray()]
+    limited = threading.Event()
+    lock = threading.Lock()
+    def consume(stream, target):
+        while True:
+            data = stream.read1(65536)
+            if not data: break
+            with lock:
+                remaining = 1024 * 1024 - sum(map(len, chunks))
+                target.extend(data[:remaining])
+                if len(data) > remaining:
+                    limited.set()
+                    if process.poll() is None: process.kill()
+                    break
+    readers = []
+    if not interactive and not visible:
+        readers = [threading.Thread(target=consume, args=(stream, target), daemon=True)
+                   for stream, target in zip((process.stdout, process.stderr), chunks)]
+        for reader in readers: reader.start()
     try:
-        stdout, stderr = process.communicate(timeout=timeout)
+        process.wait(timeout=timeout)
     except BaseException:
         windows_process.stop(process)
         raise
+    finally:
+        for reader in readers: reader.join(timeout=10)
+        for stream in (process.stdout, process.stderr):
+            if stream: stream.close()
+    if limited.is_set(): raise Failure("output_limit")
     if process.returncode != 0:
         raise Failure("command_failed")
-    if len(stdout or b"") + len(stderr or b"") > 1024 * 1024:
-        raise Failure("output_limit")
-    return (stdout or b"").decode("utf-8-sig", errors="replace").strip(), bool(stderr)
+    return chunks[0].decode("utf-8-sig", errors="replace").strip(), bool(chunks[1])
 
 
 def confirm(message, answer, timeout):
@@ -162,6 +185,7 @@ def qualify(options, reports):
     baseline = False
     helpers_completed = True
     bin_path = str(binary.parent)
+    default_install_covered = install.resolve() == (config / "install").resolve()
 
     def stage(name, action):
         nonlocal active
@@ -178,7 +202,7 @@ def qualify(options, reports):
         nonlocal before, config_before, install_before, refs, user_before, machine_before, baseline, supervisor
         if os.name != "nt" or not config.is_absolute(): raise Failure("unsupported_platform")
         before = {name: file_state(path) for name, path in watched.items()}
-        config_before = unrelated(config, config_owned, skip_install=True)
+        config_before = unrelated(config, config_owned, skip_install=default_install_covered)
         install_before = unrelated(install, install_owned)
         user_before = persistent_path()
         machine_before = persistent_path(True)
@@ -217,7 +241,7 @@ def qualify(options, reports):
 
     def install_candidate():
         run(["powershell.exe", "-NoProfile", "-File", str(Path(__file__).with_name("qualify_windows_install.ps1")),
-             "-Directory", str(downloads), "-Version", options.version, "-Asset", asset])
+             "-Directory", str(downloads), "-Version", options.version, "-Asset", asset], visible=True)
         if live_compat.digest(binary) != evidence["candidate"]["binary_sha256"]: raise Failure("installed_checksum_mismatch")
         if run([str(binary), "--version"]) != "tofa " + options.version: raise Failure("installed_version_mismatch")
         discovery()
@@ -253,7 +277,11 @@ def qualify(options, reports):
         helpers = Path(scratch.name) / ("purge-helpers" if purge else "preserve-helpers")
         helpers.mkdir()
         args = [str(binary), "uninstall"] + (["--purge"] if purge else [])
-        output, errors = command(args, supervisor, options.timeout, env=dict(os.environ, TEMP=str(helpers), TMP=str(helpers)))
+        try:
+            output, errors = command(args, supervisor, options.timeout, env=dict(os.environ, TEMP=str(helpers), TMP=str(helpers)), require_descendant_success=True)
+        except Failure as error:
+            if str(error) == "command_failed": raise Failure("uninstall_helper_failed") from None
+            raise
         # The supervisor waits for every child in the Job, including detached
         # CLI helpers. Process exit alone cannot establish successful cleanup.
         if errors or "Uninstaller started;" not in output or "Existing terminals may retain the old PATH entry." not in output or list(helpers.iterdir()):
@@ -300,7 +328,7 @@ def qualify(options, reports):
                 vault_credentials_removed=vault_absent(refs) and not vault_refs(config), helpers_completed=helpers_completed)
             evidence["preservation"].update(baseline_recorded=baseline,
                 **{name: before.get(name) == file_state(path) for name, path in watched.items()},
-                unrelated_config=config_before == unrelated(config, config_owned, skip_install=True),
+                unrelated_config=config_before == unrelated(config, config_owned, skip_install=default_install_covered),
                 unrelated_installation=install_before == unrelated(install, install_owned),
                 user_path=[p for p in user_before if p.lower() != bin_path.lower()] == [p for p in persistent_path() if p.lower() != bin_path.lower()],
                 machine_path=machine_before == persistent_path(True))

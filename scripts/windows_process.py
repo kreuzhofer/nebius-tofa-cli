@@ -62,11 +62,12 @@ def build_supervisor(directory):
     return output
 
 
-def supervised(args, supervisor):
-    """Return an argv that owns the command and all its descendants."""
+def supervised(args, supervisor, require_descendant_success=False):
+    """Own the command tree; optionally require every cleanup process to succeed."""
     if not args:
         raise ValueError("A supervised command is required")
-    return [str(supervisor), *map(str, args)]
+    flags = ["--require-descendant-success"] if require_descendant_success else []
+    return [str(supervisor), *flags, *map(str, args)]
 
 
 def stop(process):

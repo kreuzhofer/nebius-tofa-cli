@@ -96,6 +96,33 @@ class WindowsProcessTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertTrue(marker.is_file())
 
+    def test_strict_cleanup_checks_helper_exit_after_its_work_completes(self):
+        for exit_code in (0, 77):
+            with self.subTest(exit_code=exit_code):
+                marker = self.root / ("cleanup-completed-" + str(exit_code))
+                child = ("import pathlib,time,sys; time.sleep(0.4); pathlib.Path("
+                         + repr(str(marker)) + ").touch(); sys.exit(" + str(exit_code) + ")")
+                parent = ("import subprocess,sys; subprocess.Popen([sys.executable,'-c',"
+                          + repr(child) + "],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)")
+                result = subprocess.run(
+                    windows_process.supervised([sys.executable, "-c", parent], self.supervisor,
+                                               require_descendant_success=True),
+                    capture_output=True, text=True, timeout=20,
+                )
+                self.assertTrue(marker.is_file(), result.stderr)
+                if exit_code == 0:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+
+    def test_live_supervision_allows_entrypoint_to_recover_from_tool_failure(self):
+        parent = "import subprocess,sys; subprocess.run([sys.executable,'-c','import sys; sys.exit(77)']); sys.exit(0)"
+        result = subprocess.run(
+            windows_process.supervised([sys.executable, "-c", parent], self.supervisor),
+            capture_output=True, text=True, timeout=20,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_timeout_cancellation_kills_descendants(self):
         child = "import os,time; print(os.getpid(),flush=True); time.sleep(60)"
         parent = "import subprocess,sys; subprocess.Popen([sys.executable,'-c'," + repr(child) + "])"

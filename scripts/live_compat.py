@@ -3,8 +3,9 @@
 Uses saved launcher credentials. Runs three scratch coding sessions by default.
 The Codex shim observes SSE between the client and the launcher's loopback adapter;
 it never receives the Nebius key. Only counts/status/timing leave scratch storage.
-Python is a qualification dependency, not a launcher dependency. Windows uses a
-temporary native observer shim and Job Object supervisor from windows_process.
+Python is a qualification dependency, not a launcher dependency. On Windows,
+invoke this harness through qualify_windows.py, which provides its native
+observer shim and Job Object supervisor.
 """
 import argparse
 import hashlib

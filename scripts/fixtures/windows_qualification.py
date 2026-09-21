@@ -52,13 +52,13 @@ if role == "gh.exe":
 config = root / "local/tofa"
 backend = os.environ.get("FIXTURE_BACKEND", "file")
 reference = os.environ["FIXTURE_REFERENCE"]
+class Credential(ctypes.Structure):
+    _fields_ = [("Flags", wintypes.DWORD), ("Type", wintypes.DWORD), ("TargetName", wintypes.LPWSTR),
+                ("Comment", wintypes.LPWSTR), ("LastWritten", wintypes.FILETIME),
+                ("CredentialBlobSize", wintypes.DWORD), ("CredentialBlob", ctypes.POINTER(ctypes.c_byte)),
+                ("Persist", wintypes.DWORD), ("AttributeCount", wintypes.DWORD),
+                ("Attributes", ctypes.c_void_p), ("TargetAlias", wintypes.LPWSTR), ("UserName", wintypes.LPWSTR)]
 def vault_write():
-    class Credential(ctypes.Structure):
-        _fields_ = [("Flags", wintypes.DWORD), ("Type", wintypes.DWORD), ("TargetName", wintypes.LPWSTR),
-                    ("Comment", wintypes.LPWSTR), ("LastWritten", wintypes.FILETIME),
-                    ("CredentialBlobSize", wintypes.DWORD), ("CredentialBlob", ctypes.POINTER(ctypes.c_byte)),
-                    ("Persist", wintypes.DWORD), ("AttributeCount", wintypes.DWORD),
-                    ("Attributes", ctypes.c_void_p), ("TargetAlias", wintypes.LPWSTR), ("UserName", wintypes.LPWSTR)]
     secret = ctypes.create_string_buffer(b"PRIVATE_KEY")
     credential = Credential(Type=1, TargetName="io.nebius.tofa.prototype:" + reference, Persist=2,
                             CredentialBlobSize=11, CredentialBlob=ctypes.cast(secret, ctypes.POINTER(ctypes.c_byte)))
@@ -68,6 +68,19 @@ def vault_delete():
     api = ctypes.WinDLL("advapi32", use_last_error=True)
     api.CredDeleteW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD]
     assert api.CredDeleteW("io.nebius.tofa.prototype:" + reference, 1, 0) or ctypes.get_last_error() == 1168
+def vault_exists():
+    api = ctypes.WinDLL("advapi32", use_last_error=True)
+    api.CredReadW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.POINTER(ctypes.c_void_p)]
+    api.CredFree.argtypes = [ctypes.c_void_p]
+    pointer = ctypes.c_void_p()
+    if not api.CredReadW("io.nebius.tofa.prototype:" + reference, 1, 0, ctypes.byref(pointer)):
+        assert ctypes.get_last_error() == 1168
+        return False
+    try:
+        credential = ctypes.cast(pointer, ctypes.POINTER(Credential)).contents
+        return ctypes.string_at(credential.CredentialBlob, credential.CredentialBlobSize) == b"PRIVATE_KEY"
+    finally:
+        api.CredFree(pointer)
 if args == ["__vault_cleanup"]:
     vault_delete(); sys.exit()
 if args == ["--version"]:
@@ -87,17 +100,22 @@ if args[0] == "uninstall":
     helper = Path(os.environ["TEMP"]) / "tofa-uninstall-fixture.ps1"
     source = (assets / "uninstall.ps1").read_text()
     if mode == "lost_login": (config / "credentials.yml").unlink()
+    if mode == "lost_vault": vault_delete()
     if mode == "helper_failure": source = "throw 'PRIVATE_HELPER_FAILURE'\n"
     if mode == "helper_cancel": source = "exit 77\n"
-    if mode == "helper_timeout": source = "Start-Sleep -Seconds 60\n" + source
-    helper.write_text(source + "\nRemove-Item -LiteralPath $PSCommandPath\n")
+    if mode == "helper_timeout":
+        source = "$PID | Set-Content -LiteralPath '" + str(root / "helper.pid").replace("'", "''") + "'\nStart-Sleep -Seconds 60\n" + source
+    source += "\nRemove-Item -LiteralPath $PSCommandPath\n"
+    if mode == "helper_completed_failure": source += "exit 77\n"
+    helper.write_text(source)
     command = ["powershell.exe", "-NoProfile", "-File", str(helper), "-WaitPid", str(os.getppid())]
     if "--purge" in args: command += ["-Purge"]
     subprocess.Popen(command)
     print("Uninstaller started; it will report completion after tofa exits.")
     sys.exit()
-assert (config / "keyring-refs" / reference).exists() if backend == "keyring" else (config / "credentials.yml").read_text() == "PRIVATE_KEY"
+assert vault_exists() if backend == "keyring" else (config / "credentials.yml").read_text() == "PRIVATE_KEY"
 if mode == "preservation_failure": (root / ".codex/auth.json").write_text("changed")
+if mode == "default_neighbor_changed": (config / "install/unrelated.txt").write_text("changed")
 if mode == "live_timeout":
     (root / "live-started").touch()
     time.sleep(60)

@@ -10,6 +10,7 @@ import tempfile
 import time
 import signal
 import uuid
+import ctypes
 import unittest
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -204,8 +205,23 @@ class Fixture {
         self.assertEqual(report["reason"], "process_timeout")
         self.assertFalse(report["cleanup"]["helpers_completed"])
         self.assertTrue(report["cleanup"]["scratch_removed"])
-        time.sleep(0.5)
-        self.assertFalse((self.root / "late-cleanup").exists())
+        pid = int((self.root / "helper.pid").read_text(encoding="utf-8-sig"))
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.OpenProcess.restype = ctypes.c_void_p
+        kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+        kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+        handle = kernel.OpenProcess(0x100000, False, pid)
+        if handle:
+            try: self.assertEqual(kernel.WaitForSingleObject(handle, 1000), 0)
+            finally: kernel.CloseHandle(handle)
+
+    def test_helper_nonzero_exit_fails_even_after_all_cleanup_side_effects(self):
+        self.env["FIXTURE_MODE"] = "helper_completed_failure"
+        result, report = self.run_runner()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(report["reason"], "uninstall_helper_failed")
+        self.assertTrue(report["cleanup"]["binary_removed"])
+        self.assertFalse(report["cleanup"]["helpers_completed"])
 
     def test_interruption_stops_live_tree_and_saves_incomplete_report(self):
         self.env["FIXTURE_MODE"] = "live_timeout"
@@ -234,6 +250,30 @@ class Fixture {
         self.assertEqual(report["backend"], "keyring")
         self.assertTrue(report["cleanup"]["vault_credentials_removed"])
 
+    def test_lost_synthetic_vault_credential_cannot_pass_saved_login_reuse(self):
+        self.env.update(FIXTURE_BACKEND="keyring", FIXTURE_MODE="lost_vault")
+        self.addCleanup(subprocess.run, [sys.executable, str(SCRIPTS / "fixtures/windows_qualification.py"), "tofa.exe", "__vault_cleanup"], env=self.env, check=True)
+        result, report = self.run_runner()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(report["saved_login_reuse"]["passed"])
+
+    def test_custom_installation_preserves_default_install_neighbor(self):
+        self.env.update(TOFA_INSTALL_DIR=str(self.root / "custom-install"), FIXTURE_MODE="default_neighbor_changed")
+        self.install.mkdir()
+        (self.install / "unrelated.txt").write_text("PRIVATE_NEIGHBOR")
+        result, report = self.run_runner()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(report["preservation"]["unrelated_config"])
+
+    def test_command_output_limit_stops_a_noisy_process_tree(self):
+        import qualify_windows
+        import windows_process
+        supervisor = windows_process.build_supervisor(self.root / "supervisor")
+        started = time.monotonic()
+        with self.assertRaisesRegex(qualify_windows.Failure, "output_limit"):
+            qualify_windows.command([sys.executable, "-c", "import sys,time; sys.stdout.buffer.write(b'x'*2000000); sys.stdout.flush(); time.sleep(60)"], supervisor, 30)
+        self.assertLess(time.monotonic() - started, 10)
+
     def test_actual_candidate_cli_helper_is_awaited_through_native_supervisor(self):
         import qualify_windows
         import windows_process
@@ -249,9 +289,10 @@ class Fixture {
         credentials.write_text("'" + reference + "': synthetic-key\n")
         supervisor = windows_process.build_supervisor(self.root / "supervisor")
         for purge in (False, True):
+            target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(candidate, target)
             marker.write_text("tofa-install-v1\n")
-            output, errors = qualify_windows.command([str(target), "uninstall"] + (["--purge"] if purge else []), supervisor, 30, env=self.env)
+            output, errors = qualify_windows.command([str(target), "uninstall"] + (["--purge"] if purge else []), supervisor, 30, env=self.env, require_descendant_success=True)
             self.assertFalse(errors, output)
             self.assertIn("Uninstaller started;", output)
             self.assertIn("Existing terminals may retain the old PATH entry.", output)
