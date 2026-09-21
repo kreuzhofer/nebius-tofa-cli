@@ -425,3 +425,52 @@ func TestSimultaneousLaunchesUseIsolatedEndpointsAndTokens(t *testing.T) {
 		right.Body.Close()
 	}
 }
+
+type readObservedListener struct {
+	net.Listener
+	readStarted chan struct{}
+}
+
+func (listener *readObservedListener) Accept() (net.Conn, error) {
+	connection, err := listener.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	return &readObservedConnection{Conn: connection, readStarted: listener.readStarted}, nil
+}
+
+type readObservedConnection struct {
+	net.Conn
+	readStarted chan struct{}
+	once        sync.Once
+}
+
+func (connection *readObservedConnection) Read(buffer []byte) (int, error) {
+	connection.once.Do(func() { close(connection.readStarted) })
+	return connection.Conn.Read(buffer)
+}
+
+func TestClientExitClosesAdapterWithAnIdleConnection(t *testing.T) {
+	readStarted := make(chan struct{})
+	app, _ := adapterFixture(t, nil, func(endpoint, token string) error {
+		connection, err := net.DialTimeout("tcp", strings.TrimPrefix(endpoint, "http://"), time.Second)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { connection.Close() })
+		select {
+		case <-readStarted:
+		case <-time.After(time.Second):
+			t.Fatal("server did not start reading the idle connection")
+		}
+		return nil
+	})
+	app.Listen = func(network, address string) (net.Listener, error) {
+		listener, err := net.Listen(network, address)
+		if err != nil {
+			return nil, err
+		}
+		return &readObservedListener{Listener: listener, readStarted: readStarted}, nil
+	}
+	runAdapted(t, app)
+}

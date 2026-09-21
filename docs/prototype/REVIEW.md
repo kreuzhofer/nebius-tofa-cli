@@ -88,8 +88,9 @@ documents the provider endpoint, environment-key and retry settings used here.
 active requests and the child process. `exec.CommandContext`, a custom `Cancel`,
 and `WaitDelay` give the immediate child bounded termination. This does not promise
 that all descendants terminate: process groups/job objects and detached processes
-require separate platform evidence. The server separately allows two seconds for
-handlers to finish before closing remaining connections.
+require separate platform evidence. Once the child exits, the server cancels
+upstream requests and closes its listener and all remaining connections, including
+idle connections that never submitted a request.
 
 Read `adapter_test.go` for local HTTP behavior, `process_test.go` for executable
 startup/exit/cancellation, and `codex_integration_test.go` for the optional installed

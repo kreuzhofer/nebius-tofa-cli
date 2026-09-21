@@ -143,11 +143,8 @@ func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAd
 
 func (adapter *requestAdapter) close() error {
 	adapter.cancel()
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	if err := adapter.server.Shutdown(ctx); err != nil {
-		adapter.server.Close()
-		return errors.New("request adapter cleanup exceeded its deadline; connections closed")
+	if err := adapter.server.Close(); err != nil {
+		return errors.New("request adapter could not close its connections")
 	}
 	return nil
 }
