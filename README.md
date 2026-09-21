@@ -55,7 +55,8 @@ go build -o tofa ./cmd/tofa
 ./tofa launch codex --model '<catalog-model-id>' --allow-unverified
 ```
 
-`auth login` asks for a hidden API key followed by the project ID. It saves locally;
+`auth login` asks for an API key (displayed as `*` while typing or pasting), followed
+by the project ID. It saves locally;
 it does not claim that the service accepted those credentials. `models` checks the
 remote catalog with the selected project. Launch performs catalog discovery before
 starting Codex. Launching Codex can incur inference charges.

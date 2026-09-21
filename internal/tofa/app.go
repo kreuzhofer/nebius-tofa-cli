@@ -195,7 +195,7 @@ func (a *App) ask(label string, secret bool) (string, error) {
 	}
 	fmt.Fprint(a.Out, label+": ")
 	if secret {
-		b, err := readPassword()
+		b, err := readPassword(a.Out)
 		fmt.Fprintln(a.Out)
 		if err != nil {
 			return "", errors.New("credential input cancelled")
@@ -318,7 +318,7 @@ func (a *App) interactive(s Store) error {
 
 // Intercept cancellation while terminal echo is disabled, restoring state before
 // returning. The process exits after this error; no subsequent prompt is started.
-func readPassword() ([]byte, error) {
+func readPassword(out io.Writer) ([]byte, error) {
 	fd := int(os.Stdin.Fd())
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
@@ -351,6 +351,10 @@ func readPassword() ([]byte, error) {
 			case 8, 127:
 				if len(value) > 0 {
 					value = value[:len(value)-1]
+					if _, e := io.WriteString(out, "\b \b"); e != nil {
+						done <- result{nil, e}
+						return
+					}
 				}
 			default:
 				if len(value) >= 2048 {
@@ -358,6 +362,10 @@ func readPassword() ([]byte, error) {
 					return
 				}
 				value = append(value, ch[0])
+				if _, e := io.WriteString(out, "*"); e != nil {
+					done <- result{nil, e}
+					return
+				}
 			}
 		}
 	}()

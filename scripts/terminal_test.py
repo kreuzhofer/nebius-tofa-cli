@@ -26,9 +26,24 @@ class TerminalTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as home:
    master,slave,before,p=self.start(home)
    try:
-    self.read_until(master,b'API key:');time.sleep(.05);os.write(master,b'fixture-token\n')
+    self.read_until(master,b'API key:');time.sleep(.05)
+    # Pasting without Enter must visibly respond, without revealing the key.
+    os.write(master,b'fixture-tokex')
+    output=self.read_until(master,b'*************')
+    self.assertNotIn(b'fixture-tokex',output)
+    # Both common backspace encodings erase a mask character and its input byte.
+    os.write(master,b'\x7f')
+    self.read_until(master,b'\b \b')
+    os.write(master,b'n')
+    self.read_until(master,b'*')
+    os.write(master,b'\x08')
+    self.read_until(master,b'\b \b')
+    os.write(master,b'n\n')
     output=self.read_until(master,b'Project ID:');self.assertNotIn(b'fixture-token',output)
     os.write(master,b'fixture-project\n');self.read_until(master,b'Credentials saved');self.assertEqual(p.wait(timeout=5),0)
+    saved=pathlib.Path(home+'/.config/tofa/credentials.yml').read_text()
+    self.assertIn(': fixture-token',saved)
+    self.assertEqual(termios.tcgetattr(slave)[3]&termios.ECHO,before[3]&termios.ECHO)
     env=dict(os.environ,HOME=home,XDG_CONFIG_HOME=home+'/.config')
     subprocess.run([BINARY,'auth','logout'],env=env,check=True,capture_output=True)
     config=pathlib.Path(home+'/.config/tofa/config.yml').read_text()

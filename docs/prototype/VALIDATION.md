@@ -15,7 +15,7 @@ Installed client observed through `--version`/`--help`: Codex CLI 0.154.0.
 | `go test -race ./...` | Passed; synthetic vault, loopback catalog and real fake-client process |
 | `go vet ./...` | Passed |
 | Native compiled CLI `--help` / `--version` | Passed |
-| Hidden key input; plaintext opt-in login/logout | Passed in a pseudo-terminal using synthetic key and temporary HOME |
+| Asterisk feedback on typing/paste, both backspace encodings, plaintext opt-in login/logout | Passed in a pseudo-terminal using synthetic key and temporary HOME; plaintext key never echoed |
 | Ctrl-C during key input restores terminal echo | Failed initially; fixed; passed |
 | Failed native-store replacement retains prior login | Passed with fake vault |
 | Config commit failure rolls back replacement | Passed with simulated filesystem failure |
