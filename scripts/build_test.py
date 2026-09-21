@@ -2,6 +2,7 @@
 import hashlib
 import os
 import pathlib
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -22,9 +23,28 @@ class BuildTest(unittest.TestCase):
             return excluded.intersection(names)
         shutil.copytree(ROOT, self.source, ignore=ignore)
 
-    def build(self, *args):
+    def build(self, *args, env=None):
         return subprocess.run(["sh", "scripts/build.sh", *args], cwd=self.source,
-                              text=True, capture_output=True, timeout=240)
+                              env=env, text=True, capture_output=True, timeout=240)
+
+    def test_binary_mode_checksum_tool_produces_installer_compatible_manifest(self):
+        # Git Bash defaults to binary-mode markers ("hash *file"). Exercise that
+        # tool boundary on Unix too, retaining real hashes and real Go binaries.
+        checksum = shutil.which("sha256sum")
+        command = [checksum] if checksum else [shutil.which("shasum"), "-a", "256"]
+        tools = pathlib.Path(self.temp.name) / "tools"
+        tools.mkdir()
+        shim = tools / "sha256sum"
+        shim.write_text("#!/bin/sh\nexec " + shlex.join(command) + ' -b "$@"\n')
+        shim.chmod(0o755)
+        version = "v0.1.0-rc.1"
+        result = self.build(version, env=dict(os.environ, PATH=str(tools) + os.pathsep + os.environ["PATH"]))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        dist = self.source / "dist"
+        sums = (dist / "SHA256SUMS").read_text()
+        self.assertIn(f"  tofa_{version}_windows_amd64.exe\n", sums)
+        self.assertEqual({line.split()[1] for line in sums.splitlines()},
+                         {p.name for p in dist.iterdir() if p.name != "SHA256SUMS"})
 
     def test_requires_one_explicit_version_before_touching_distribution(self):
         dist = self.source / "dist"

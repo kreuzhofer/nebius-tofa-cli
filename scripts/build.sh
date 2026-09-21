@@ -20,7 +20,17 @@ for platform in darwin linux windows;do
   CGO_ENABLED=0 GOOS=$platform GOARCH=$arch go build -trimpath -ldflags "-X main.version=$version" -o "$work/tofa_${version}_${platform}_${arch}${suffix}" ./cmd/tofa
  done
 done
-(cd "$work"; if command -v sha256sum >/dev/null 2>&1;then sha256sum * > SHA256SUMS;else shasum -a 256 * > SHA256SUMS;fi)
+(cd "$work"
+ # Hash exact bytes on every host, including Git Bash. Both installers consume
+ # the same two-space manifest format, without the checksum tool's binary marker.
+ if command -v sha256sum >/dev/null 2>&1;then
+  sha256sum -b * > SHA256SUMS.raw
+ else
+  shasum -a 256 -b * > SHA256SUMS.raw
+ fi
+ sed 's/ \*/  /' SHA256SUMS.raw > SHA256SUMS
+ rm SHA256SUMS.raw
+)
 rm -rf dist
 mv "$work" dist
 printf '%s\n' 'Built six artifacts. Cross-compilation does not establish native execution or model compatibility.'
