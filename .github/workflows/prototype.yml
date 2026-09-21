@@ -9,6 +9,7 @@ permissions:
   contents: read
 jobs:
   native:
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -29,7 +30,7 @@ jobs:
         if: runner.os != 'Windows'
       - name: Offline live-harness qualification checks
         if: runner.os != 'Windows'
-        run: python3 scripts/live_compat_test.py
+        run: python3 scripts/live_compat_test.py -f
       - name: Parse PowerShell installers
         if: runner.os == 'Windows'
         shell: pwsh

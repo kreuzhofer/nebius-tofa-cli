@@ -24,13 +24,6 @@ class LiveCompatibilityTests(unittest.TestCase):
             normal_auth = normal_client / "auth.json"
             normal_auth.write_text('{"fixture":"before"}')
             trace_path = root / "fixture-trace.txt"
-            # Temporary native-runner diagnosis; contains stack locations only.
-            (root / "sitecustomize.py").write_text(
-                "import faulthandler, sys\n"
-                "if '--observe' in sys.argv:\n"
-                "    trace = open(" + repr(str(trace_path)) + ", 'w')\n"
-                "    trace.write('[DEBUG-live-fixture] observer entered\\n'); trace.flush()\n"
-                "    faulthandler.dump_traceback_later(3, file=trace)\n")
             launcher.write_text("#!" + sys.executable + "\n" + '''
 import json, os, subprocess, sys
 if sys.argv[1:] == ['--version']:
@@ -41,7 +34,10 @@ os.environ['TOFA_API_KEY'] = 'local-fixture-token'
 sys.exit(subprocess.call(['codex', '-c', provider] + args))
 ''')
             client.write_text("#!" + sys.executable + "\nmode = " + repr(mode)
-                              + "\nnormal_auth = " + repr(str(normal_auth)) + "\n" + '''
+                              + "\nnormal_auth = " + repr(str(normal_auth)) + "\n"
+                              + "import faulthandler\ntrace = open(" + repr(str(trace_path)) + ", 'w')\n"
+                              + "trace.write('[DEBUG-live-fixture] client entered\\n'); trace.flush()\n"
+                              + "faulthandler.dump_traceback_later(3, file=trace)\n" + '''
 import json, os, pathlib, re, sys, urllib.request
 if sys.argv[1:] == ['--version']:
     print('codex-cli fixture'); sys.exit()
@@ -107,7 +103,6 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
             threading.Thread(target=server.serve_forever, daemon=True).start()
             try:
                 env = {**os.environ, "HOME": str(root), "CODEX_HOME": str(root / "normal-codex"),
-                       "PYTHONPATH": str(root),
                        "FIXTURE_ENDPOINT": f"http://127.0.0.1:{server.server_port}"}
                 report = root / "evidence.json"
                 result = subprocess.run([sys.executable, str(HARNESS), "--launcher", str(launcher),
