@@ -22,6 +22,8 @@ import live_compat
 from release import prerelease
 
 REPOSITORY = "kreuzhofer/nebius-tofa-cli"
+CONFIG_OWNED = frozenset({"config.yml", "credentials.yml", ".auth-lock"})
+INSTALL_OWNED = frozenset({"bin/tofa", ".path-files", ".tofa-install"})
 STAGES = ("preflight", "recovery", "download", "install", "login", "fresh_terminal",
           "live", "uninstall", "reinstall", "saved_login_reuse", "purge")
 
@@ -67,7 +69,7 @@ def confirm(message, answer, timeout):
 
 def file_state(path):
     if path.is_symlink():
-        return ("symlink", os.readlink(path))
+        return ("symlink", os.readlink(path), live_compat.digest(path))
     return ("file", live_compat.digest(path)) if path.is_file() else ("absent", None)
 
 
@@ -156,8 +158,11 @@ def download(version, directory, timeout, evidence):
     return asset
 
 
-def save_report(output, evidence):
-    live_compat.write_json(output, evidence)
+def save_report(reports, evidence):
+    json_report, summary = reports
+    json.dump(evidence, json_report, indent=2)
+    json_report.write("\n")
+    json_report.flush()
     lines = ["# Local prerelease qualification", "", f"Outcome: **{evidence['outcome']}**",
              f"Candidate: `{evidence['candidate']['tag']}`", f"Commit: `{evidence['candidate'].get('commit', 'unknown')}`",
              f"Binary SHA256: `{evidence['candidate'].get('binary_sha256', 'unknown')}`",
@@ -172,12 +177,11 @@ def save_report(output, evidence):
         lines.extend(["", "Reason: " + evidence["reason"]])
     lines.extend(["", "No upload was performed. Attach both local reports to the validation issue.",
                   "If incomplete, inspect the cleanup fields and recover the remaining installation/state before rerunning."])
-    with output.with_suffix(".md").open("x", encoding="utf-8") as stream:
-        os.chmod(stream.name, 0o600)
-        stream.write("\n".join(lines) + "\n")
+    summary.write("\n".join(lines) + "\n")
+    summary.flush()
 
 
-def qualify(options):
+def qualify(options, reports):
     home = Path.home()
     config = Path(os.environ.get("XDG_CONFIG_HOME", str(home / ".config"))) / "tofa"
     install = Path(os.environ.get("TOFA_INSTALL_DIR", str(home / ".local/share/tofa")))
@@ -214,8 +218,8 @@ def qualify(options):
     def preflight():
         nonlocal refs, before, config_before, install_before, shells, shell_before, snapshots_ready
         before = {name: file_state(path) for name, path in watched.items()}
-        config_before = unrelated_state(config, {"config.yml", "credentials.yml", ".auth-lock"})
-        install_before = unrelated_state(install, {"bin/tofa", ".path-files", ".tofa-install"})
+        config_before = unrelated_state(config, CONFIG_OWNED)
+        install_before = unrelated_state(install, INSTALL_OWNED)
         shells = startup_files(home, install)
         shell_before = {path: shell_content(path) for path in shells}
         snapshots_ready = True
@@ -328,8 +332,8 @@ def qualify(options):
             evidence["cleanup"]["vault_credentials_removed"] = vault_absent(refs, options.timeout) and not vault_refs(config)
             evidence["preservation"]["baseline_recorded"] = snapshots_ready
             evidence["preservation"].update({name: before.get(name) == file_state(path) for name, path in watched.items()})
-            evidence["preservation"]["unrelated_config"] = config_before == unrelated_state(config, {"config.yml", "credentials.yml", ".auth-lock"})
-            evidence["preservation"]["unrelated_installation"] = install_before == unrelated_state(install, {"bin/tofa", ".path-files", ".tofa-install"})
+            evidence["preservation"]["unrelated_config"] = config_before == unrelated_state(config, CONFIG_OWNED)
+            evidence["preservation"]["unrelated_installation"] = install_before == unrelated_state(install, INSTALL_OWNED)
             evidence["preservation"]["shell_settings"] = all(shell_content(path) == content for path, content in shell_before.items())
             if evidence["outcome"] == "passed" and not all(evidence["cleanup"].values()):
                 evidence.update(outcome="failed", reason="cleanup_incomplete")
@@ -337,7 +341,11 @@ def qualify(options):
                 evidence.update(outcome="failed", reason="preservation_failed")
         except (OSError, ValueError, Failure, subprocess.SubprocessError):
             evidence.update(outcome="failed", reason="final_checks_failed")
-        save_report(options.output, evidence)
+        try:
+            save_report(reports, evidence)
+        except OSError:
+            print("Could not finish local reports; inspect remaining account state before rerunning.", file=sys.stderr)
+            return 1
         print("Qualification " + evidence["outcome"] + ". Local JSON and Markdown reports saved; no upload performed.", flush=True)
     return 0 if evidence["outcome"] == "passed" else 1
 
@@ -363,8 +371,24 @@ def main():
         parser.error("invalid timeout")
     if options.codex:
         options.codex = shutil.which(options.codex) or options.codex
+    # Reserve both destinations before touching account state. Keep descriptors
+    # open so a path replacement cannot redirect the final evidence writes.
+    reports = []
+    reserved = []
+    try:
+        for path in (options.output, options.output.with_suffix(".md")):
+            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            reserved.append(path)
+            reports.append(os.fdopen(descriptor, "w", encoding="utf-8"))
+    except OSError:
+        for stream in reports:
+            stream.close()
+        for path in reserved:
+            path.unlink()
+        parser.error("cannot create the local report files; account state was not changed")
     signal.signal(signal.SIGTERM, interrupted)
-    return qualify(options)
+    with reports[0], reports[1]:
+        return qualify(options, reports)
 
 
 if __name__ == "__main__":

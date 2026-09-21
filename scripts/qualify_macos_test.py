@@ -186,6 +186,31 @@ sys.exit(0 if (pathlib.Path(os.environ['HOME'])/'synthetic-vault').exists() else
         self.assertEqual(report["outcome"], "failed")
         self.assertFalse(self.install.exists())
 
+    def test_symlinked_codex_auth_target_changes_fail_preservation(self):
+        auth = self.codex_home / "auth.json"
+        target = self.home / "ordinary-auth.json"
+        auth.rename(target)
+        auth.symlink_to(target)
+        self.env["FIXTURE_MODE"] = "preservation_failure"
+        result, report = self.run_runner()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(report["preservation"]["codex_auth"])
+
+    @unittest.skipIf(os.geteuid() == 0, "root bypasses directory write permission")
+    def test_unwritable_report_directory_rejected_before_install(self):
+        folder = self.home / "readonly"
+        folder.mkdir()
+        self.report = folder / "report.json"
+        folder.chmod(0o500)
+        self.addCleanup(folder.chmod, 0o700)
+        result = subprocess.run([sys.executable, str(SCRIPTS / "qualify_macos.py"),
+                                 "--version", VERSION, "--output", str(self.report)],
+                                env=self.env, text=True, input="READY\nFOUND\nPURGE\n",
+                                capture_output=True, timeout=30)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.home / "login-count").exists())
+        self.assertNotIn("Traceback", result.stderr)
+
     def test_missing_report_parent_is_rejected_without_account_changes(self):
         self.report = self.home / "missing/report.json"
         result = subprocess.run([sys.executable, str(SCRIPTS / "qualify_macos.py"),

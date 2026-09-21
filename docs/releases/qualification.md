@@ -58,8 +58,9 @@ recorded separately in the validation issue.
 
 ## Evidence and recovery
 
-The command creates a new JSON file and matching `.md` summary, both mode 0600.
-It refuses to overwrite earlier evidence. Exit zero requires every lifecycle
+The command reserves a new JSON file and matching `.md` summary, both mode 0600,
+before changing account state, and fills them with evidence when the run ends.
+It rejects unwritable destinations and refuses to overwrite earlier evidence. Exit zero requires every lifecycle
 stage, preservation assertion and final cleanup assertion to pass. Attach both
 files to [the real-machine validation issue](https://github.com/kreuzhofer/nebius-tofa-cli/issues/23)
 yourself. A failed or interrupted run is evidence, too; retain it alongside reruns.
@@ -75,7 +76,8 @@ Reports contain only fixed stage names, counts/status/timing, public versions,
 release identity and binary/script hashes. They exclude keys, credential-file
 contents/hashes, private paths, project/session/credential identifiers and raw
 conversation bodies. Normal Codex config/auth and unrelated files under tofa's
-installation/config directories are compared in memory; no such hashes are
+installation/config directories are compared in memory, including the contents of
+symlinked files; no such hashes are
 exported. Shell settings are compared after removing owned PATH blocks and trailing
 newlines added by the installer. Only tofa's recorded Keychain references are
 queried, without requesting secret values; unrelated vault entries are untouched.
