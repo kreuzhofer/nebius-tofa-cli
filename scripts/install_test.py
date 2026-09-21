@@ -2,6 +2,39 @@
 import hashlib, os, pathlib, subprocess, tempfile, unittest
 ROOT = pathlib.Path(__file__).resolve().parent
 class InstallerTest(unittest.TestCase):
+ def test_invalid_checksum_manifests_preserve_existing_installation(self):
+  with tempfile.TemporaryDirectory(prefix='tofa checksum ') as temp:
+   home=pathlib.Path(temp); assets=home/'assets'; assets.mkdir()
+   version='v0.1.0-rc.1'
+   platform=subprocess.check_output(['uname','-s'],text=True).strip().lower()
+   arch={'arm64':'arm64','aarch64':'arm64','x86_64':'amd64'}[subprocess.check_output(['uname','-m'],text=True).strip()]
+   filename=f'tofa_{version}_{platform}_{arch}'
+   binary=assets/filename; binary.write_text('#!/bin/sh\necho original\n')
+   checksum=assets/'SHA256SUMS'
+   checksum.write_text(hashlib.sha256(binary.read_bytes()).hexdigest()+'  '+filename+'\n')
+   install=home/'install'
+   env=dict(os.environ,HOME=str(home),TOFA_INSTALL_DIR=str(install),TOFA_RELEASE_BASE_URL=assets.as_uri())
+   command=['sh',str(ROOT/'install.sh'),'--version',version,'--no-modify-path']
+   subprocess.run(command,env=env,check=True,capture_output=True)
+   before={p.relative_to(install):p.read_bytes() for p in install.rglob('*') if p.is_file()}
+   binary.write_text('#!/bin/sh\necho replacement\n')
+   valid=hashlib.sha256(binary.read_bytes()).hexdigest()+'  '+filename+'\n'
+   cases={
+    'missing': '',
+    'other asset': valid.replace(filename,'another-binary'),
+    'duplicate': valid+valid,
+    'malformed duplicate': valid+'invalid  '+filename+'\n',
+    'incorrect': '0'*64+'  '+filename+'\n',
+    'extra fields': valid.rstrip()+' unexpected\n',
+   }
+   for label,content in cases.items():
+    with self.subTest(label=label):
+     checksum.write_text(content)
+     result=subprocess.run(command,env=env,text=True,capture_output=True)
+     self.assertNotEqual(result.returncode,0,result.stdout+result.stderr)
+     self.assertIn('checksum',result.stderr.lower())
+     self.assertEqual({p.relative_to(install):p.read_bytes() for p in install.rglob('*') if p.is_file()},before)
+
  def test_install_upgrade_uninstall_preserves_then_purges(self):
   with tempfile.TemporaryDirectory(prefix="tofa test ' ") as temp:
    home=pathlib.Path(temp); assets=home/'assets'; assets.mkdir()

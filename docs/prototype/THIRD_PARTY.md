@@ -3,7 +3,8 @@
 No Ollama source code was copied into this prototype. The researched launcher
 pattern informs the command flow; Ollama's MIT license is documented separately
 in the [launcher research](https://github.com/kreuzhofer/nebius-tofa-cli/issues/2).
-This document does not select a license for the project's own code.
+The project's own code is covered by the root [MIT license](../../LICENSE).
+Bundled material retains its separate licenses.
 
 Direct runtime dependencies are pinned in `go.mod` and checksummed in `go.sum`:
 
@@ -16,8 +17,13 @@ Direct runtime dependencies are pinned in `go.mod` and checksummed in `go.sum`:
 
 Transitive runtime modules include `al.essio.dev/pkg/shellescape` (MIT),
 `github.com/danieljoos/wincred` (MIT), and `github.com/godbus/dbus/v5` (BSD-2-Clause).
-Before distribution, ship the full dependency license notices alongside artifacts;
-`go.sum` is an integrity file, not a license notice bundle.
+The complete runtime module license texts, yaml.v3 NOTICE, go-keyring's additional
+macOS source notice and full Apache-2.0 terms are retained in
+[THIRD_PARTY_NOTICES.txt](../../THIRD_PARTY_NOTICES.txt). The build copies this file,
+the project license and the build toolchain's Go license/patent grant into `dist/`.
+`scripts/build_test.py` checks notices against the union of module dependencies in
+all six produced binaries. Keep notices and module versions aligned when upgrading
+dependencies. `go.sum` is an integrity file, not a license notice bundle.
 
 Configuration references:
 
@@ -44,5 +50,5 @@ The upstream [Apache-2.0 license](../../internal/tofa/assets/codex-LICENSE) and
 the prompt. `scripts/build.sh` includes copies as `LICENSE-CODEX.txt` and
 `NOTICE-CODEX.txt` in the artifact directory. Only the prompt is reused here;
 the full upstream notice is preserved, not a claim that this launcher embeds
-Codex's UI or its other components. Full notices for the Go dependency graph
-remain a separate prerequisite for published installable releases.
+Codex's UI or its other components. These files and the Go dependency notices
+are included in the distribution checksum manifest.

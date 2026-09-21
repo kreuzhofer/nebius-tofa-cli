@@ -26,9 +26,14 @@ New-Item -ItemType Directory -Path $Temp | Out-Null
 try {
  Invoke-WebRequest -UseBasicParsing "$Base/$Asset" -OutFile (Join-Path $Temp 'tofa.exe')
  Invoke-WebRequest -UseBasicParsing "$Base/SHA256SUMS" -OutFile (Join-Path $Temp 'SHA256SUMS')
- $Lines=@(Get-Content (Join-Path $Temp 'SHA256SUMS') | Where-Object {$_ -match ('^[a-fA-F0-9]{64}\s+'+[regex]::Escape($Asset)+'$')})
- if ($Lines.Count -ne 1) {throw 'Missing or ambiguous checksum'}
- $Expected=($Lines[0] -split '\s+')[0]
+ # Count all entries for this asset before validating the digest, so a malformed
+ # duplicate cannot be hidden by filtering only for well-formed hashes.
+ $Lines=@(Get-Content (Join-Path $Temp 'SHA256SUMS') | Where-Object {
+  $Fields=$_.Trim() -split '\s+'
+  $Fields.Count -ge 2 -and $Fields[1] -ceq $Asset
+ })
+ if ($Lines.Count -ne 1 -or $Lines[0] -cnotmatch ('^[a-fA-F0-9]{64}\s+'+[regex]::Escape($Asset)+'\s*$')) {throw 'Missing, invalid or ambiguous checksum'}
+ $Expected=($Lines[0].Trim() -split '\s+')[0]
  if ((Get-FileHash (Join-Path $Temp 'tofa.exe') -Algorithm SHA256).Hash -ne $Expected) {throw 'Checksum mismatch; existing installation retained'}
  $Bin=Join-Path $Root 'bin'; Assert-NotLink $Bin
  New-Item -ItemType Directory -Force -Path $Bin | Out-Null

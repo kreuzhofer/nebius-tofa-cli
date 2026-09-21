@@ -2,7 +2,7 @@
 
 A standalone Go CLI that launches an **already installed Codex CLI** against
 Nebius Token Factory's native Responses endpoint. It does not run models locally.
-This is an experimental, reviewable prototype on `prototype/direct-launcher`.
+This is an experimental, reviewable prototype.
 There is no published release yet. Kimi-K3 with Codex 0.155.1 on macOS ARM64 passes
 the recorded live qualification; all launches still require `--allow-unverified`.
 Claude, desktop integrations, broader protocol translation and browser OAuth are
@@ -36,27 +36,56 @@ the exact command to activate tofa in your current terminal.
 ### macOS and Linux
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/install.sh | sh
+version=v0.1.0-rc.1 # select an existing published tag
+curl -fsSL "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version/install.sh" -o install.sh &&
+  sh install.sh --version "$version"
 ```
 
 Installs into `~/.local/share/tofa/bin`. Follow the printed PATH activation command,
 then run `tofa auth login`. Bash, zsh and fish receive shell-specific instructions.
 
-To select a release, append `-s -- --version TAG` after `sh`. Use
-`--no-modify-path` to receive manual setup instructions instead of automatic edits.
+Use the same tag for the script download and `--version`. Prereleases must be
+selected explicitly: the installer's default `latest` looks for a stable release
+and does not select a prerelease. Add `--no-modify-path` for manual setup instructions.
 Rerun the installer to upgrade; saved preferences and credentials are retained.
 
 ### Windows PowerShell
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/install.ps1')))
+$Version = 'v0.1.0-rc.1' # select an existing published tag
+$Installer = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/install.ps1" -ErrorAction Stop
+& ([scriptblock]::Create($Installer)) -Version $Version
 ```
 
 Installs into `%LOCALAPPDATA%\tofa\install\bin`. Follow the printed PowerShell PATH
 activation command, then run `tofa auth login`.
 
-Append `-Version TAG` to select a release, or `-NoModifyPath` for manual PATH setup.
+Use the same tag for the script download and `-Version`; `latest` does not select
+prereleases. Add `-NoModifyPath` for manual PATH setup.
 Rerun the installer to upgrade; saved preferences and credentials are retained.
+
+### Building a distribution
+
+```sh
+sh scripts/build.sh v0.1.0-rc.1
+```
+
+An explicit version is required. A successful build replaces the generated
+`dist/` directory with one complete distribution; old artifacts are removed.
+A failed compilation leaves the previous distribution intact and exits with an
+error. The directory contains:
+
+- `tofa_TAG_darwin_amd64`, `tofa_TAG_darwin_arm64`, `tofa_TAG_linux_amd64`,
+  `tofa_TAG_linux_arm64`, `tofa_TAG_windows_amd64.exe`, and `tofa_TAG_windows_arm64.exe`.
+- Matching `install.sh`, `install.ps1`, `uninstall.sh`, and `uninstall.ps1`.
+- `LICENSE` (project MIT license), `THIRD_PARTY_NOTICES.txt`, `LICENSE-GO.txt`,
+  `PATENTS-GO.txt`, `LICENSE-CODEX.txt`, `NOTICE-CODEX.txt`, and this `README.md`.
+- `SHA256SUMS`, covering every other file in the distribution.
+
+Retain the license and notice files when redistributing standalone binaries.
+The local build creates files only; tag-triggered publication is tracked in
+[#20](https://github.com/kreuzhofer/nebius-tofa-cli/issues/20). Cross-compilation
+does not establish native execution or real-machine qualification on every target.
 
 ## Try the local build
 
@@ -169,6 +198,7 @@ Read [the Go walkthrough](docs/prototype/REVIEW.md) and
 go test -race ./...
 go vet ./...
 sh scripts/build.sh v0.0.0-prototype
+python3 scripts/build_test.py
 python3 scripts/install_test.py
 # Unix only, against a compiled local binary:
 python3 scripts/terminal_test.py ./tofa
@@ -179,6 +209,12 @@ python3 scripts/live_compat_test.py
 ```
 
 Python is a **development test tool**, not a runtime or installer dependency.
+The build tests require Go and run on macOS/Linux. They inspect all six targets'
+embedded versions and build metadata, execute the native binary, verify every
+checksum and bundled notice, and install from a controlled local release source.
+Run `./scripts/windows_test.ps1` in native Windows PowerShell for the offline
+installer and recovery-script tests. Its `-InstallerOnly` switch checks downloads
+and checksum rejection without running the Windows recovery script.
 The tests use synthetic credentials, temporary directories and local HTTP servers.
 They never contact Token Factory or access native credential stores. The workflow
 also tests on native runners; test results must be checked before claiming coverage.
@@ -213,10 +249,12 @@ the completion result or cleanup errors.
 This works even if the installed binary is broken:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/uninstall.sh | sh
+version=v0.1.0-rc.1 # use the installed version, shown by tofa --version
+curl -fsSL "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version/uninstall.sh" -o uninstall.sh &&
+  sh uninstall.sh
 ```
 
-To also remove saved preferences and credentials, append `-s -- --purge` after `sh`.
+To also remove saved preferences and credentials, run `sh uninstall.sh --purge`.
 Linux native-store cleanup needs `secret-tool`; if it or the service is unavailable,
 the script retains recovery references and reports incomplete cleanup.
 
@@ -225,7 +263,9 @@ the script retains recovery references and reports incomplete cleanup.
 This works even if the installed binary is broken:
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/kreuzhofer/nebius-tofa-cli/prototype/direct-launcher/scripts/uninstall.ps1')))
+$Version = 'v0.1.0-rc.1' # use the installed version, shown by tofa --version
+$Uninstaller = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/uninstall.ps1" -ErrorAction Stop
+& ([scriptblock]::Create($Uninstaller))
 ```
 
 Append `-Purge` to also remove saved preferences and credentials. Failed native-store
