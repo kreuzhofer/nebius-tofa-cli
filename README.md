@@ -3,7 +3,7 @@
 A standalone Go CLI that launches an **already installed Codex CLI** against
 Nebius Token Factory's native Responses endpoint. It does not run models locally.
 This is an experimental, reviewable prototype.
-There is no published release yet. Kimi-K3 with Codex 0.155.1 on macOS ARM64 passes
+Versioned prereleases are available through GitHub. Kimi-K3 with Codex 0.155.1 on macOS ARM64 passes
 the recorded live qualification; all launches still require `--allow-unverified`.
 Claude, desktop integrations, broader protocol translation and browser OAuth are
 outside this prototype.
@@ -25,11 +25,8 @@ See [the investigation](docs/research/codex-kimi-followup.md) and
 
 ## Installation
 
-**No release is published yet.** The scripts below are ready for a published release,
-but cannot currently download one. For hands-on review now, use the locally built
-artifact or follow [Try the local build](#try-the-local-build).
-
-Once a release is available, installation is per user and needs no administrator
+Select the explicit [v0.1.0-rc.1 prerelease](https://github.com/kreuzhofer/nebius-tofa-cli/releases/tag/v0.1.0-rc.1).
+Installation is per user and needs no administrator
 privileges. The installer verifies SHA-256 checksums, updates your PATH and prints
 the exact command to activate tofa in your current terminal.
 
@@ -83,9 +80,33 @@ error. The directory contains:
 - `SHA256SUMS`, covering every other file in the distribution.
 
 Retain the license and notice files when redistributing standalone binaries.
-The local build creates files only; tag-triggered publication is tracked in
-[#20](https://github.com/kreuzhofer/nebius-tofa-cli/issues/20). Cross-compilation
-does not establish native execution or real-machine qualification on every target.
+The local build creates files only. Cross-compilation does not establish native
+execution or real-machine qualification on every target.
+
+### Publishing a prerelease
+
+Push a new explicit prerelease tag such as `v0.1.0-rc.1` to the intended source
+commit. Tags must use `vMAJOR.MINOR.PATCH-PRERELEASE`; stable tags and malformed
+versions fail validation. Ordinary branch pushes and manual CI runs never publish.
+
+The workflow builds one candidate bundle, then runs native race tests, vet and
+actual-binary installation lifecycle checks on macOS, Linux and Windows. Every
+required job must pass. Native jobs and publication download the same bundle;
+publication never rebuilds the tested executables. Release CI uses synthetic state
+and needs no real inference credential.
+
+Publication uploads a private draft, downloads and compares every asset with the
+checked bundle, verifies the tag still names the checked commit, then publishes it
+explicitly as a prerelease. An existing release (including a partial draft) makes a
+retry fail without overwriting assets or repointing the tag. Use a new candidate
+version for changed release files; investigate an interrupted draft before taking
+any manual recovery action. The publication job alone has `contents: write`.
+
+All six OS/CPU artifacts have cross-build evidence. Native lifecycle execution
+covers macOS ARM64, Linux amd64 and Windows amd64. Maintainer qualification with
+real credential vaults and live Codex is recorded separately; native CI is not
+real-machine acceptance. Apple signing/notarization and Windows publisher signing
+are deferred, so record any platform prompts or blocks during qualification.
 
 ## Try the local build
 
@@ -199,6 +220,7 @@ go test -race ./...
 go vet ./...
 sh scripts/build.sh v0.0.0-prototype
 python3 scripts/build_test.py
+python3 scripts/release_test.py -v
 python3 scripts/install_test.py
 # Native macOS/Linux lifecycle against the bundle built above:
 python3 scripts/lifecycle_test.py dist v0.0.0-prototype -v
