@@ -20,8 +20,16 @@ import (
 const Service = "io.nebius.tofa.prototype"
 
 var ErrMissing = errors.New("credential not found")
+
+// ErrVaultAbsent identifies a confirmed absent or unsupported vault facility.
+// Access failures and uncertain availability must not use this sentinel.
+var ErrVaultAbsent = errors.New("credential vault facility absent")
 var refPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 
+// Vault stores credentials. An optional Availability() error method enables
+// automatic selection on fresh login: nil prefers the vault, ErrVaultAbsent
+// permits files, and every other error stops selection. Without that method,
+// callers must use an explicit or previously saved backend choice.
 type Vault interface {
 	Set(reference, key string) error
 	Get(reference string) (string, error)
