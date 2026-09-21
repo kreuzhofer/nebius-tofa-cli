@@ -50,7 +50,10 @@ The harness compares in-memory hashes of normal Codex `config.toml`/`auth.json`
 and launcher `config.yml`/`credentials.yml` before/after. It does not edit them,
 write/delete credential-store entries, or publish their hashes. The scratch Codex
 process uses an allowlisted environment and workspace-write sandbox with shell
-login startup disabled. File preservation does not independently prove native
+login startup disabled. Version probes also use scratch client settings. Reports
+identify each preserved/changed file by a fixed label, without exporting its path,
+content or hash. Concurrent changes (including an auth refresh by another process)
+fail this check; the report does not attribute the writer. File preservation does not independently prove native
 credential-store lifecycle behavior or every aspect of an ordinary client launch.
 
 ## Offline validation
@@ -62,7 +65,8 @@ python3 scripts/live_compat_test.py
 These executable-boundary tests use a fake launcher/client and local synthetic
 SSE with dummy tokens. They cover successful repeated runs, incorrect files,
 failed tools, a wrong resumed session, absent/empty streaming, metadata warnings,
-timeout reporting, completed-response disconnects, scratch trust recording, and
+timeout reporting, completed-response disconnects, scratch trust recording, changed
+normal auth files, and
 report redaction. They never read real credentials or call
 Token Factory. Unix CI runs these tests; it never runs the live harness.
 

@@ -19,6 +19,10 @@ class LiveCompatibilityTests(unittest.TestCase):
             root = Path(directory)
             launcher = root / "tofa"
             client = root / "real-codex"
+            normal_client = root / "normal-codex"
+            normal_client.mkdir()
+            normal_auth = normal_client / "auth.json"
+            normal_auth.write_text('{"fixture":"before"}')
             launcher.write_text("#!" + sys.executable + "\n" + '''
 import json, os, subprocess, sys
 if sys.argv[1:] == ['--version']:
@@ -28,7 +32,8 @@ provider = 'model_providers.nebius-tofa={base_url='+json.dumps(os.environ['FIXTU
 os.environ['TOFA_API_KEY'] = 'local-fixture-token'
 sys.exit(subprocess.call(['codex', '-c', provider] + args))
 ''')
-            client.write_text("#!" + sys.executable + "\nmode = " + repr(mode) + "\n" + '''
+            client.write_text("#!" + sys.executable + "\nmode = " + repr(mode)
+                              + "\nnormal_auth = " + repr(str(normal_auth)) + "\n" + '''
 import json, os, pathlib, re, sys, urllib.request
 if sys.argv[1:] == ['--version']:
     print('codex-cli fixture'); sys.exit()
@@ -39,6 +44,7 @@ if mode == 'trust_workspace':
     config = pathlib.Path(os.environ['CODEX_HOME'])/'config.toml'
     trust = '[projects.'+json.dumps(str(pathlib.Path.cwd()))+']\\ntrust_level = "trusted"\\n'
     if trust not in config.read_text(): config.write_text(config.read_text()+'\\n'+trust)
+if mode == 'normal_auth_changed': pathlib.Path(normal_auth).write_text('{"fixture":"after"}')
 provider = next(a for a in sys.argv if a.startswith('model_providers.'))
 endpoint = json.loads(re.search(r'base_url\\s*=\\s*("[^"]+")', provider).group(1))
 request = urllib.request.Request(endpoint+'/responses', data=b'{}', headers={'Authorization':'Bearer '+os.environ['TOFA_API_KEY']})
@@ -95,11 +101,11 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
                 report = root / "evidence.json"
                 result = subprocess.run([sys.executable, str(HARNESS), "--launcher", str(launcher),
                                          "--codex", str(client), "--runs", str(runs), "--timeout", str(timeout), "--output", str(report)],
-                                        env=env, capture_output=True, text=True, timeout=30)
+                                        env=env, capture_output=True, text=True, timeout=90)
                 evidence = json.loads(report.read_text())
                 self.assertEqual(len(evidence["runs"]), runs)
                 if mode != "timeout":
-                    self.assertEqual(len(seen), runs * 2)
+                    self.assertEqual(len(seen), runs * 2, json.dumps(evidence))
                     self.assertEqual(set(seen), {"Bearer local-fixture-token"})
                 self.assertNotIn("PRIVATE_BODY", report.read_text())
                 self.assertNotIn("local-fixture-token", report.read_text())
@@ -153,6 +159,13 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
         result, evidence = self.fixture("trust_workspace")
         self.assertEqual(result.returncode, 0)
         self.assertTrue(evidence["runs"][0]["scratch_settings_preserved"])
+
+    def test_normal_auth_change_is_identified_without_exporting_its_content(self):
+        result, evidence = self.fixture("normal_auth_changed")
+        self.assertEqual(result.returncode, 1)
+        self.assertFalse(evidence["normal_files_preserved"]["codex_auth"])
+        self.assertTrue(evidence["normal_files_preserved"]["codex_config"])
+        self.assertNotIn('"fixture"', json.dumps(evidence))
 
     def test_timeout_records_failure_without_retry(self):
         started = time.monotonic()

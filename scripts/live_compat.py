@@ -310,18 +310,26 @@ def main():
         parser.error("output must be a new file in an existing directory")
     codex_home = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
     launcher_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "tofa"
-    watched = [codex_home / "config.toml", codex_home / "auth.json", launcher_home / "config.yml",
-               launcher_home / "credentials.yml"]
-    before = [digest(path) for path in watched]
+    watched = {"codex_config": codex_home / "config.toml", "codex_auth": codex_home / "auth.json",
+               "launcher_config": launcher_home / "config.yml", "launcher_file_credential": launcher_home / "credentials.yml"}
+    before = {name: digest(path) for name, path in watched.items()}
     evidence = {"model": MODEL, "route": "adapted with test-only loopback SSE observer",
                 "platform": platform.system() + "/" + platform.machine(),
+                "os_release": platform.release(),
                 "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "launcher_sha256": digest(Path(options.launcher)), "runs": []}
-    for name in ("launcher", "codex"):
-        result = subprocess.run([getattr(options, name), "--version"], capture_output=True, text=True, timeout=10)
-        if result.returncode != 0:
-            raise RuntimeError("version probe failed")
-        evidence[name + "_version"] = result.stdout.strip()
+                "launcher_sha256": digest(Path(options.launcher)),
+                "harness_sha256": digest(Path(__file__)), "codex_sha256": digest(Path(options.codex)), "runs": []}
+    with tempfile.TemporaryDirectory(prefix="tofa-version-") as directory:
+        probe_root = Path(directory).resolve()
+        (probe_root / "codex").mkdir()
+        probe_env = {name: os.environ[name] for name in ("PATH", "TMPDIR", "LANG", "LC_ALL") if name in os.environ}
+        probe_env.update(HOME=str(probe_root), CODEX_HOME=str(probe_root / "codex"))
+        for name in ("launcher", "codex"):
+            result = subprocess.run([getattr(options, name), "--version"], env=probe_env,
+                                    capture_output=True, text=True, timeout=10)
+            if result.returncode != 0:
+                raise RuntimeError("version probe failed")
+            evidence[name + "_version"] = result.stdout.strip()
     try:
         for number in range(options.runs):
             print(f"Live run {number + 1}/{options.runs}: {MODEL}", flush=True)
@@ -330,10 +338,12 @@ def main():
             evidence["runs"].append(result)
             print("PASS" if result["passed"] else "FAIL", flush=True)
     finally:
-        evidence["normal_settings_preserved"] = before == [digest(path) for path in watched]
+        evidence["normal_files_preserved"] = {name: before[name] == digest(path) for name, path in watched.items()}
+        evidence["normal_settings_preserved"] = all(evidence["normal_files_preserved"].values())
         evidence["passed"] = (len(evidence["runs"]) == options.runs and evidence["normal_settings_preserved"]
                               and all(run["passed"] for run in evidence["runs"]))
         write_json(output, evidence)
+        print("Qualification passed" if evidence["passed"] else "Qualification failed; inspect the sanitized report", flush=True)
     return 0 if evidence["passed"] else 1
 
 
