@@ -1,7 +1,7 @@
 # Prototype evidence — 2026-09-21
 
-Status: implementation ready for hands-on review; the Wayfinder prototype decision
-remains open. No claim of working live Codex inference or universal native-store
+Status: first hands-on testing found a conversation-continuation blocker; the
+Wayfinder prototype decision remains open. No claim of working live Codex inference or universal native-store
 availability is made.
 
 ## Local evidence
@@ -79,3 +79,24 @@ Native CLI self-uninstall also passed locally in a temporary macOS installation.
 Model compatibility registry: **empty**. Every catalog entry is marked unverified;
 `--allow-unverified` is required. Browser authorization and local protocol adaptation
 remain deferred research/product work, not hidden fallbacks.
+
+## First hands-on compatibility finding
+
+The maintainer reports that Codex with `moonshotai/Kimi-K3` starts and answers,
+then receives HTTP 422 on the next turn: replayed assistant history omits
+`message.status` and `output_text.annotations`, which Token Factory requires for
+that representation. This is a demonstrated continuation failure, not merely a
+model-catalog warning. No credentials or paid calls were used by the assistant to
+investigate it.
+
+`scripts/repro_codex_history.py` exercises installed Codex 0.154.0 against a local
+synthetic Responses server and captures the same omissions. A control run using
+`TOFA_REPRO_MODEL=gpt-5.4` removes the metadata warning while preserving the
+serialization failure. Both runs finish with the expected diagnostic exit 1 and
+`REPRODUCED: message.status, output_text.annotations`. This optional diagnostic is
+not part of the passing Go/installer suite and does not run a real model.
+
+See [the source/schema investigation](../research/codex-kimi-followup.md) for pins,
+remaining metadata questions and an engineering inquiry. The proposed temporary
+request adapter is under discussion; it has not been implemented. The API-key
+asterisk change is independent and does not resolve this compatibility blocker.

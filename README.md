@@ -6,6 +6,12 @@ This is an experimental, reviewable prototype on `prototype/direct-launcher`.
 There is no published release yet, and **no model/client combination is certified**.
 Claude, desktop integrations, protocol proxies and browser OAuth are outside this prototype.
 
+**Known compatibility failure:** a user test with Codex 0.154.0 and Kimi-K3 answered
+once, then failed on conversation history validation. The same client-side field
+omission is reproduced locally independently of the model metadata warning. See
+[the investigation](docs/research/codex-kimi-followup.md). The current binary does
+not yet repair this request shape.
+
 ## Installation
 
 **No release is published yet.** The scripts below are ready for a published release,
