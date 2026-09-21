@@ -1,4 +1,5 @@
 /dist/
+/.tofa-dist.*/
 /tofa
 /tofa.exe
 /.agents/

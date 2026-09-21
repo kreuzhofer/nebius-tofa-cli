@@ -35,8 +35,14 @@ base=${TOFA_RELEASE_BASE_URL:-"https://github.com/kreuzhofer/nebius-tofa-cli/rel
 work=$(mktemp -d);trap 'rm -rf "$work"' EXIT HUP INT TERM
 curl -fsSL --proto '=https,file' --proto-redir '=https' "$base/$asset" -o "$work/tofa"
 curl -fsSL --proto '=https,file' --proto-redir '=https' "$base/SHA256SUMS" -o "$work/SHA256SUMS"
-expected=$(awk -v file="$asset" '$2==file {print $1}' "$work/SHA256SUMS")
-[ "${#expected}" -eq 64 ] || fail 'missing or ambiguous SHA256 checksum'
+expected=$(awk -v file="$asset" '
+ $2 == file {
+  count++
+  if (NF != 2 || length($1) != 64 || $1 ~ /[^0-9a-fA-F]/) invalid=1
+  sum=tolower($1)
+ }
+ END { if (count != 1 || invalid) exit 1; print sum }
+' "$work/SHA256SUMS") || fail 'missing, invalid or ambiguous SHA256 checksum'
 if command -v sha256sum >/dev/null 2>&1; then actual=$(sha256sum "$work/tofa" | awk '{print $1}');else actual=$(shasum -a 256 "$work/tofa" | awk '{print $1}');fi
 [ "$expected" = "$actual" ] || fail 'checksum mismatch; existing installation retained'
 mkdir -p "$root/bin"
