@@ -59,9 +59,10 @@ default preservation and purge without touching Credential Manager. Windows user
 PATH updates, asynchronous self-removal and fish startup execution remain unverified.
 Native CLI self-uninstall also passed locally in a temporary macOS installation.
 
-## Still needed before compatibility/support claims
+## Remaining review and broader-support limits
 
-1. Maintainer feedback on the CLI and code walkthrough.
+1. Further maintainer review of the CLI and code walkthrough; the recorded
+   hands-on feedback covers the coding workflow, follow-up and normal model restoration.
 2. Native credential read/write/delete on each OS, including headless/locked/denied
    stores. Windows file ACL enforcement has CI coverage; actual credential-store
    checks require an isolated test account
@@ -268,3 +269,21 @@ syntax checks. Live checks apply only to this exact combination and small task;
 they do not establish general coding quality, images, long context, reasoning
 controls, other platforms, native credential write/delete behavior or descendants'
 lifecycle. The earlier maintainer game review provides complementary live evidence.
+
+### Native harness regression coverage
+
+All **12 offline harness tests** pass locally and on native macOS ARM64/Linux x64
+in [the final native run](https://github.com/kreuzhofer/nebius-tofa-cli/actions/runs/35617480179)
+at `cf6dade9969e29f57c2951cb12646dea59395577`. The Go race/vet and platform installer
+checks also pass on macOS ARM64, Linux x64 and Windows x64. The live harness itself
+is Unix-only; Windows CI does not run it. All six OS/CPU artifacts build and upload
+successfully in the same run. Cross-builds do not establish native execution on
+the other three CPU/OS combinations.
+
+Earlier macOS harness CI failures were traced to `HTTPServer.server_bind` calling
+`socket.getfqdn` for the numeric loopback address. A captured stack established the
+blocking lookup; proxy isolation did not fix it. The observer now binds directly
+without reverse DNS, retaining HTTP server address metadata. A regression injecting
+unavailable DNS fails before this change and passes afterward. Temporary stack
+instrumentation has been removed. Fixture requests also explicitly bypass ambient
+proxy discovery to keep synthetic traffic local.
