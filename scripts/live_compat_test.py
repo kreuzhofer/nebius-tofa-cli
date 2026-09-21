@@ -30,6 +30,11 @@ class LiveCompatibilityTests(unittest.TestCase):
                     "    def unavailable(*args):\n"
                     "        raise RuntimeError('loopback listener must not require reverse DNS')\n"
                     "    socket.getfqdn = unavailable\n")
+            if mode == "coarse_clock":
+                (root / "sitecustomize.py").write_text(
+                    "import sys, time\n"
+                    "if '--observe' in sys.argv:\n"
+                    "    time.monotonic = lambda: 1234.0\n")
             launcher.write_text("#!" + sys.executable + "\n" + '''
 import json, os, subprocess, sys
 if sys.argv[1:] == ['--version']:
@@ -107,7 +112,7 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
             try:
                 env = {**os.environ, "HOME": str(root), "CODEX_HOME": str(root / "normal-codex"),
                        "FIXTURE_ENDPOINT": f"http://127.0.0.1:{server.server_port}"}
-                if mode == "no_dns":
+                if mode in ("no_dns", "coarse_clock"):
                     env["PYTHONPATH"] = str(root)
                 report = root / "evidence.json"
                 result = subprocess.run([sys.executable, str(HARNESS), "--launcher", str(launcher),
@@ -181,6 +186,11 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
     def test_loopback_listener_does_not_require_reverse_dns(self):
         result, evidence = self.fixture("no_dns")
         self.assertEqual(result.returncode, 0)
+        self.assertTrue(evidence["passed"])
+
+    def test_stream_timing_uses_high_resolution_when_deadline_clock_is_coarse(self):
+        result, evidence = self.fixture("coarse_clock")
+        self.assertEqual(result.returncode, 0, json.dumps(evidence))
         self.assertTrue(evidence["passed"])
 
     def test_timeout_records_failure_without_retry(self):

@@ -109,7 +109,9 @@ def observe(args):
             record = {"status": 0, "text_deltas": 0, "tool_deltas": 0,
                       "completed": False, "first_delta_ms": None, "completed_ms": None}
             observations.append(record)
-            start = time.monotonic()
+            # Windows' deadline clock can have a coarse tick on Python 3.12.
+            # Stream ordering needs the high-resolution performance counter.
+            start = time.perf_counter()
             connection = http.client.HTTPConnection(target.hostname, target.port, timeout=90)
             stage = "adapter_request"
             try:
@@ -141,10 +143,10 @@ def observe(args):
                             field = "text_deltas" if kind == "response.output_text.delta" else "tool_deltas"
                             record[field] += 1
                             if record["first_delta_ms"] is None:
-                                record["first_delta_ms"] = round((time.monotonic() - start) * 1000, 3)
+                                record["first_delta_ms"] = round((time.perf_counter() - start) * 1000, 3)
                         if kind == "response.completed":
                             record["completed"] = True
-                            record["completed_ms"] = round((time.monotonic() - start) * 1000, 3)
+                            record["completed_ms"] = round((time.perf_counter() - start) * 1000, 3)
             except (OSError, http.client.HTTPException) as error:
                 if stage == "client_write" and record["completed"] and isinstance(error, (BrokenPipeError, ConnectionResetError)):
                     record["client_closed_after_completion"] = True
