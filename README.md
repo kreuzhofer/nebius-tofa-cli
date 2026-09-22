@@ -11,9 +11,10 @@ no GitHub account is needed to install.
   tool execution and continued-conversation checks. All models still require
   `--allow-unverified`.
 - rc.2 addresses the observed automatic-review request-format rejection while
-  preserving Codex's approval decisions. Completed live automatic review remains
-  unverified, and Codex 0.155.1's fixed 90-second review deadline can still expire
-  during slow Token Factory responses.
+  preserving Codex's approval decisions. The maintainer reports a successful live
+  app build with **Approve for me**, including installation and dev-server startup
+  without manual intervention. Codex 0.155.1's fixed 90-second review deadline can
+  still expire during slow Token Factory responses.
 - Release CI passed native checks on macOS ARM64, Linux amd64 and Windows amd64.
   Full real-account macOS and Windows release qualification remains pending.
 
@@ -237,12 +238,17 @@ JSON, missing outcomes, invalid enums, upstream failures, and cancellation leave
 it blocked. Optional assessment fields can be absent, as Codex's schema permits.
 The adapter adds no retries or fallback decisions and does not change Codex policy.
 
-Automatic review is still **not live-qualified**. Codex 0.155.1 has a fixed
-90-second total review deadline. In the live diagnostic, the adapted request
-reached HTTP 200 only after about 242 seconds, after Codex had already stopped
-waiting; a complete assessment was not observed. The format adjustment does not
-extend that deadline or resolve slow provider responses. See
-[the rc.2 evidence](docs/releases/v0.1.0-rc.2.md).
+On 2026-09-22, the maintainer confirmed that a new rc.2 test session built a working
+app with **Approve for me**, including dependency installation and dev-server
+startup without approval errors or manual intervention. This is a user-reported
+live success; no request trace was enabled for that session.
+
+Codex 0.155.1 still has a fixed 90-second total review deadline. In the earlier
+live diagnostic, the adapted request reached HTTP 200 only after about 242
+seconds, after Codex had already stopped waiting; no complete assessment was
+observed in that diagnostic. The format adjustment does not extend that deadline
+or resolve slow provider responses. Full release qualification remains pending.
+See [the rc.2 evidence](docs/releases/v0.1.0-rc.2.md).
 
 ### Connection and client settings
 
