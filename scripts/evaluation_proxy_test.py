@@ -137,5 +137,36 @@ class ProxyTests(unittest.TestCase):
         finally:
             server.shutdown(); server.server_close()
 
+    def test_complete_oversized_event_is_rejected_before_json_parsing(self):
+        class Upstream(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *unused): pass
+            def do_POST(self):
+                self.rfile.read(int(self.headers['Content-Length']))
+                self.send_response(200); self.end_headers()
+                line = ('data: ' + json.dumps({'type': 'response.output_text.delta',
+                                              'delta': 'x' * 263000}) + '\n\n').encode()
+                self.wfile.write(line)
+                self.wfile.write(b'data: {"type":"response.completed"}\n\n')
+        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Upstream)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                budget = root / 'budget.json'; budget.write_text('{"used":0,"maximum":8}')
+                report = root / 'observations.json'
+                with EvaluationProxy('http://127.0.0.1:' + str(server.server_port), 'fixture-token',
+                                     report, budget, 'coding', 5) as proxy:
+                    request = urllib.request.Request(proxy.url + '/responses',
+                        data=b'{"model":"moonshotai/Kimi-K3","stream":true,"input":[]}',
+                        headers={'Authorization': 'Bearer fixture-token'})
+                    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                    opener.open(request).read()
+                observed = json.loads(report.read_text())[0]
+                self.assertEqual(observed['failure'], 'event_body_limit')
+                self.assertFalse(observed['completed'])
+                self.assertEqual(observed['text_deltas'], 0)
+        finally:
+            server.shutdown(); server.server_close()
+
 
 if __name__ == '__main__': unittest.main()

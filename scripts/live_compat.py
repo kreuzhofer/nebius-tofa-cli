@@ -191,6 +191,8 @@ def observe(args):
                             if record["first_delta_ms"] is None:
                                 record["first_delta_ms"] = round((time.perf_counter() - start) * 1000, 3)
                                 checkpoint("adapter_read")
+                        if kind in ("response.failed", "response.incomplete", "error"):
+                            record["failure"] = "response_incomplete"
                         if kind == "response.completed":
                             record["completed"] = True
                             record["completed_ms"] = round((time.perf_counter() - start) * 1000, 3)
@@ -397,7 +399,7 @@ def run_one(options, root):
                             and result["streaming_observed"] and not result["client_error"]
                             and not result["metadata_warning"] and not result["timed_out"]
                             and not result.get("output_limit", False)
-                            and all(s["status"] == 200 and s["completed"] and not s.get("transport_error") for s in streams))
+                            and all(s["status"] == 200 and s["completed"] and not s.get("transport_error") and not s.get("failure") for s in streams))
         turns.append(result)
         print("  Turn passed" if result["passed"] else "  Turn failed", flush=True)
         if not session or result["exit_code"] != 0:

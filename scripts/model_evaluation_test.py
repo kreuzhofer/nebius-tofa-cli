@@ -108,6 +108,14 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(request['stage'], 'stream_read')
         self.assertNotIn('PRIVATE', raw)
 
+    def test_completed_stream_with_prior_error_cannot_pass_protocol(self):
+        report, _ = self.score({'exit_code': 0, 'turn_completed': True, 'tools_succeeded': 1,
+            'files_correct': True, 'streaming_observed': True,
+            'streams': [{'status': 200, 'completed': True, 'failure': 'response_incomplete'}]})
+        self.assertEqual(report['runs'][0]['protocol']['score'], 4)
+        self.assertEqual(report['runs'][0]['coding']['score'], 2)
+        self.assertIn('response_incomplete', report['runs'][0]['failures'])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -59,7 +59,7 @@ def score_run(run):
         if not isinstance(streams, list) or any(not isinstance(s, dict) for s in streams):
             raise ValueError('invalid request observations')
         completed = bool(streams) and all(s.get('status') == 200 and s.get('completed')
-                                         and not s.get('transport_error') for s in streams)
+                                         and not s.get('transport_error') and not s.get('failure') for s in streams)
         protocol += int(completed and turn.get('streaming_observed', False))
         protocol += int(turn.get('tools_succeeded', 0) > 0)
         coding += int(turn.get('files_correct', False))

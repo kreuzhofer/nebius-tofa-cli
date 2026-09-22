@@ -163,6 +163,8 @@ class EvaluationProxy:
                         pending += chunk
                         while b'\n' in pending:
                             line, pending = pending.split(b'\n', 1)
+                            if len(line) > 256 * 1024:
+                                record['failure'] = 'event_body_limit'; break
                             if not line.startswith(b'data: '): continue
                             try: event = json.loads(line[6:])
                             except (ValueError, UnicodeDecodeError): continue
@@ -188,6 +190,7 @@ class EvaluationProxy:
                                     except (ValueError, AttributeError): record['decision'] = 'invalid'
                             if kind in ('response.failed', 'response.incomplete', 'error'):
                                 record['failure'] = 'response_incomplete'
+                        if record.get('failure') == 'event_body_limit': break
                         if len(pending) > 256 * 1024:
                             record['failure'] = 'event_body_limit'; break
                         owner.publish(index, record)

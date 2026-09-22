@@ -131,6 +131,8 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
                         time.sleep(3)
                         return
                     kinds = ["response.completed"] if mode == "no_streaming" else ["response.output_text.delta", "response.output_text.delta", "response.completed"]
+                    if mode == "incomplete_then_completed":
+                        kinds.insert(-1, "response.incomplete")
                     for kind in kinds:
                         try:
                             self.wfile.write(("data: " + json.dumps({"type": kind, "delta": "" if mode == "empty_deltas" else "PRIVATE_BODY"}) + "\n\n").encode())
@@ -173,6 +175,15 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
             finally:
                 server.shutdown()
                 server.server_close()
+
+    def test_completion_cannot_hide_an_earlier_stream_failure(self):
+        result, evidence = self.fixture("incomplete_then_completed")
+        self.assertEqual(result.returncode, 1)
+        for turn in evidence["runs"][0]["turns"]:
+            self.assertTrue(turn["files_correct"])
+            self.assertTrue(turn["streaming_observed"])
+            self.assertFalse(turn["passed"])
+            self.assertEqual(turn["streams"][0]["failure"], "response_incomplete")
 
     def test_file_diagnostics_distinguish_shape_and_preservation_failures(self):
         cases = (("missing_summary", "missing", None, True),
