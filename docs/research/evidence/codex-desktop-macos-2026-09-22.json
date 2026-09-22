@@ -1,0 +1,357 @@
+{
+  "research_date": "2026-09-22",
+  "issue": 29,
+  "app": {
+    "name": "ChatGPT",
+    "bundle_id": "com.openai.codex",
+    "version": "26.915.31945",
+    "build": "9922",
+    "engine": "0.155.0-alpha.9.2",
+    "asar_sha256": "1f7939c1c781887c167043c4d1d307af3400d324685cfc315dfe2f80e634f483"
+  },
+  "platform": {
+    "os": "macOS",
+    "version": "26.6.2",
+    "build": "25G83",
+    "arch": "arm64"
+  },
+  "selected_model": "moonshotai/Kimi-K3",
+  "offline_503_probe": {
+    "requests": [
+      {
+        "method": "POST",
+        "path": "/v1/responses",
+        "model": "gpt-5.6-luna",
+        "stream": true,
+        "body_keys": [
+          "client_metadata",
+          "include",
+          "input",
+          "model",
+          "parallel_tool_calls",
+          "prompt_cache_key",
+          "reasoning",
+          "store",
+          "stream",
+          "text",
+          "tool_choice"
+        ],
+        "authorization_is_dummy": true
+      },
+      {
+        "method": "POST",
+        "path": "/v1/responses",
+        "model": "moonshotai/Kimi-K3",
+        "stream": true,
+        "body_keys": [
+          "client_metadata",
+          "include",
+          "input",
+          "instructions",
+          "model",
+          "parallel_tool_calls",
+          "prompt_cache_key",
+          "reasoning",
+          "store",
+          "stream",
+          "tool_choice",
+          "tools"
+        ],
+        "authorization_is_dummy": true
+      }
+    ],
+    "human_observation": "unexpected status503 Service Unavailable: Offline desktop qualification fixture: inference intentionally unavailable, url http://127.0.0.1:<ephemeral-port>/v1/responses"
+  },
+  "offline_sse_probe": {
+    "requests": [
+      {
+        "model": "gpt-5.6-luna",
+        "path": "/v1/responses",
+        "stream": true,
+        "authorization_is_dummy": true,
+        "tool_result_count": 0,
+        "tool_marker_present": false,
+        "assistant_history_count": 0,
+        "assistant_history_missing_status": false,
+        "tool_definition_count": 0,
+        "tool_namespaces": []
+      },
+      {
+        "model": "moonshotai/Kimi-K3",
+        "path": "/v1/responses",
+        "stream": true,
+        "authorization_is_dummy": true,
+        "tool_result_count": 0,
+        "tool_marker_present": false,
+        "assistant_history_count": 0,
+        "assistant_history_missing_status": false,
+        "tool_definition_count": 45,
+        "tool_namespaces": [
+          "mcp__codex_app",
+          "mcp__cua_repl",
+          "mcp__node_repl",
+          "multi_agent_v1"
+        ]
+      },
+      {
+        "model": "moonshotai/Kimi-K3",
+        "path": "/v1/responses",
+        "stream": true,
+        "authorization_is_dummy": true,
+        "tool_result_count": 1,
+        "tool_marker_present": true,
+        "assistant_history_count": 0,
+        "assistant_history_missing_status": false,
+        "tool_definition_count": 45,
+        "tool_namespaces": [
+          "mcp__codex_app",
+          "mcp__cua_repl",
+          "mcp__node_repl",
+          "multi_agent_v1"
+        ]
+      }
+    ],
+    "human_observation": "Offline tool round trip complete.",
+    "additional_user_turn_observed": false,
+    "process_stopped": true,
+    "auth_file_created": false
+  },
+  "ui_automation_blocker": "Computer Use is not allowed to use the app com.openai.codex for safety reasons.",
+  "live_probe": {
+    "status": "main_flow_completed_with_auxiliary_title_failure",
+    "launcher_revision": "430531a86540f0a78d3814c85e04c6270efde9d7",
+    "launcher_sha256": "d8ecf7b18238c99a4c4719c5344151f7f97a2c67c308bf4e6e1e099ff4646e95",
+    "launcher_version": "dev-prototype",
+    "route": "existing launcher Responses request adapter",
+    "max_output_tokens_per_request": 1024,
+    "local_request_limit_initial": 3,
+    "local_request_limit_final": 4,
+    "trace": [
+      {
+        "phase": "request",
+        "number": 1,
+        "model": "moonshotai/Kimi-K3",
+        "bytes": 42498,
+        "total_bytes": 42498,
+        "stream": true,
+        "tool_results": 0,
+        "assistant_history": 0,
+        "max_output_tokens": 1024
+      },
+      {
+        "phase": "headers",
+        "number": 1,
+        "status": 400
+      },
+      {
+        "phase": "error",
+        "number": 1,
+        "status": 400,
+        "error_bytes": 150,
+        "schema_conflict": false
+      },
+      {
+        "phase": "request",
+        "number": 2,
+        "model": "moonshotai/Kimi-K3",
+        "bytes": 94808,
+        "total_bytes": 137306,
+        "stream": true,
+        "tool_results": 0,
+        "assistant_history": 0,
+        "max_output_tokens": 1024
+      },
+      {
+        "phase": "headers",
+        "number": 2,
+        "status": 200
+      },
+      {
+        "phase": "response",
+        "number": 2,
+        "events": {
+          "response.created": 1,
+          "response.in_progress": 1,
+          "response.output_item.added": 1,
+          "response.function_call_arguments.delta": 1,
+          "response.function_call_arguments.done": 1,
+          "response.output_item.done": 1,
+          "response.completed": 1
+        },
+        "usage": {
+          "input_tokens": 10423,
+          "input_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 0
+          },
+          "output_tokens": 45,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 10468
+        }
+      },
+      {
+        "phase": "request",
+        "number": 3,
+        "model": "moonshotai/Kimi-K3",
+        "bytes": 95234,
+        "total_bytes": 232540,
+        "stream": true,
+        "tool_results": 1,
+        "assistant_history": 0,
+        "max_output_tokens": 1024
+      },
+      {
+        "phase": "headers",
+        "number": 3,
+        "status": 200
+      },
+      {
+        "phase": "response",
+        "number": 3,
+        "events": {
+          "response.created": 1,
+          "response.in_progress": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 4,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.completed": 1
+        },
+        "usage": {
+          "input_tokens": 10543,
+          "input_tokens_details": {
+            "cached_tokens": 10368,
+            "cache_write_tokens": 0
+          },
+          "output_tokens": 21,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 10564
+        }
+      },
+      {
+        "phase": "rejected",
+        "status": 429,
+        "reason": "Diagnostic request count exhausted"
+      },
+      {
+        "phase": "request",
+        "number": 4,
+        "model": "moonshotai/Kimi-K3",
+        "bytes": 95813,
+        "total_bytes": 328353,
+        "stream": true,
+        "tool_results": 1,
+        "assistant_history": 1,
+        "max_output_tokens": 1024
+      },
+      {
+        "phase": "headers",
+        "number": 4,
+        "status": 200
+      },
+      {
+        "phase": "transport_error",
+        "number": 4
+      }
+    ],
+    "same_scratch_session_summaries": [
+      [
+        {
+          "event": "token_usage",
+          "usage": {
+            "input_tokens": 10423,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 45,
+            "reasoning_output_tokens": 0,
+            "total_tokens": 10468
+          }
+        },
+        {
+          "event": "assistant_message",
+          "marker_present": true,
+          "text_length": 64
+        },
+        {
+          "event": "token_usage",
+          "usage": {
+            "input_tokens": 10543,
+            "cached_input_tokens": 10368,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 21,
+            "reasoning_output_tokens": 0,
+            "total_tokens": 10564
+          }
+        },
+        {
+          "event": "task_complete",
+          "marker_present": true
+        },
+        {
+          "event": "task_complete",
+          "marker_present": false
+        },
+        {
+          "event": "assistant_message",
+          "marker_present": true,
+          "text_length": 20
+        },
+        {
+          "event": "token_usage",
+          "usage": {
+            "input_tokens": 10622,
+            "cached_input_tokens": 10496,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 13,
+            "reasoning_output_tokens": 0,
+            "total_tokens": 10635
+          }
+        },
+        {
+          "event": "task_complete",
+          "marker_present": true
+        }
+      ]
+    ],
+    "human_observations": [
+      "The command ran successfully and printed tofa-desktop-live-ok.",
+      "First continuation hit diagnostic 429 request cap.",
+      "After owned-instance restart with four cumulative slots, continuation answered tofa-desktop-live-ok."
+    ],
+    "title_failure": "Kimi-K3 tools with json_schema are unsupported except the recognized non-strict Codex approval review; request was not sent upstream",
+    "last_response_instrumentation_limit": "Proxy logged transport_error after HTTP 200 without final event summary; scratch session task_complete, usage, and human answer independently establish completion.",
+    "paid_inference_requests_completed": 3,
+    "summed_usage": {
+      "input_tokens": 31588,
+      "output_tokens": 79
+    }
+  },
+  "validation": {
+    "go_test_all": "pass",
+    "go_test_initial_sandbox": "loopback bind denied; rerun with localhost permission passed",
+    "scratch_helper_boundary_checks": "pass: model rejection, credential rejection, request count, output limit, upstream credential replacement"
+  },
+  "restoration": {
+    "ordinary_config_toml_unchanged": true,
+    "ordinary_auth_json_unchanged": true,
+    "ordinary_auth_contents_read": false,
+    "ordinary_auth_byte_comparison_performed": false,
+    "baseline_scope": "before first live inference through final cleanup; not before offline launches",
+    "ordinary_config_written_by_probe": false,
+    "ordinary_auth_written_or_copied_by_probe": false,
+    "scratch_auth_file_created": false,
+    "owned_app_and_engine_pids_exited": true,
+    "ports_closed": {
+      "56923": true,
+      "57658": true,
+      "58395": true
+    },
+    "owned_app_state_directories_removed": true
+  }
+}

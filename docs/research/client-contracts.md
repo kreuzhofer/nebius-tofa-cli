@@ -72,6 +72,8 @@ Responses tool use includes function-call output items linked by `call_id`, and 
 
 ## ChatGPT desktop
 
+Follow-up: [macOS Codex desktop feasibility](codex-desktop-feasibility.md) pins the installed ChatGPT/Codex product and bundled engine, tests a separate desktop instance, and records routing and qualification evidence. The original documentation-only boundaries below remain historical findings.
+
 OpenAI's current desktop page lists macOS, Windows, and Linux and distinguishes ChatGPT Chat/Work from Codex. Its ordinary onboarding uses a ChatGPT account. This is evidence of app availability, not proof of custom-provider entitlement or the same integration implementation on all systems. [ChatGPT desktop documentation](https://learn.chatgpt.com/docs/app).
 
 Ollama's documented integration requires **Ollama 0.34.0+**, adds up to five compatible models to the Codex picker, and restarts ChatGPT when needed. Native model requests continue to their native provider. Ordinary Chat and voice are explicitly outside Ollama routing. Codex keeps session ownership; Ollama handles selected-model requests and compaction. Disconnect restores connection settings and the previous profile. Ollama web search additionally requires Ollama sign-in. [Ollama ChatGPT integration](https://docs.ollama.com/integrations/chatgpt).
