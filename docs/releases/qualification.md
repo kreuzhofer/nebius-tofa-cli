@@ -10,7 +10,7 @@ Use the runner from this repository checkout; candidate bytes and matching
 installation scripts always come from the selected release. The runner does not
 rebuild or replace published assets. Changed release files require a new candidate.
 
-For `v0.1.0-rc.1`, use the [pinned two-machine handoff and evidence checklist](v0.1.0-rc.1.md#required-real-machine-qualification-handoff).
+For `v0.1.0-rc.2`, use the [pinned two-machine handoff and evidence checklist](v0.1.0-rc.2.md#required-real-machine-qualification-handoff).
 
 ## Before running
 
@@ -30,8 +30,8 @@ From a checkout of the repository containing this runner:
 
 ```sh
 python3 scripts/qualify_macos.py \
-  --version v0.1.0-rc.1 \
-  --output "$HOME/tofa-macos-rc1-$(date +%Y%m%d-%H%M%S).json"
+  --version v0.1.0-rc.2 \
+  --output "$HOME/tofa-macos-rc2-$(date +%Y%m%d-%H%M%S).json"
 ```
 
 If you need a checkout first, use `gh repo clone kreuzhofer/nebius-tofa-cli` and
@@ -106,8 +106,8 @@ uninstall helpers. Deadlines, Ctrl-C and Ctrl-Break terminate that tree.
 From the checkout, run in your normal account:
 
 ```powershell
-python scripts/qualify_windows.py --version v0.1.0-rc.1 `
-  --output (Join-Path $env:USERPROFILE ('tofa-windows-rc1-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.json'))
+python scripts/qualify_windows.py --version v0.1.0-rc.2 `
+  --output (Join-Path $env:USERPROFILE ('tofa-windows-rc2-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.json'))
 ```
 
 The same `READY`, interactive login, `FOUND` and `PURGE` gates apply. At `FOUND`,
