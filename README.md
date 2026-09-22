@@ -1,46 +1,97 @@
-# tofa — Token Factory launcher prototype
+# tofa — Token Factory launcher
 
-A standalone Go CLI that launches an **already installed Codex CLI** against
-Nebius Token Factory's native Responses endpoint. It does not run models locally.
-This is an experimental, reviewable prototype.
-Versioned prereleases are available through GitHub. Kimi-K3 with Codex 0.155.1 on macOS ARM64 passes
-the recorded live conversation qualification. Automatic approval review has the
-separate limitations below; all launches still require `--allow-unverified`.
-Claude, desktop integrations, broader protocol translation and browser OAuth are
-outside this prototype.
+A standalone CLI that launches an **already installed Codex CLI** against
+Nebius Token Factory. It does not run models locally or install Codex.
 
-**Compatibility adapter:** a user test with Codex 0.154.0 and Kimi-K3 answered once,
-then failed on conversation history validation. Launch now starts a private,
-per-launch loopback adapter that supplies missing assistant-message `status` and
-output-text `annotations`, preserving existing values. An offline test with Codex
-0.155.1 exercises a tool call and continued conversation using synthetic responses.
-The maintainer also reports a successful live browser-game build and follow-up
-feature change using the suggested launcher flow. Kimi launches now receive a
-temporary model catalog using Nebius's advertised context limit and capabilities,
-removing the missing-metadata warning in the installed-client check. Broader
-compatibility and platform checks are still tracked separately.
-Three automated live sessions now also pass streaming, tool execution, checked file
-changes and same-session follow-up, with normal settings/auth files preserved.
-See [the investigation](docs/research/codex-kimi-followup.md) and
-[current evidence](docs/prototype/VALIDATION.md#request-adapter-validation).
+The current release is [v0.1.0-rc.2](https://github.com/kreuzhofer/nebius-tofa-cli/releases/tag/v0.1.0-rc.2),
+an experimental prerelease. The repository and release downloads are public;
+no GitHub account is needed to install.
+
+- Kimi-K3 with Codex 0.155.1 on macOS ARM64 passed recorded live streaming,
+  tool execution and continued-conversation checks. All models still require
+  `--allow-unverified`.
+- rc.2 addresses the observed automatic-review request-format rejection while
+  preserving Codex's approval decisions. Completed live automatic review remains
+  unverified, and Codex 0.155.1's fixed 90-second review deadline can still expire
+  during slow Token Factory responses.
+- Release CI passed native checks on macOS ARM64, Linux amd64 and Windows amd64.
+  Full real-account macOS and Windows release qualification remains pending.
+
+See [rc.2 evidence and qualification status](docs/releases/v0.1.0-rc.2.md),
+[conversation validation](docs/prototype/VALIDATION.md#request-adapter-validation)
+and [the adapter investigation](docs/research/codex-kimi-followup.md).
+Claude, desktop integrations, broader protocol translation and browser OAuth
+remain outside the current scope.
 
 ## Installation
 
-Select the explicit [v0.1.0-rc.2 prerelease](https://github.com/kreuzhofer/nebius-tofa-cli/releases/tag/v0.1.0-rc.2).
-For private repository access, use the authenticated instructions below; anonymous
-`curl`/PowerShell downloads cannot access private releases. The direct HTTPS
-installer examples later in this section apply when the repository is publicly
-accessible; the installers themselves do not authenticate to private GitHub releases.
+Use the version-pinned commands below to install **v0.1.0-rc.2** directly from
+GitHub. The installer downloads only the binary matching your operating system
+and CPU.
 
-Installation is per user and needs no administrator
-privileges. The installer verifies SHA-256 checksums, updates your PATH and prints
-the exact command to activate tofa in your current terminal.
+Installation is per user and needs no administrator privileges. The installer
+verifies the binary's SHA-256 checksum, updates your PATH and prints the exact
+command to activate tofa in your current terminal. An already installed Codex CLI
+and a Token Factory API key and project ID are required to launch Codex.
 
-### Download from the private repository
+### macOS and Linux
 
-Authenticate the GitHub CLI (`gh auth login`) with an account that can access this
-repository. This is GitHub authentication, separate from `tofa auth login` for
-Token Factory. Keep the release pinned; do not select `latest` for a prerelease.
+```sh
+version=v0.1.0-rc.2
+curl -fsSL "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version/install.sh" -o install.sh &&
+  sh install.sh --version "$version"
+```
+
+Installs into `~/.local/share/tofa/bin`. Follow the printed PATH activation command
+or open a new terminal. Bash, zsh and fish receive shell-specific instructions.
+
+Use the same tag for the script download and `--version`. Prereleases must be
+selected explicitly: the installer's default `latest` looks for a stable release
+and does not select a prerelease. Add `--no-modify-path` for manual setup instructions.
+Rerun the installer to upgrade; saved preferences and credentials are retained.
+
+### Windows PowerShell
+
+```powershell
+$Version = 'v0.1.0-rc.2'
+$Installer = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/install.ps1" -ErrorAction Stop
+& ([scriptblock]::Create($Installer)) -Version $Version
+```
+
+Installs into `%LOCALAPPDATA%\tofa\install\bin`. Follow the printed PowerShell PATH
+activation command or open a new terminal.
+
+Use the same tag for the script download and `-Version`; `latest` does not select
+prereleases. Add `-NoModifyPath` for manual PATH setup.
+Rerun the installer to upgrade; saved preferences and credentials are retained.
+
+### First launch and upgrades
+
+After installing and activating PATH:
+
+```sh
+tofa --version
+tofa auth login
+tofa launch codex --model 'moonshotai/Kimi-K3' --allow-unverified
+```
+
+`tofa --version` should print `tofa v0.1.0-rc.2`. Login is needed for first setup;
+when upgrading, rerun the installer and reuse your saved login.
+
+To exercise automatic approval review, select **Approve for me** in Codex's
+`/permissions` menu. rc.2 preserves the approval gate; it does not select a review
+mode for you. See the [automatic-review limitations](#automatic-approval-review)
+below before interpreting a timeout as a request-format failure.
+
+<a id="download-from-the-private-repository"></a>
+
+### Optional GitHub CLI downloads
+
+If you prefer `gh`, the following commands download and verify release assets
+before installation or standalone use. They require a configured GitHub CLI
+(`gh auth login`); the direct installers above do not. GitHub authentication is
+separate from `tofa auth login` for Token Factory. Keep the release pinned;
+`latest` does not select a prerelease.
 
 On macOS/Linux, download the complete bundle, verify it, then use the matching
 installer with the downloaded assets:
@@ -51,14 +102,6 @@ release_dir=$(mktemp -d)
 gh release download "$version" --repo kreuzhofer/nebius-tofa-cli --dir "$release_dir" &&
   (cd "$release_dir" && shasum -a 256 -c SHA256SUMS) &&
   TOFA_RELEASE_BASE_URL="file://$release_dir" sh "$release_dir/install.sh" --version "$version"
-```
-
-Follow the printed PATH activation command (or open a fresh terminal), then run:
-
-```sh
-tofa --version
-tofa auth login
-tofa launch codex --model 'moonshotai/Kimi-K3' --allow-unverified
 ```
 
 On Windows amd64, download and verify the standalone executable, then launch it
@@ -83,37 +126,6 @@ if ((Get-FileHash -LiteralPath $Binary -Algorithm SHA256).Hash.ToLowerInvariant(
 
 Both paths require an already installed Codex CLI. Release downloads and checksums
 are verified separately from live Token Factory qualification.
-
-### macOS and Linux
-
-```sh
-version=v0.1.0-rc.2 # select an existing published tag
-curl -fsSL "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version/install.sh" -o install.sh &&
-  sh install.sh --version "$version"
-```
-
-Installs into `~/.local/share/tofa/bin`. Follow the printed PATH activation command,
-then run `tofa auth login`. Bash, zsh and fish receive shell-specific instructions.
-
-Use the same tag for the script download and `--version`. Prereleases must be
-selected explicitly: the installer's default `latest` looks for a stable release
-and does not select a prerelease. Add `--no-modify-path` for manual setup instructions.
-Rerun the installer to upgrade; saved preferences and credentials are retained.
-
-### Windows PowerShell
-
-```powershell
-$Version = 'v0.1.0-rc.2' # select an existing published tag
-$Installer = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/install.ps1" -ErrorAction Stop
-& ([scriptblock]::Create($Installer)) -Version $Version
-```
-
-Installs into `%LOCALAPPDATA%\tofa\install\bin`. Follow the printed PowerShell PATH
-activation command, then run `tofa auth login`.
-
-Use the same tag for the script download and `-Version`; `latest` does not select
-prereleases. Add `-NoModifyPath` for manual PATH setup.
-Rerun the installer to upgrade; saved preferences and credentials are retained.
 
 ### Building a distribution
 
@@ -201,6 +213,11 @@ retry requests or follow redirects. The launcher sets provider request/stream
 retry limits to zero; Codex automatic review can still retry failed review
 sessions and requests independently.
 Unsupported routes and oversized or encoded requests fail explicitly.
+The adapter supplies missing assistant-message `status` and output-text
+`annotations` in conversation history, preserving existing values so Codex can
+continue a conversation through Token Factory.
+
+### Automatic approval review
 
 For Kimi-K3, the adapter also handles the exact non-strict automatic approval
 review format observed in Codex 0.155.1. Nebius rejects tools combined with
@@ -226,6 +243,8 @@ reached HTTP 200 only after about 242 seconds, after Codex had already stopped
 waiting; a complete assessment was not observed. The format adjustment does not
 extend that deadline or resolve slow provider responses. See
 [the rc.2 evidence](docs/releases/v0.1.0-rc.2.md).
+
+### Connection and client settings
 
 `--direct` explicitly bypasses the adapter for diagnosis; this route passes the
 Nebius key in the child environment and leaves history unchanged. Routes never
@@ -311,6 +330,8 @@ python3 scripts/terminal_test.py ./tofa
 TOFA_TEST_CODEX="$(command -v codex)" go test ./internal/tofa -run TestInstalledCodex -v
 # Unix only, offline validation of the live-test harness:
 python3 scripts/live_compat_test.py
+# Unix only, offline validation of the request-tracing harness:
+python3 scripts/trace_codex_test.py -v
 ```
 
 Python is a **development test tool**, not a runtime or installer dependency.
@@ -350,6 +371,11 @@ For opt-in real inference using saved credentials, see the
 [live compatibility harness](docs/prototype/LIVE-COMPATIBILITY.md). It runs three
 isolated Kimi sessions and records streaming, tools, checked file changes and
 continuation evidence. Live runs are separate from the offline commands above.
+
+For opt-in request diagnosis, see [Codex request tracing](docs/codex-tracing.md).
+The standalone harness records sanitized request metadata, status and timing;
+the released executable has no `--debug` flag. Traces must be enabled for a new
+run and cannot reconstruct earlier conversations.
 
 Design decisions: [Wayfinder map](https://github.com/kreuzhofer/nebius-tofa-cli/issues/1).
 Dependencies and reuse: [third-party notices](docs/prototype/THIRD_PARTY.md).
