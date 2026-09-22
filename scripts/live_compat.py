@@ -283,6 +283,10 @@ def turn(command, env, workspace, prompt, timeout):
             if (kind == "item.completed" and item.get("type") == "command_execution"
                     and item.get("status") == "completed" and item.get("exit_code") == 0):
                 summary["tools_succeeded"] += 1
+                if env.get("TOFA_EVAL_MARKER"):
+                    summary["evaluation_marker_executed"] = (
+                        summary.get("evaluation_marker_executed", False) or
+                        item.get("aggregated_output") == env["TOFA_EVAL_MARKER"])
 
     readers = [threading.Thread(target=consume, args=(process.stdout, True), daemon=True),
                threading.Thread(target=consume, args=(process.stderr, False), daemon=True)]
@@ -330,7 +334,7 @@ def run_one(options, root):
     else:
         shim_path = shim / "codex"
         shim_path.write_text("#!/bin/sh\nexec " + shlex.quote(sys.executable) + " "
-                             + shlex.quote(str(Path(__file__).resolve())) + ' --observe "$@"\n')
+                             + shlex.quote(str(getattr(options, "observer_harness", Path(__file__).resolve()))) + ' --observe "$@"\n')
         shim_path.chmod(0o700)
     env = dict(os.environ)
     env.update(PATH=str(shim) + os.pathsep + os.environ.get("PATH", ""),
