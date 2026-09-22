@@ -89,8 +89,14 @@ with opener.open(request, timeout=5) as response:
 continued = 'resume' in sys.argv
 values = {'count':4,'total':18,'max':9}
 if continued: values.update(min=-2, average=4.5)
-if mode == 'wrong_files': values['total'] = 999
+if mode in ('wrong_files', 'wrong_files_changed_input'): values['total'] = 999
+if mode == 'extra_fields': values['PRIVATE_BODY'] = 'PRIVATE_BODY'
 pathlib.Path('summary.json').write_text(json.dumps(values))
+if mode in ('changed_input', 'wrong_files_changed_input'):
+    pathlib.Path('input.json').write_text('{"numbers": [4, -2, 7, 9]}')
+if mode == 'missing_summary': pathlib.Path('summary.json').unlink()
+if mode == 'invalid_summary': pathlib.Path('summary.json').write_text('PRIVATE_BODY')
+if mode == 'nonobject_summary': pathlib.Path('summary.json').write_text('[4,18,9]')
 identity = '11111111-1111-4111-8111-111111111111'
 if mode == 'wrong_session' and continued: identity = '22222222-2222-4222-8222-222222222222'
 print(json.dumps({'type':'thread.started','thread_id':identity}))
@@ -167,6 +173,38 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
             finally:
                 server.shutdown()
                 server.server_close()
+
+    def test_file_diagnostics_distinguish_shape_and_preservation_failures(self):
+        cases = (("missing_summary", "missing", None, True),
+                 ("invalid_summary", "invalid_json", None, True),
+                 ("nonobject_summary", "not_object", None, True),
+                 ("extra_fields", "object", 1, True),
+                 ("changed_input", "object", 0, False),
+                 ("wrong_files_changed_input", "object", 0, False))
+        for mode, status, extras, preserved in cases:
+            with self.subTest(mode=mode):
+                result, evidence = self.fixture(mode)
+                self.assertEqual(result.returncode, 1)
+                for turn in evidence["runs"][0]["turns"]:
+                    self.assertFalse(turn["files_correct"])
+                    checks = turn["file_checks"]
+                    self.assertEqual(checks["summary_status"], status)
+                    self.assertEqual(checks["unexpected_field_count"], extras)
+                    self.assertEqual(checks["input_preserved"], preserved)
+                    if mode in ("extra_fields", "changed_input"):
+                        self.assertTrue(all(checks["expected_fields_match"].values()))
+
+    def test_wrong_result_identifies_failed_field_without_exporting_values(self):
+        result, evidence = self.fixture("wrong_files")
+        self.assertEqual(result.returncode, 1)
+        turn = evidence["runs"][0]["turns"][0]
+        self.assertFalse(turn["files_correct"])
+        checks = turn["file_checks"]
+        self.assertEqual(checks["summary_status"], "object")
+        self.assertEqual(checks["expected_fields_match"], {"count": True, "total": False, "max": True})
+        self.assertEqual(checks["unexpected_field_count"], 0)
+        self.assertTrue(checks["input_preserved"])
+        self.assertNotIn('999', json.dumps(checks))
 
     def test_outer_timeout_retains_incomplete_request_diagnostics(self):
         for mode, stage, status in (("hung_headers", "response_headers", 0),

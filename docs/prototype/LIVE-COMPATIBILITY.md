@@ -29,6 +29,15 @@ expectations check both results. Qualification requires successful tool executio
 and completed turns, the same session identity, preserved input/configuration,
 and no missing-model-metadata warning.
 
+Each turn's `file_checks` explains a failed `files_correct` assertion without
+exporting generated content. `summary_status` distinguishes a missing/unreadable
+file, invalid JSON, a non-object value and a JSON object. `expected_fields_match`
+contains booleans for the fixed expected field names, `unexpected_field_count`
+counts extra fields without naming them, and `input_preserved` checks the original
+input bytes independently of output correctness. Exact object equality and input
+preservation remain required; valid JSON or successful tool execution alone
+cannot pass the task.
+
 Codex's `exec --json` output supplies session, tool and turn evidence. It does not
 expose incremental text tokens. A test-only executable shim therefore places a
 loopback SSE observer between Codex and the launcher's real adapter. It forwards

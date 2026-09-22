@@ -71,6 +71,11 @@ separate automatic-review deadline.
 On a failed live turn, inspect `timed_out` and `elapsed_ms`, then its `streams`
 entries for the last `stage`, HTTP `status`, `headers_ms` and `error_kind`.
 Snapshots survive turn termination; unfinished requests remain failed/incomplete.
+If transport and tools succeeded but `files_correct` is false, inspect the turn's
+`file_checks`: output-file/JSON status, fixed expected-field match booleans, extra
+field count and input preservation. These diagnostics export neither generated
+values nor unexpected field names. A failed `saved_login_reuse` task does not by
+itself mean authentication failed; inspect its request and task checks separately.
 
 ## Evidence and recovery
 

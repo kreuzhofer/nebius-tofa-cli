@@ -355,11 +355,31 @@ def run_one(options, root):
             session = identities[0] if len(identities) == 1 else None
         else:
             same_session = identities == [session]
+        checks = {"summary_status": "unreadable", "unexpected_field_count": None,
+                  "expected_fields_match": {key: False for key in EXPECTED[number]},
+                  "input_preserved": False}
+        summary_matches = False
         try:
-            result["files_correct"] = (json.loads((workspace / "summary.json").read_text()) == EXPECTED[number]
-                                       and digest(workspace / "input.json") == original_input)
-        except (OSError, ValueError):
-            result["files_correct"] = False
+            summary = json.loads((workspace / "summary.json").read_text())
+            checks["summary_status"] = "object" if isinstance(summary, dict) else "not_object"
+            if isinstance(summary, dict):
+                checks["expected_fields_match"] = {
+                    key: summary.get(key) == value for key, value in EXPECTED[number].items()}
+                checks["unexpected_field_count"] = len(summary.keys() - EXPECTED[number].keys())
+            # Preserve exact object equality; partial field matches cannot pass.
+            summary_matches = summary == EXPECTED[number]
+        except FileNotFoundError:
+            checks["summary_status"] = "missing"
+        except ValueError:
+            checks["summary_status"] = "invalid_json"
+        except OSError:
+            pass
+        try:
+            checks["input_preserved"] = digest(workspace / "input.json") == original_input
+        except OSError:
+            pass
+        result["file_checks"] = checks
+        result["files_correct"] = summary_matches and checks["input_preserved"]
         try:
             streams = json.loads(observation_path.read_text())
         except (OSError, ValueError):
