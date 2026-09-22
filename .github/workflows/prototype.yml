@@ -43,6 +43,9 @@ jobs:
       - name: Offline live-harness qualification checks
         if: runner.os != 'Windows'
         run: python3 scripts/live_compat_test.py -f
+      - name: Offline Codex trace checks
+        if: runner.os != 'Windows'
+        run: python3 scripts/trace_codex_test.py -v
       - name: Offline macOS qualification lifecycle
         if: runner.os != 'Windows'
         run: python3 scripts/qualify_macos_test.py -v
