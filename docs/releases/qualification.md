@@ -15,9 +15,9 @@ For `v0.1.0-rc.2`, use the [pinned two-machine handoff and evidence checklist](v
 ## Before running
 
 Use macOS ARM64 with Python 3.9+, `curl`, the GitHub CLI (`gh`) and an installed
-Codex CLI on PATH. Sign `gh` in using your existing authorized GitHub account;
-this private repository's anonymous download URLs return 404. The runner uses
-`gh` for both release metadata and downloads and never handles access tokens.
+Codex CLI on PATH. Sign `gh` in using your existing authorized GitHub account.
+The runner uses authenticated `gh` for both release metadata and downloads,
+including private repository access, and never handles access tokens.
 Normal launcher prerequisites, Keychain access and Token Factory connectivity
 still apply. No extra OS account or self-hosted GitHub runner is required.
 

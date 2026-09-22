@@ -27,11 +27,10 @@ See [the investigation](docs/research/codex-kimi-followup.md) and
 ## Installation
 
 Select the explicit [v0.1.0-rc.2 prerelease](https://github.com/kreuzhofer/nebius-tofa-cli/releases/tag/v0.1.0-rc.2).
-This repository is currently private: GitHub access is required, and anonymous
-`curl`/PowerShell download URLs return 404. Use the authenticated instructions
-below. The direct HTTPS installer examples later in this section apply when the
-repository is publicly accessible; the installers themselves do not authenticate
-to private GitHub releases.
+For private repository access, use the authenticated instructions below; anonymous
+`curl`/PowerShell downloads cannot access private releases. The direct HTTPS
+installer examples later in this section apply when the repository is publicly
+accessible; the installers themselves do not authenticate to private GitHub releases.
 
 Installation is per user and needs no administrator
 privileges. The installer verifies SHA-256 checksums, updates your PATH and prints
