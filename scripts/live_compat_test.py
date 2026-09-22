@@ -35,6 +35,24 @@ class LiveCompatibilityTests(unittest.TestCase):
                     "import sys, time\n"
                     "if '--observe' in sys.argv:\n"
                     "    time.monotonic = lambda: 1234.0\n")
+            if mode == "header_timeout":
+                (root / "sitecustomize.py").write_text(
+                    "import http.client, socket, sys\n"
+                    "if '--observe' in sys.argv:\n"
+                    "    def timeout(*args, **kwargs):\n"
+                    "        raise socket.timeout('PRIVATE_BODY')\n"
+                    "    http.client.HTTPConnection.getresponse = timeout\n")
+            if mode == "slow_headers":
+                # Scale socket waits, retaining the configured/default ratio, so
+                # a real delayed HTTP response exercises the old 90s cutoff fast.
+                (root / "sitecustomize.py").write_text(
+                    "import http.client, sys\n"
+                    "if '--observe' in sys.argv:\n"
+                    "    original = http.client.HTTPConnection.__init__\n"
+                    "    def scaled(self, *args, **kwargs):\n"
+                    "        kwargs['timeout'] *= 0.002\n"
+                    "        original(self, *args, **kwargs)\n"
+                    "    http.client.HTTPConnection.__init__ = scaled\n")
             launcher.write_text("#!" + sys.executable + "\n" + '''
 import json, os, subprocess, sys
 if sys.argv[1:] == ['--version']:
@@ -91,13 +109,30 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
                 def do_POST(self):
                     self.rfile.read(int(self.headers["Content-Length"]))
                     seen.append(self.headers["Authorization"])
+                    if mode == "header_timeout":
+                        return
+                    if mode == "hung_headers":
+                        time.sleep(3)
+                        return
+                    if mode == "slow_headers":
+                        time.sleep(0.35)
                     self.send_response(200)
                     self.send_header("Content-Type", "text/event-stream")
                     self.end_headers()
+                    if mode == "hung_stream":
+                        self.wfile.write(b'data: {"type":"response.output_text.delta","delta":"PRIVATE_BODY"}\n\n')
+                        self.wfile.flush()
+                        time.sleep(3)
+                        return
                     kinds = ["response.completed"] if mode == "no_streaming" else ["response.output_text.delta", "response.output_text.delta", "response.completed"]
                     for kind in kinds:
-                        self.wfile.write(("data: " + json.dumps({"type": kind, "delta": "" if mode == "empty_deltas" else "PRIVATE_BODY"}) + "\n\n").encode())
-                        self.wfile.flush()
+                        try:
+                            self.wfile.write(("data: " + json.dumps({"type": kind, "delta": "" if mode == "empty_deltas" else "PRIVATE_BODY"}) + "\n\n").encode())
+                            self.wfile.flush()
+                        except OSError:
+                            if mode == "slow_headers":
+                                return
+                            raise
                     if mode == "client_closes_completed":
                         time.sleep(0.1)
                         try:
@@ -112,7 +147,7 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
             try:
                 env = {**os.environ, "HOME": str(root), "CODEX_HOME": str(root / "normal-codex"),
                        "FIXTURE_ENDPOINT": f"http://127.0.0.1:{server.server_port}"}
-                if mode in ("no_dns", "coarse_clock"):
+                if mode in ("no_dns", "coarse_clock", "header_timeout", "slow_headers"):
                     env["PYTHONPATH"] = str(root)
                 report = root / "evidence.json"
                 result = subprocess.run([sys.executable, str(HARNESS), "--launcher", str(launcher),
@@ -121,7 +156,10 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
                 evidence = json.loads(report.read_text())
                 self.assertEqual(len(evidence["runs"]), runs)
                 if mode != "timeout":
-                    self.assertEqual(len(seen), runs * 2, json.dumps(evidence))
+                    if mode == "slow_headers":
+                        self.assertIn(len(seen), (1, 2))
+                    else:
+                        self.assertEqual(len(seen), runs if mode in ("header_timeout", "hung_headers", "hung_stream") else runs * 2, json.dumps(evidence))
                     self.assertEqual(set(seen), {"Bearer local-fixture-token"})
                 self.assertNotIn("PRIVATE_BODY", report.read_text())
                 self.assertNotIn("local-fixture-token", report.read_text())
@@ -129,6 +167,39 @@ if mode == 'metadata_warning': print('Model metadata for PRIVATE_BODY', file=sys
             finally:
                 server.shutdown()
                 server.server_close()
+
+    def test_outer_timeout_retains_incomplete_request_diagnostics(self):
+        for mode, stage, status in (("hung_headers", "response_headers", 0),
+                                    ("hung_stream", "adapter_read", 200)):
+            with self.subTest(mode=mode):
+                result, evidence = self.fixture(mode, timeout=1)
+                self.assertEqual(result.returncode, 1)
+                turn = evidence["runs"][0]["turns"][0]
+                self.assertTrue(turn["timed_out"])
+                self.assertGreaterEqual(turn["elapsed_ms"], 900)
+                self.assertEqual(len(turn["streams"]), 1)
+                observation = turn["streams"][0]
+                self.assertEqual(observation["stage"], stage)
+                self.assertEqual(observation["status"], status)
+                self.assertFalse(observation["completed"])
+                if status:
+                    self.assertGreaterEqual(observation["headers_ms"], 0)
+                    self.assertEqual(observation["text_deltas"], 1)
+                else:
+                    self.assertIsNone(observation["headers_ms"])
+
+    def test_selected_timeout_allows_headers_beyond_old_socket_limit(self):
+        result, evidence = self.fixture("slow_headers", timeout=600)
+        self.assertEqual(result.returncode, 0, json.dumps(evidence))
+        self.assertTrue(evidence["passed"])
+
+    def test_socket_timeout_is_reported_without_exception_text(self):
+        result, evidence = self.fixture("header_timeout")
+        self.assertEqual(result.returncode, 1)
+        observation = evidence["runs"][0]["turns"][0]["streams"][0]
+        self.assertEqual(observation["status"], 0)
+        self.assertTrue(observation["transport_error"])
+        self.assertEqual(observation["error_kind"], "timeout")
 
     def test_three_runs_require_tools_files_continuation_and_streaming(self):
         result, evidence = self.fixture(runs=3)

@@ -12,7 +12,10 @@ python3 scripts/live_compat.py --launcher ./tofa --runs 3 --output /tmp/tofa-liv
 
 The output file must not already exist. Use `--codex /absolute/path/to/codex` to
 select a specific installed client. Each turn defaults to a 180-second deadline;
-each turn's observer accepts at most 12 requests. These are operational limits.
+`--timeout 600` allows up to ten minutes per turn. The observer's socket timeout
+uses the selected value, while the parent enforces the total turn deadline across
+all requests and tool execution. Each turn's observer accepts at most 12 requests.
+These are operational limits, not expectations about Token Factory latency.
 The harness does not retry failed runs or switch models/routes. Exit zero means
 every requested run passed. A nonzero exit means the combination did not qualify;
 inspect the sanitized report rather than treating process success alone as proof.
@@ -36,6 +39,18 @@ incremental events, not a latency SLA or a benchmark of the uninstrumented route
 The production launcher and its upstream connection are unchanged.
 The numeric loopback listener binds without reverse DNS; a slow resolver must not
 prevent this local observer from starting.
+
+Private observation snapshots are replaced atomically at request start, while
+waiting for headers, after headers, at the first delta, and on completion or error.
+If the parent terminates a turn, its report retains the last readable snapshot.
+`stage` distinguishes waiting for `response_headers` from `adapter_read` stream
+reads; `headers_ms` records header latency, `elapsed_ms` records elapsed time at the
+last snapshot, and each turn records its overall elapsed time. A snapshot may
+predate termination and is not a claim that the request finished. Both Python
+3.9 `socket.timeout` and newer timeout exceptions are classified as `timeout`;
+other transport errors remain `connection`, without exporting exception text.
+Incomplete requests still fail qualification. A diagnostic timeout alone does not
+establish a provider rejection or a launcher incompatibility.
 
 Client closure after a completed response is recorded separately from a transport
 failure before completion. The scratch workspace's canonical path is predeclared

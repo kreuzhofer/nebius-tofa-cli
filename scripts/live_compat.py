@@ -20,6 +20,7 @@ import re
 import shlex
 import shutil
 import signal
+import socket
 import socketserver
 import subprocess
 import sys
@@ -86,7 +87,30 @@ def observe(args):
             or target.path or target.query or target.fragment or target.username):
         raise ValueError("expected the launcher's loopback adapter")
     token = os.environ["TOFA_API_KEY"]
+    timeout = int(os.environ["TOFA_LIVE_TIMEOUT"])
+    if not 1 <= timeout <= 600:
+        raise ValueError("invalid observer timeout")
     observations = []
+    observation_path = Path(os.environ["TOFA_LIVE_OBSERVATIONS"])
+    observation_lock = threading.Lock()
+
+    def persist(index=None, snapshot=None):
+        # The parent can terminate the whole client tree at its turn deadline.
+        # Atomic snapshots retain usable evidence even if finalization never runs.
+        with observation_lock:
+            if index is not None:
+                observations[index] = snapshot
+            temporary = None
+            try:
+                with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8",
+                                                 dir=observation_path.parent, delete=False) as stream:
+                    temporary = Path(stream.name)
+                    json.dump(observations, stream)
+                    stream.write("\n")
+                os.replace(temporary, observation_path)
+            finally:
+                if temporary is not None:
+                    temporary.unlink(missing_ok=True)
 
     class Observer(http.server.BaseHTTPRequestHandler):
         def log_message(self, *unused):
@@ -107,24 +131,46 @@ def observe(args):
                 self.send_error(413)
                 return
             record = {"status": 0, "text_deltas": 0, "tool_deltas": 0,
-                      "completed": False, "first_delta_ms": None, "completed_ms": None}
-            observations.append(record)
+                      "completed": False, "first_delta_ms": None, "completed_ms": None,
+                      "headers_ms": None}
+            with observation_lock:
+                if len(observations) >= 12:
+                    self.send_error(429)
+                    return
+                index = len(observations)
+                observations.append(dict(record))
             # Windows' deadline clock can have a coarse tick on Python 3.12.
             # Stream ordering needs the high-resolution performance counter.
             start = time.perf_counter()
-            connection = http.client.HTTPConnection(target.hostname, target.port, timeout=90)
+
+            def checkpoint(stage):
+                record.update(stage=stage, elapsed_ms=round((time.perf_counter() - start) * 1000, 3))
+                # Handler-local records are never shared with the serializer.
+                persist(index, dict(record))
+
+            # The parent enforces the total turn budget across every request and
+            # tool round. A socket wait must not impose a shorter hidden limit.
+            connection = http.client.HTTPConnection(target.hostname, target.port, timeout=timeout)
             stage = "adapter_request"
             try:
+                checkpoint(stage)
                 connection.request("POST", "/responses", self.rfile.read(length),
                                    {"Authorization": "Bearer " + token,
                                     "Content-Type": "application/json", "Accept": "text/event-stream"})
+                stage = "response_headers"
+                checkpoint(stage)
                 response = connection.getresponse()
                 record["status"] = response.status
+                record["headers_ms"] = round((time.perf_counter() - start) * 1000, 3)
+                stage = "client_write"
+                checkpoint(stage)
                 self.send_response(response.status)
                 self.send_header("Content-Type", response.getheader("Content-Type", "application/octet-stream"))
                 self.end_headers()
                 while True:
                     stage = "adapter_read"
+                    if record["stage"] != stage:
+                        checkpoint(stage)
                     line = response.readline(1024 * 1024)
                     if not line:
                         break
@@ -144,18 +190,21 @@ def observe(args):
                             record[field] += 1
                             if record["first_delta_ms"] is None:
                                 record["first_delta_ms"] = round((time.perf_counter() - start) * 1000, 3)
+                                checkpoint("adapter_read")
                         if kind == "response.completed":
                             record["completed"] = True
                             record["completed_ms"] = round((time.perf_counter() - start) * 1000, 3)
+                            checkpoint("completed")
             except (OSError, http.client.HTTPException) as error:
                 if stage == "client_write" and record["completed"] and isinstance(error, (BrokenPipeError, ConnectionResetError)):
                     record["client_closed_after_completion"] = True
                 else:
                     record["transport_error"] = True
                     record["error_stage"] = stage
-                    record["error_kind"] = "timeout" if isinstance(error, TimeoutError) else "connection"
+                    record["error_kind"] = "timeout" if isinstance(error, (socket.timeout, TimeoutError)) else "connection"
             finally:
                 connection.close()
+                checkpoint("completed" if record["completed"] and not record.get("transport_error") else stage)
 
     server = LoopbackServer(("127.0.0.1", 0), Observer)
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -171,7 +220,7 @@ def observe(args):
     finally:
         server.shutdown()
         server.server_close()
-        write_json(os.environ["TOFA_LIVE_OBSERVATIONS"], observations)
+        persist()
     return result
 
 
@@ -194,6 +243,7 @@ def turn(command, env, workspace, prompt, timeout):
     """Consume client output without retaining conversation text or launcher project IDs."""
     summary = {"exit_code": None, "tools_succeeded": 0, "turn_completed": False,
                "client_error": False, "metadata_warning": False, "timed_out": False}
+    started = time.perf_counter()
     thread_ids = []
     if os.name == "nt":
         import windows_process
@@ -254,6 +304,7 @@ def turn(command, env, workspace, prompt, timeout):
         process.stdout.close()
         process.stderr.close()
     summary["exit_code"] = process.returncode
+    summary["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 3)
     return summary, thread_ids
 
 
@@ -283,6 +334,7 @@ def run_one(options, root):
         shim_path.chmod(0o700)
     env = dict(os.environ)
     env.update(PATH=str(shim) + os.pathsep + os.environ.get("PATH", ""),
+               TOFA_LIVE_TIMEOUT=str(options.timeout),
                TOFA_LIVE_HOME=str(scratch_home), TOFA_LIVE_CODEX_HOME=str(client_home),
                TOFA_LIVE_CODEX=json.dumps(options.codex) if os.name == "nt" else options.codex)
     if os.name == "nt":

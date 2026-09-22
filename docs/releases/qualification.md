@@ -31,6 +31,7 @@ From a checkout of the repository containing this runner:
 ```sh
 python3 scripts/qualify_macos.py \
   --version v0.1.0-rc.2 \
+  --timeout 600 \
   --output "$HOME/tofa-macos-rc2-$(date +%Y%m%d-%H%M%S).json"
 ```
 
@@ -57,6 +58,19 @@ launcher. File storage is unencrypted; the launcher announces its location.
 to 180 seconds (`--timeout`, maximum 600); each human/login step defaults to 900
 seconds (`--human-timeout`, maximum 3600). OS prompts and signing blocks should be
 recorded separately in the validation issue.
+
+The command above allows ten minutes per live turn for variable Token Factory
+latency. The observer uses the selected socket timeout, and the parent enforces
+the total turn deadline across all requests and tools. After `FOUND`, two turns
+create and extend a small JSON summary; both turns repeat after reinstall to
+verify saved-login reuse. Client output is consumed privately, so the terminal
+can remain quiet until a turn passes or fails. Four turns can take up to forty
+minutes plus lifecycle steps. This harness timeout does not change Codex's
+separate automatic-review deadline.
+
+On a failed live turn, inspect `timed_out` and `elapsed_ms`, then its `streams`
+entries for the last `stage`, HTTP `status`, `headers_ms` and `error_kind`.
+Snapshots survive turn termination; unfinished requests remain failed/incomplete.
 
 ## Evidence and recovery
 
