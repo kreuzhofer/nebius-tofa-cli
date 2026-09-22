@@ -4,7 +4,8 @@ A standalone Go CLI that launches an **already installed Codex CLI** against
 Nebius Token Factory's native Responses endpoint. It does not run models locally.
 This is an experimental, reviewable prototype.
 Versioned prereleases are available through GitHub. Kimi-K3 with Codex 0.155.1 on macOS ARM64 passes
-the recorded live qualification; all launches still require `--allow-unverified`.
+the recorded live conversation qualification. Automatic approval review has the
+separate limitations below; all launches still require `--allow-unverified`.
 Claude, desktop integrations, broader protocol translation and browser OAuth are
 outside this prototype.
 
@@ -25,7 +26,7 @@ See [the investigation](docs/research/codex-kimi-followup.md) and
 
 ## Installation
 
-Select the explicit [v0.1.0-rc.1 prerelease](https://github.com/kreuzhofer/nebius-tofa-cli/releases/tag/v0.1.0-rc.1).
+Select the explicit [v0.1.0-rc.2 prerelease](https://github.com/kreuzhofer/nebius-tofa-cli/releases/tag/v0.1.0-rc.2).
 This repository is currently private: GitHub access is required, and anonymous
 `curl`/PowerShell download URLs return 404. Use the authenticated instructions
 below. The direct HTTPS installer examples later in this section apply when the
@@ -46,7 +47,7 @@ On macOS/Linux, download the complete bundle, verify it, then use the matching
 installer with the downloaded assets:
 
 ```sh
-version=v0.1.0-rc.1
+version=v0.1.0-rc.2
 release_dir=$(mktemp -d)
 gh release download "$version" --repo kreuzhofer/nebius-tofa-cli --dir "$release_dir" &&
   (cd "$release_dir" && shasum -a 256 -c SHA256SUMS) &&
@@ -67,7 +68,7 @@ are finished using this executable; replace `amd64` with `arm64` for Windows ARM
 (cross-build evidence only).
 
 ```powershell
-$Version = 'v0.1.0-rc.1'
+$Version = 'v0.1.0-rc.2'
 $Asset = "tofa_${Version}_windows_amd64.exe"
 $Download = Join-Path $env:TEMP ([guid]::NewGuid().ToString('N'))
 gh release download $Version --repo kreuzhofer/nebius-tofa-cli --dir $Download --pattern $Asset --pattern SHA256SUMS
@@ -87,7 +88,7 @@ are verified separately from live Token Factory qualification.
 ### macOS and Linux
 
 ```sh
-version=v0.1.0-rc.1 # select an existing published tag
+version=v0.1.0-rc.2 # select an existing published tag
 curl -fsSL "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version/install.sh" -o install.sh &&
   sh install.sh --version "$version"
 ```
@@ -103,7 +104,7 @@ Rerun the installer to upgrade; saved preferences and credentials are retained.
 ### Windows PowerShell
 
 ```powershell
-$Version = 'v0.1.0-rc.1' # select an existing published tag
+$Version = 'v0.1.0-rc.2' # select an existing published tag
 $Installer = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/install.ps1" -ErrorAction Stop
 & ([scriptblock]::Create($Installer)) -Version $Version
 ```
@@ -118,7 +119,7 @@ Rerun the installer to upgrade; saved preferences and credentials are retained.
 ### Building a distribution
 
 ```sh
-sh scripts/build.sh v0.1.0-rc.1
+sh scripts/build.sh v0.1.0-rc.2
 ```
 
 An explicit version is required. A successful build replaces the generated
@@ -139,7 +140,7 @@ execution or real-machine qualification on every target.
 
 ### Publishing a prerelease
 
-Push a new explicit prerelease tag such as `v0.1.0-rc.1` to the intended source
+Push a new explicit prerelease tag such as `v0.1.0-rc.2` to the intended source
 commit. Tags must use `vMAJOR.MINOR.PATCH-PRERELEASE`; stable tags and malformed
 versions fail validation. Ordinary branch pushes and manual CI runs never publish.
 
@@ -197,8 +198,35 @@ The default route is announced before launch. Each launch binds its own
 The saved Nebius key stays in the launcher, which forwards only to the fixed Token
 Factory endpoint and selected project. The adapter accepts only `POST /responses`,
 limits bodies to 16 MiB, streams responses, propagates cancellation and does not
-retry requests or follow redirects. Codex request/stream retries are also disabled.
+retry requests or follow redirects. The launcher sets provider request/stream
+retry limits to zero; Codex automatic review can still retry failed review
+sessions and requests independently.
 Unsupported routes and oversized or encoded requests fail explicitly.
+
+For Kimi-K3, the adapter also handles the exact non-strict automatic approval
+review format observed in Codex 0.155.1. Nebius rejects tools combined with
+constrained JSON generation. When the request has the recognized decision schema,
+`strict: false`, `tool_choice: auto`, and exactly the reviewer function tools
+`exec_command`, `write_stdin`, and `view_image`, the adapter appends the complete
+schema as a final-answer instruction and removes `text.format`. It preserves
+existing instructions, approval policy, context, tool definitions/results, other
+text options, and response bytes. This adaptation is announced once when used.
+Other Kimi tools-plus-schema shapes fail locally, including strict schemas;
+other models and requests without schema/tool conflicts retain their options,
+including requests that explicitly disable tool calls with `tool_choice: none`.
+
+Codex still parses the assessment and controls execution. Installed-client tests
+show that valid allow decisions execute a harmless action, while deny, malformed
+JSON, missing outcomes, invalid enums, upstream failures, and cancellation leave
+it blocked. Optional assessment fields can be absent, as Codex's schema permits.
+The adapter adds no retries or fallback decisions and does not change Codex policy.
+
+Automatic review is still **not live-qualified**. Codex 0.155.1 has a fixed
+90-second total review deadline. In the live diagnostic, the adapted request
+reached HTTP 200 only after about 242 seconds, after Codex had already stopped
+waiting; a complete assessment was not observed. The format adjustment does not
+extend that deadline or resolve slow provider responses. See
+[the rc.2 evidence](docs/releases/v0.1.0-rc.2.md).
 
 `--direct` explicitly bypasses the adapter for diagnosis; this route passes the
 Nebius key in the child environment and leaves history unchanged. Routes never
@@ -281,7 +309,7 @@ python3 scripts/lifecycle_test.py dist v0.0.0-prototype -v
 # Unix only, against a compiled local binary:
 python3 scripts/terminal_test.py ./tofa
 # Optional: installed Codex, scratch config, synthetic local responses only:
-TOFA_TEST_CODEX="$(command -v codex)" go test ./internal/tofa -run TestInstalledCodexToolAndContinuationThroughAdapter -v
+TOFA_TEST_CODEX="$(command -v codex)" go test ./internal/tofa -run TestInstalledCodex -v
 # Unix only, offline validation of the live-test harness:
 python3 scripts/live_compat_test.py
 ```
@@ -353,7 +381,7 @@ the completion result or cleanup errors.
 This works even if the installed binary is broken:
 
 ```sh
-version=v0.1.0-rc.1 # use the installed version, shown by tofa --version
+version=v0.1.0-rc.2 # use the installed version, shown by tofa --version
 curl -fsSL "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version/uninstall.sh" -o uninstall.sh &&
   sh uninstall.sh
 ```
@@ -367,7 +395,7 @@ the script retains recovery references and reports incomplete cleanup.
 This works even if the installed binary is broken:
 
 ```powershell
-$Version = 'v0.1.0-rc.1' # use the installed version, shown by tofa --version
+$Version = 'v0.1.0-rc.2' # use the installed version, shown by tofa --version
 $Uninstaller = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/uninstall.ps1" -ErrorAction Stop
 & ([scriptblock]::Create($Uninstaller))
 ```

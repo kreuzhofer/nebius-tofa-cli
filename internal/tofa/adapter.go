@@ -8,12 +8,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"reflect"
+	"sync"
 	"time"
 )
 
@@ -83,6 +86,7 @@ func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAd
 			return nil
 		},
 	}
+	var approvalNotice sync.Once
 	adapter.server = &http.Server{
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
@@ -123,11 +127,22 @@ func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAd
 				http.Error(writer, "request adapter: expected a JSON object", http.StatusBadRequest)
 				return
 			}
+			body, adapted, err := adaptApprovalReview(body)
+			if err != nil {
+				http.Error(writer, "request adapter: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			if adapted {
+				approvalNotice.Do(func() {
+					fmt.Fprintln(a.Out, "Request adapter: Kimi-K3 approval-review schema moved to final-answer instructions; Codex still validates the decision.")
+				})
+			}
 			request.Body = io.NopCloser(bytes.NewReader(body))
 			request.ContentLength = int64(len(body))
 			proxy.ServeHTTP(writer, request)
 		}),
 	}
+	fmt.Fprintln(a.Out, "Route: per-launch Responses request adapter (assistant-history repair).")
 	go func() {
 		err := adapter.server.Serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {
@@ -195,4 +210,94 @@ func normalizeHistory(body []byte) ([]byte, error) {
 	}
 	payload["input"], _ = json.Marshal(items)
 	return json.Marshal(payload)
+}
+
+// Codex 0.155.1 guardian-reviewer/src/assessment.rs. This non-strict schema
+// guides generation; Codex independently parses the decision and gates execution.
+const guardianOutputSchema = `{"type":"object","additionalProperties":false,"properties":{"risk_level":{"type":"string","enum":["low","medium","high","critical"]},"user_authorization":{"type":"string","enum":["unknown","low","medium","high"]},"outcome":{"type":"string","enum":["allow","deny"]},"rationale":{"type":"string"}},"required":["outcome"]}`
+
+func adaptApprovalReview(body []byte) ([]byte, bool, error) {
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, false, err
+	}
+	var model string
+	json.Unmarshal(payload["model"], &model)
+	if model != "moonshotai/Kimi-K3" {
+		return body, false, nil
+	}
+	var textOptions, format map[string]json.RawMessage
+	if json.Unmarshal(payload["text"], &textOptions) != nil || json.Unmarshal(textOptions["format"], &format) != nil {
+		return body, false, nil
+	}
+	var formatType string
+	json.Unmarshal(format["type"], &formatType)
+	if formatType != "json_schema" {
+		return body, false, nil
+	}
+	var choice string
+	json.Unmarshal(payload["tool_choice"], &choice)
+	if choice == "none" {
+		return body, false, nil
+	}
+	var toolDefinitions []map[string]json.RawMessage
+	var tools []json.RawMessage
+	if len(payload["tools"]) == 0 || string(payload["tools"]) == "null" || (json.Unmarshal(payload["tools"], &tools) == nil && len(tools) == 0) {
+		return body, false, nil
+	}
+
+	unsupported := errors.New("Kimi-K3 tools with json_schema are unsupported except the recognized non-strict Codex approval review; request was not sent upstream")
+	if json.Unmarshal(payload["tools"], &toolDefinitions) != nil {
+		return nil, false, unsupported
+	}
+	for field := range format {
+		switch field {
+		case "type", "schema", "strict":
+		case "name":
+			var name *string
+			if json.Unmarshal(format[field], &name) != nil || name == nil {
+				return nil, false, unsupported
+			}
+		default:
+			return nil, false, unsupported
+		}
+	}
+	var strict *bool
+	if json.Unmarshal(format["strict"], &strict) != nil || strict == nil || *strict {
+		return nil, false, unsupported
+	}
+	var schema, expected any
+	if json.Unmarshal(format["schema"], &schema) != nil {
+		return nil, false, unsupported
+	}
+	json.Unmarshal([]byte(guardianOutputSchema), &expected)
+	if !reflect.DeepEqual(schema, expected) {
+		return nil, false, unsupported
+	}
+	if choice != "auto" {
+		return nil, false, unsupported
+	}
+	allowed := map[string]bool{"exec_command": true, "write_stdin": true, "view_image": true}
+	if len(toolDefinitions) != len(allowed) {
+		return nil, false, unsupported
+	}
+	for _, tool := range toolDefinitions {
+		var name, kind string
+		json.Unmarshal(tool["name"], &name)
+		json.Unmarshal(tool["type"], &kind)
+		if kind != "function" || !allowed[name] {
+			return nil, false, unsupported
+		}
+		delete(allowed, name)
+	}
+	var instructions *string
+	if json.Unmarshal(payload["instructions"], &instructions) != nil || instructions == nil {
+		return nil, false, unsupported
+	}
+	*instructions += "\n\nWhen you are ready to give your final answer, return JSON matching this schema:\n" + string(format["schema"])
+	payload["instructions"], _ = json.Marshal(instructions)
+	delete(textOptions, "format")
+	payload["text"], _ = json.Marshal(textOptions)
+	result, err := json.Marshal(payload)
+	return result, true, err
 }

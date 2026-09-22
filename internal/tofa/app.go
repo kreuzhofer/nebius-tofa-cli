@@ -369,7 +369,6 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		adapter.close()
 		return err
 	}
-	fmt.Fprintln(a.Out, "Route: per-launch Responses request adapter (assistant-history repair).")
 	err = run(adapter.context, child, childEnv(adapter.token))
 	cleanupErr := adapter.close()
 	if serveErr := <-adapter.done; serveErr != nil {
