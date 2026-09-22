@@ -191,6 +191,8 @@ def observe(args):
                             if record["first_delta_ms"] is None:
                                 record["first_delta_ms"] = round((time.perf_counter() - start) * 1000, 3)
                                 checkpoint("adapter_read")
+                        if kind in ("response.failed", "response.incomplete", "error"):
+                            record["failure"] = "response_incomplete"
                         if kind == "response.completed":
                             record["completed"] = True
                             record["completed_ms"] = round((time.perf_counter() - start) * 1000, 3)
@@ -283,6 +285,10 @@ def turn(command, env, workspace, prompt, timeout):
             if (kind == "item.completed" and item.get("type") == "command_execution"
                     and item.get("status") == "completed" and item.get("exit_code") == 0):
                 summary["tools_succeeded"] += 1
+                if env.get("TOFA_EVAL_MARKER"):
+                    summary["evaluation_marker_executed"] = (
+                        summary.get("evaluation_marker_executed", False) or
+                        item.get("aggregated_output") == env["TOFA_EVAL_MARKER"])
 
     readers = [threading.Thread(target=consume, args=(process.stdout, True), daemon=True),
                threading.Thread(target=consume, args=(process.stderr, False), daemon=True)]
@@ -330,7 +336,7 @@ def run_one(options, root):
     else:
         shim_path = shim / "codex"
         shim_path.write_text("#!/bin/sh\nexec " + shlex.quote(sys.executable) + " "
-                             + shlex.quote(str(Path(__file__).resolve())) + ' --observe "$@"\n')
+                             + shlex.quote(str(getattr(options, "observer_harness", Path(__file__).resolve()))) + ' --observe "$@"\n')
         shim_path.chmod(0o700)
     env = dict(os.environ)
     env.update(PATH=str(shim) + os.pathsep + os.environ.get("PATH", ""),
@@ -393,7 +399,7 @@ def run_one(options, root):
                             and result["streaming_observed"] and not result["client_error"]
                             and not result["metadata_warning"] and not result["timed_out"]
                             and not result.get("output_limit", False)
-                            and all(s["status"] == 200 and s["completed"] and not s.get("transport_error") for s in streams))
+                            and all(s["status"] == 200 and s["completed"] and not s.get("transport_error") and not s.get("failure") for s in streams))
         turns.append(result)
         print("  Turn passed" if result["passed"] else "  Turn failed", flush=True)
         if not session or result["exit_code"] != 0:

@@ -378,6 +378,11 @@ For opt-in real inference using saved credentials, see the
 isolated Kimi sessions and records streaming, tools, checked file changes and
 continuation evidence. Live runs are separate from the offline commands above.
 
+For separate coding/protocol scores, controlled automatic-review allow/deny cases,
+and a dated five-model candidate selection, use the bounded
+[model evaluation workflow](docs/evaluation/README.md). Reports do not change the
+launcher's supported-model policy.
+
 For opt-in request diagnosis, see [Codex request tracing](docs/codex-tracing.md).
 The standalone harness records sanitized request metadata, status and timing;
 the released executable has no `--debug` flag. Traces must be enabled for a new

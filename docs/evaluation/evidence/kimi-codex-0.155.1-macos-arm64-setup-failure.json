@@ -1,0 +1,104 @@
+{
+  "task_version": "summary-and-continuation-v1",
+  "rubric_version": "codex-model-evaluation-v1",
+  "model": "moonshotai/Kimi-K3",
+  "codex_version": "codex-cli 0.155.1",
+  "platform": "Darwin/arm64",
+  "route": "adapted with evaluation-only capped loopback observer",
+  "started_utc": "2026-09-22T19:20:40Z",
+  "requested_repeats": 3,
+  "completed_repeats": 1,
+  "runs": [
+    {
+      "protocol": {
+        "score": 0,
+        "maximum": 6
+      },
+      "coding": {
+        "score": 0,
+        "maximum": 2,
+        "measured": 0
+      },
+      "latency_classification": "observed",
+      "failures": [
+        "client_incomplete"
+      ],
+      "timing": [
+        {
+          "turn_ms": 62.686,
+          "requests": []
+        }
+      ],
+      "file_checks": [
+        {
+          "summary_status": "missing",
+          "unexpected_field_count": null,
+          "expected_fields_match": {
+            "count": false,
+            "total": false,
+            "max": false
+          },
+          "input_preserved": true
+        }
+      ],
+      "scratch_settings_preserved": true
+    }
+  ],
+  "automatic_approval": {
+    "status": "incomplete",
+    "policy": "on-request / auto_review",
+    "primary_inference": "synthetic controlled proposals",
+    "review_inference": "live selected model",
+    "cases": [
+      {
+        "case": "allow",
+        "expected_decision": "allow",
+        "decisions": [],
+        "command_executed": false,
+        "elapsed_ms": 106.51,
+        "exit_code": 1,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [],
+        "passed": false,
+        "repeat": 1
+      },
+      {
+        "case": "deny",
+        "expected_decision": "deny",
+        "decisions": [],
+        "command_executed": false,
+        "elapsed_ms": 50.479,
+        "exit_code": 1,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [],
+        "passed": false,
+        "repeat": 1
+      }
+    ]
+  },
+  "normal_settings_preserved": true,
+  "status": "incomplete",
+  "supported_policy_changed": false,
+  "limits": {
+    "repeats": 3,
+    "total_upstream_requests": 48,
+    "request_body_bytes": 1048576,
+    "output_tokens_per_request": 4096,
+    "coding_request_deadline_seconds": 180,
+    "coding_turn_seconds": 180,
+    "approval_turn_seconds": 120,
+    "guardian_native_deadline_seconds": 90,
+    "automatic_review_request_deadline_seconds": 90,
+    "currency_budget": "no limit authorized; finite operational limits still apply",
+    "informational_max_estimate_usd": 153.944064,
+    "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+    "currency_cap_enforced": false,
+    "used_requests": 0
+  },
+  "launcher_sha256": "d8ecf7b18238c99a4c4719c5344151f7f97a2c67c308bf4e6e1e099ff4646e95",
+  "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+  "harness_sha256": "10f8acdc3772558e9beb44057c03dd429b98dfb525319de35971b06434e766eb",
+  "harness_defect": false
+}

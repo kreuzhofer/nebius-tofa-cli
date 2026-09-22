@@ -1,0 +1,17 @@
+{
+  "attempts": [
+    {
+      "file": "kimi-codex-0.155.1-macos-arm64-setup-failure.json",
+      "classification": "harness_configuration_defect",
+      "upstream_requests": 0,
+      "model_measurements_valid": false,
+      "diagnosis": "Redundant caller config flag rejected by launcher before inference; original automatic classification is superseded by this diagnosis."
+    },
+    {
+      "file": "kimi-codex-0.155.1-macos-arm64.json",
+      "classification": "completed_passing_baseline",
+      "upstream_requests": 30,
+      "model_measurements_valid": true
+    }
+  ]
+}
