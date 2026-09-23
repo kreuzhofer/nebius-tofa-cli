@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype · Shared desktop history · #34</title>
+<style>
+  :root{font:16px/1.55 system-ui,sans-serif;color:#22332d;background:#f5f7f5;accent-color:#167452}
+  body{max-width:1060px;margin:40px auto;padding:0 24px}h1{font-size:2rem;line-height:1.2}h2{font-size:1.2rem}
+  .eyebrow{color:#167452;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+  section{background:white;border:1px solid #dce5df;border-radius:12px;padding:24px;margin:20px 0}
+  button{font:inherit;background:white;color:#145f45;border:1px solid #acc8b9;border-radius:7px;padding:8px 13px;cursor:pointer;margin:4px 6px 4px 0}
+  button:hover,button[aria-selected=true]{background:#e2f1e8}button:disabled{opacity:.5;cursor:default}
+  dl{display:grid;grid-template-columns:180px 1fr;gap:8px 20px}dt{color:#607368}dd{margin:0;overflow-wrap:anywhere}
+  table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 6px;border-bottom:1px solid #e0e7e3}
+  .notice{border-left:4px solid #167452;background:#edf7f1;padding:12px 16px}.small{font-size:.88rem;color:#52655a}
+  #steps{display:flex;flex-direction:column;align-items:start}#steps button{text-align:left}#message{min-height:48px}
+  @media(max-width:650px){dl{grid-template-columns:1fr}dt{font-weight:600}table{font-size:.8rem}section{padding:16px}}
+</style>
+<body>
+<div class="eyebrow">Throwaway logic prototype · Issue #34</div>
+<h1>One history, two ways to launch</h1>
+<p>Can ordinary and tofa launches share the same conversations while Token Factory access exists only during a tofa launch? Explore visibility, continuation and temporary route ownership below.</p>
+<p class="notice"><strong>This page is a simulation.</strong> It makes no network requests and changes no desktop files. The accompanying bundled-engine experiment observed shared history and relaunch recovery. Desktop UI parity, onboarding and crash handling still need qualification.</p>
+<section aria-labelledby="state-title">
+  <h2 id="state-title">Current state</h2>
+  <p id="message" role="status" aria-live="polite"></p>
+  <dl id="state"></dl>
+  <h2>Shared conversations</h2>
+  <table><thead><tr><th>Conversation</th><th>Provider / model</th><th>History</th><th>Workspace</th><th>Select</th></tr></thead><tbody id="history"></tbody></table>
+</section>
+<section><h2>Try any action</h2><div id="actions"></div><p class="small">All actions remain available so you can try invalid sequences. Quitting leaves history intact. A launcher interruption leaves the desktop open with its Token Factory route unavailable; close it before relaunching.</p></section>
+<section><h2>Guided walkthroughs</h2><div id="tabs" role="tablist" aria-label="Scenarios"></div><p id="scenario"></p><div id="steps"></div><p id="walkthrough-status" class="small"></p></section>
+<section><h2>What the runnable experiment established</h2>
+  <p>The installed bundled engine preserved both session identities, titles and workspace associations across ordinary → tofa → ordinary → tofa launches. Native continuation used the native route. Tofa continuation failed explicitly without its provider, then succeeded using a fresh temporary route. Synthetic config and auth files stayed unchanged; expired listeners closed.</p>
+  <p class="notice"><strong>Desktop result: this wrapper needs revision.</strong> Actual desktop startup persisted its temporary executable path into shared tool settings. Cleanup leaves a stale path. Engine-only preservation does not establish desktop preservation. See <a href="desktop-evidence.json">desktop-evidence.json</a>.</p>
+  <p>The merged catalog retained the shipped native model descriptors. This is a bundled snapshot, not a live account catalog. Desktop auxiliary requests for native models under the tofa provider remain a routing question; this prototype rejects mismatches.</p>
+  <p class="small">Observed evidence: <a href="evidence.json">evidence.json</a> · Run instructions and limits: <a href="README.md">README.md</a>. The simulation's running-app refusal and interruption behavior are proposals, not measured desktop guarantees.</p>
+</section>
+<script>
+// Portable pure state module. No DOM, persistence, clock, randomness or network.
+const SharedHistory = (() => {
+  const initial = () => ({desktop:'closed', launcher:false, route:null, generation:0,
+    expired:[], selected:null, nextId:1, sessions:[], account:'Unchanged (simulation assumption)',
+    message:'Ready. Launch the desktop to start a conversation.'});
+  function reduce(previous, action) {
+    if(action.type==='reset') return initial();
+    const state = structuredClone(previous);
+    const say = text => {state.message=text; return state;};
+    if(action.type==='launch') {
+      if(state.desktop!=='closed') return say('A desktop is already running. Quit it before changing launch mode; no takeover occurred.');
+      state.desktop=action.mode;state.launcher=action.mode==='tofa';
+      if(state.launcher) state.route=++state.generation;
+      return say(action.mode==='tofa'?'Tofa launch: a fresh temporary route is available. Shared history is unchanged.':'Ordinary launch: shared history is visible. Token Factory access is unavailable.');
+    }
+    if(action.type==='quit') {
+      if(state.route!==null) state.expired.push(state.route);
+      state.desktop='closed';state.launcher=false;state.route=null;
+      return say('Desktop closed. Temporary routing ended; all conversations remain.');
+    }
+    if(action.type==='interrupt') {
+      if(!state.launcher) return say('No active launcher to interrupt.');
+      state.expired.push(state.route);state.route=null;state.launcher=false;
+      return say('Launcher interrupted. The desktop is still open, but Token Factory is unavailable. Close the desktop, then relaunch through tofa.');
+    }
+    if(action.type==='create') {
+      if(state.desktop==='closed') return say('Launch the desktop first.');
+      if(state.desktop==='tofa'&&!state.launcher) return say('Cannot create a tofa conversation: its route is unavailable.');
+      const tofa=state.desktop==='tofa';
+      const session={id:state.nextId++,title:tofa?'Tofa conversation':'Ordinary conversation',
+        provider:tofa?'Token Factory':'OpenAI',model:tofa?'Kimi-K3':'GPT',workspace:'Example workspace',turns:1};
+      state.sessions.push(session);state.selected=session.id;
+      return say('Conversation created. Its identity and recorded provider stay the same across launches.');
+    }
+    if(action.type==='select') {
+      const session=state.sessions.find(row=>row.id===action.id);
+      if(!session) return say('That conversation does not exist.');
+      state.selected=session.id;return say('Selected '+session.title+'. Its complete history remains stored.');
+    }
+    if(action.type==='resume') {
+      if(state.desktop==='closed') return say('Launch the desktop first.');
+      const session=state.sessions.find(row=>row.id===state.selected);
+      if(!session) return say('Create or select a conversation first.');
+      if(session.provider==='Token Factory'&&!state.launcher)
+        return say('Token Factory is unavailable. History remains visible. Quit and relaunch through tofa to continue this same conversation.');
+      session.turns++;return say('Continued the same conversation using '+session.provider+'. Its model and provider did not change.');
+    }
+    return say('Unknown action.');
+  }
+  return {initial,reduce};
+})();
+</script>
+<script>
+const actions=[['Launch ordinary',{type:'launch',mode:'ordinary'}],['Launch through tofa',{type:'launch',mode:'tofa'}],
+  ['Create conversation',{type:'create'}],['Continue selected',{type:'resume'}],['Quit desktop',{type:'quit'}],
+  ['Interrupt launcher',{type:'interrupt'}],['Reset everything',{type:'reset'}]];
+const step=(label,type,extra={})=>[label,{type,...extra}];
+const scenarios=[
+  {title:'Ordinary → tofa',description:'An ordinary conversation keeps its provider when continued during a tofa launch.',steps:[
+    step('1. Launch ordinary','launch',{mode:'ordinary'}),step('2. Create an ordinary conversation','create'),step('3. Quit','quit'),
+    step('4. Launch through tofa','launch',{mode:'tofa'}),step('5. Continue the ordinary conversation','resume')]},
+  {title:'Tofa → ordinary → tofa',description:'Visibility survives an unavailable provider. Relaunch restores access with a new route.',steps:[
+    step('1. Launch through tofa','launch',{mode:'tofa'}),step('2. Create a tofa conversation','create'),step('3. Quit','quit'),
+    step('4. Launch ordinary','launch',{mode:'ordinary'}),step('5. Try to continue: provider unavailable','resume'),step('6. Quit','quit'),
+    step('7. Relaunch through tofa','launch',{mode:'tofa'}),step('8. Continue the same conversation','resume')]},
+  {title:'Running app & interruption',description:'Proposed lifecycle behavior: refuse takeover, show unavailable routing after interruption, preserve history.',steps:[
+    step('1. Launch ordinary','launch',{mode:'ordinary'}),step('2. Try a concurrent tofa launch','launch',{mode:'tofa'}),step('3. Quit','quit'),
+    step('4. Launch through tofa','launch',{mode:'tofa'}),step('5. Create a conversation','create'),step('6. Interrupt the launcher','interrupt'),
+    step('7. Try to continue','resume'),step('8. Quit the remaining desktop','quit'),step('9. Relaunch through tofa','launch',{mode:'tofa'}),step('10. Continue','resume')]}
+];
+let state=SharedHistory.initial(),active=null,next=0;
+const el=id=>document.getElementById(id);
+function button(label,fn){const node=document.createElement('button');node.textContent=label;node.onclick=fn;return node;}
+function dispatch(action){state=SharedHistory.reduce(state,action);render();}
+function render(){
+  el('message').textContent=state.message;
+  el('state').replaceChildren();
+  const fields={'Desktop':state.desktop,'Launcher':state.launcher?'Active':'Inactive',
+    'Temporary route':state.route===null?'Unavailable':'Generation '+state.route+' · active',
+    'Latest generation':state.generation,'Expired routes':state.expired.join(', ')||'None',
+    'Selected conversation':state.selected===null?'None':'#'+state.selected,'Next conversation ID':state.nextId,
+    'Shared account / config':state.account};
+  for(const [label,value] of Object.entries(fields)){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;el('state').append(dt,dd);}
+  el('history').replaceChildren();
+  for(const session of state.sessions){const row=document.createElement('tr');
+    for(const value of ['#'+session.id+' '+session.title,session.provider+' / '+session.model,session.turns+' completed turn(s)',session.workspace]){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}
+    const cell=document.createElement('td');cell.append(button(state.selected===session.id?'Selected':'Select',()=>{active=null;dispatch({type:'select',id:session.id});}));row.append(cell);el('history').append(row);}
+  if(!state.sessions.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=5;cell.textContent='No conversations yet.';row.append(cell);el('history').append(row);}
+  el('tabs').replaceChildren();scenarios.forEach((scenario,index)=>{const tab=button(scenario.title,()=>{active=index;next=0;dispatch({type:'reset'});});tab.setAttribute('role','tab');tab.setAttribute('aria-selected',String(index===active));el('tabs').append(tab);});
+  el('steps').replaceChildren();el('scenario').textContent=active===null?'Choose a walkthrough to reset the demo and begin.':scenarios[active].description;
+  if(active!==null)scenarios[active].steps.forEach(([label,action],index)=>{const node=button(label,()=>{next++;dispatch(action);});node.disabled=index!==next;el('steps').append(node);});
+  el('walkthrough-status').textContent=active===null?'Free-play mode.':next===scenarios[active].steps.length?'Walkthrough complete. Select a tab to replay.':'Next: step '+(next+1)+' of '+scenarios[active].steps.length;
+}
+actions.forEach(([label,action])=>el('actions').append(button(label,()=>{active=null;dispatch(action);})));
+render();
+</script>
+</body>
+</html>

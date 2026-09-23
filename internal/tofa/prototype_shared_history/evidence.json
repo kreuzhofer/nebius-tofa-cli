@@ -1,0 +1,130 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "engine_version": "codex-cli 0.155.0-alpha.9.2",
+  "engine_sha256": "9280c0754e8f1f6b72f495d30c8c82a006dbc4995bf0492916fa0901f6bfd1f9",
+  "actual_desktop_opened": false,
+  "real_user_profile_used": false,
+  "paid_inference_requests": 0,
+  "shared_scratch_config_and_auth_unchanged": true,
+  "native_bundled_descriptors_preserved": true,
+  "fresh_tofa_routes": 2,
+  "expired_routes_closed": true,
+  "local_bearers_absent_from_shared_engine_state": true,
+  "phases": [
+    {
+      "phase": 1,
+      "mode": "ordinary",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 1,
+          "workspace_matches": true
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "mode": "tofa",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 2,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 1,
+          "workspace_matches": true
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "mode": "ordinary",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 2,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 1,
+          "workspace_matches": true
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "mode": "tofa",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 2,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 2,
+          "workspace_matches": true
+        }
+      ]
+    }
+  ],
+  "desktop_phases": [],
+  "requests": [
+    {
+      "lane": "native",
+      "model": "gpt-6-astra",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "Token Factory",
+      "model": "moonshotai/Kimi-K3",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "native",
+      "model": "gpt-6-astra",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "Token Factory",
+      "model": "moonshotai/Kimi-K3",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    }
+  ],
+  "limitations": [
+    "bundled native catalog snapshot, not live account catalog",
+    "desktop UI observations require a human",
+    "native auxiliary requests under the tofa provider are rejected, not remapped",
+    "normal user profile, onboarding, managed policy, upgrades and crashes not qualified"
+  ]
+}

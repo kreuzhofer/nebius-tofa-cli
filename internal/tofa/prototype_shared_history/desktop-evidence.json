@@ -1,0 +1,54 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "result": "failed_shared_config_preservation",
+  "engine_version": "codex-cli 0.155.0-alpha.9.2",
+  "actual_desktop_opened": true,
+  "real_user_profile_used": false,
+  "phase": 1,
+  "mode": "ordinary",
+  "desktop_phases": [
+    {
+      "phase": 1,
+      "mode": "ordinary",
+      "temporary_executable_selected": true,
+      "engine_handshake_succeeded": true,
+      "ipc_path_error": false,
+      "ui_verified": false,
+      "owned_process_group_stopped": true
+    }
+  ],
+  "ui_verified": false,
+  "auth_unchanged": true,
+  "config_unchanged": false,
+  "temporary_executable_persisted_at": "mcp_servers.node_repl.env.CODEX_CLI_PATH",
+  "temporary_executable_removed_on_cleanup": true,
+  "native_model_unchanged": true,
+  "native_provider_unchanged": true,
+  "phases": [
+    {
+      "phase": 1,
+      "mode": "ordinary",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 1,
+          "workspace_matches": true
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "lane": "native",
+      "model": "gpt-6-astra",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    }
+  ],
+  "verdict": "The desktop persists its temporary executable into shared tool settings. This wrapper is not ready for the ordinary profile."
+}
