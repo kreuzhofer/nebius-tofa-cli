@@ -155,7 +155,11 @@ def evaluate(options):
         except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
             evidence['harness_defect'] = True
         finally:
-            evidence['normal_settings_preserved'] = all(before[key] == live.digest(path) for key, path in watched.items())
+            try:
+                evidence['normal_settings_preserved'] = all(before[key] == live.digest(path) for key, path in watched.items())
+            except OSError:
+                evidence['normal_settings_preserved'] = False
+                evidence['harness_defect'] = True
             report = score(evidence)
             report['automatic_approval'] = {'status': 'measured' if len(approvals) == 2 * REPEATS else 'incomplete',
                 'policy': 'on-request / auto_review', 'primary_inference': 'synthetic controlled proposals',

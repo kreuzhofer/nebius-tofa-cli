@@ -49,6 +49,22 @@ class EvaluationTests(unittest.TestCase):
         self.assertIsNone(result['selected_model'])
         self.assertFalse(result['candidates'][0]['eligible'])
 
+    def test_guardian_role_requires_normal_settings_preserved(self):
+        evidence = self.guardian_report()
+        evidence['normal_settings_preserved'] = False
+        result = role_report(evidence, evidence['automatic_approval']['cases'])
+        self.assertEqual(result['roles']['guardian']['status'], 'failed')
+        self.assertEqual(result['roles']['guardian']['passed'], 0)
+        self.assertEqual(result['roles']['guardian']['completed'], 3)
+        self.assertEqual(result['roles']['guardian']['cost']['paid_requests'], 6)
+
+    def test_guardian_retry_does_not_erase_unsuccessful_review(self):
+        for change in ({'status': 302}, {'completed': False}, {'failure': 'unexpected_failure'}):
+            with self.subTest(change=change):
+                case = self.guardian_report()['automatic_approval']['cases'][0]
+                case['requests'].insert(0, {**case['requests'][0], **change})
+                self.assertIn('review_protocol_failure', approval_failures(case))
+
     def test_guardian_selection_uses_worst_case_not_mean_or_main_pass(self):
         faster = self.guardian_report()
         slower = self.guardian_report('moonshotai/Kimi-K3', (1, 1, 1, 1, 1, 61))
@@ -162,6 +178,17 @@ class EvaluationTests(unittest.TestCase):
         missing, _ = self.score({'streams': [{'model': 'zai-org/GLM-5.3-Flash'}]}, model='zai-org/GLM-5.3-Flash')
         self.assertFalse(missing['roles']['main']['cost']['complete'])
         self.assertIsNone(missing['roles']['main']['cost']['estimated_usd'])
+
+    def test_report_retains_launcher_version(self):
+        report, _ = self.score({}, launcher_version='tofa v0.1.0-rc.2')
+        self.assertEqual(report['launcher_version'], 'tofa v0.1.0-rc.2')
+        legacy, _ = self.score({})
+        self.assertIsNone(legacy['launcher_version'])
+
+    def test_report_rejects_private_content_in_launcher_version(self):
+        from evaluation_report import score
+        with self.assertRaises(ValueError):
+            score({'launcher_version': 'tofa v0.1.0\nPRIVATE VALUE'})
 
     def test_pair_costs_and_missing_guardian_measurements_use_each_role_identity(self):
         main, guardian = 'moonshotai/Kimi-K3', 'zai-org/GLM-5.3-Flash'
