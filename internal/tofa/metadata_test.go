@@ -93,6 +93,69 @@ func TestUnknownModelDoesNotReceiveInventedMetadata(t *testing.T) {
 	runAdapted(t, app)
 }
 
+func TestEvaluationPairUsesScopedMetadataAndCleansUp(t *testing.T) {
+	for _, guardian := range []string{"moonshotai/Kimi-K3", "nvidia/Nemotron-3-Ultra-550b-a55b"} {
+		t.Run(guardian, func(t *testing.T) {
+			app, _ := adapterFixture(t, nil, nil)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				io.WriteString(w, `{"data":[{"id":"moonshotai/Kimi-K3"},{"id":"nvidia/Nemotron-3-Ultra-550b-a55b"}]}`)
+			}))
+			defer server.Close()
+			app.Endpoint = server.URL
+			var path string
+			clientError := errors.New("fixture exit")
+			app.RunClient = func(args, env []string) error {
+				for _, arg := range args {
+					if value, ok := strings.CutPrefix(arg, "model_catalog_json="); ok {
+						path, _ = strconv.Unquote(value)
+					}
+				}
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var catalog struct {
+					Models []struct {
+						Slug      string `json:"slug"`
+						Guardian  string `json:"auto_review_model_override"`
+						Context   int    `json:"context_window"`
+						Reasoning []any  `json:"supported_reasoning_levels"`
+					} `json:"models"`
+				}
+				if err := json.Unmarshal(data, &catalog); err != nil {
+					t.Fatal(err)
+				}
+				byID := map[string]int{}
+				for _, model := range catalog.Models {
+					byID[model.Slug] = model.Context
+					if len(model.Reasoning) != 0 {
+						t.Fatal("unverified reasoning controls")
+					}
+					if model.Slug == "moonshotai/Kimi-K3" && model.Guardian != guardian {
+						t.Fatal("missing explicit Guardian selection")
+					}
+				}
+				if byID["moonshotai/Kimi-K3"] != 1024000 {
+					t.Fatal("wrong main metadata")
+				}
+				if guardian != "moonshotai/Kimi-K3" && (len(byID) != 2 || byID[guardian] != 1048576) {
+					t.Fatal("reviewer must use its own metadata")
+				}
+				if len(byID) != len(catalog.Models) {
+					t.Fatal("duplicate catalog entries")
+				}
+				return clientError
+			}
+			if err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified", "--evaluation-guardian-model", guardian}); !errors.Is(err, clientError) {
+				t.Fatalf("lost client result: %v", err)
+			}
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatal("temporary pair metadata retained")
+			}
+		})
+	}
+}
+
 func TestKimiCatalogCreationFailurePreventsLaunch(t *testing.T) {
 	app, _ := adapterFixture(t, nil, func(string, string) error {
 		t.Error("client started without its model catalog")
@@ -105,6 +168,37 @@ func TestKimiCatalogCreationFailurePreventsLaunch(t *testing.T) {
 	err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 	if err == nil || !strings.Contains(err.Error(), "could not create launch model catalog") {
 		t.Fatalf("missing explicit catalog failure: %v", err)
+	}
+}
+
+func TestInvalidEvaluationRolesPreventClientLaunch(t *testing.T) {
+	for _, test := range []struct {
+		main, guardian string
+		direct         bool
+		want           string
+	}{
+		{"moonshotai/Kimi-K3", "", false, "valid model ID"},
+		{"moonshotai/Kimi-K3", "unlisted/model", false, "bundled model metadata"},
+		{"unlisted/model", "moonshotai/Kimi-K3", false, "bundled model metadata"},
+		{"moonshotai/Kimi-K3", "zai-org/GLM-5.3", false, "not available"},
+		{"moonshotai/Kimi-K3", "moonshotai/Kimi-K3", true, "adapted connection"},
+	} {
+		t.Run(test.main+"/"+test.guardian+"/"+test.want, func(t *testing.T) {
+			app, _ := adapterFixture(t, nil, nil)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				io.WriteString(w, `{"data":[{"id":"moonshotai/Kimi-K3"},{"id":"unlisted/model"}]}`)
+			}))
+			defer server.Close()
+			app.Endpoint = server.URL
+			app.RunClient = func(args, env []string) error { t.Fatal("invalid pair launched client"); return nil }
+			args := []string{"launch", "codex", "--model", test.main, "--evaluation-guardian-model", test.guardian, "--allow-unverified"}
+			if test.direct {
+				args = append(args, "--direct")
+			}
+			if err := app.Run(args); err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("missing explicit role failure: %v", err)
+			}
+		})
 	}
 }
 

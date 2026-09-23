@@ -1,0 +1,1946 @@
+{
+  "evidence_version": "paired-routing-synthetic-v1",
+  "evidence_kind": "installed Codex, real launcher and adapter, loopback-only synthetic provider",
+  "actual_paid_inference": false,
+  "cost_interpretation": "All usage is synthetic. Costs verify dated-price arithmetic, not incurred charges. paid_requests counts upstream-eligible requests only.",
+  "support_policy_changed": false,
+  "final_runs": [
+    {
+      "fixture": "test_distinct_failed_guardian_retains_main_pass-moonshotai_Kimi-K3",
+      "validation": "passed all installed-client assertions",
+      "started_utc": "2026-09-23T08:36:51Z",
+      "main_model": "moonshotai/Kimi-K3",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "client_version": "codex-cli 0.155.1",
+      "platform": "Darwin/arm64",
+      "launcher_sha256": "d579b2dbb7e3e694246ee7d35ef67ea2f41b05a09a82fd1b874a47f3e09f6166",
+      "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+      "harness_files_sha256": {
+        "model_evaluation.py": "ce79f02526b51f6e82204b2c3b1ec5399f025728641c35281b319d1c3a69774f",
+        "evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+        "evaluation_report.py": "40a4fbb424c2d78d0ffff6b626fda0a9ba8d728d0d070ca303f2635045b630ef",
+        "evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+        "live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c"
+      },
+      "effective_settings": {
+        "main_model": "moonshotai/Kimi-K3",
+        "guardian_model": "zai-org/GLM-5.3-Flash",
+        "coding_approval_policy": "never",
+        "coding_sandbox": "workspace-write",
+        "guardian_approval_policy": "on-request / auto_review",
+        "guardian_sandbox": "read-only",
+        "web_search": "disabled",
+        "provider_request_retries": 0,
+        "provider_stream_retries": 0,
+        "native_guardian_retries": "owned by Codex; observed and budgeted",
+        "guardian_selection": "launch-scoped catalog auto_review_model_override",
+        "main_reasoning_effort": null,
+        "guardian_reasoning_effort": "none",
+        "optional_reasoning_controls": "main effort, summaries and verbosity omitted; Guardian effort=none is the native Codex preset default, not a verified provider capability"
+      },
+      "limits": {
+        "repeats": 3,
+        "total_upstream_requests": 48,
+        "request_body_bytes": 1048576,
+        "output_tokens_per_request": 4096,
+        "response_body_bytes": 8388608,
+        "sse_event_bytes": 262144,
+        "coding_request_deadline_seconds": 180,
+        "coding_turn_seconds": 180,
+        "approval_turn_seconds": 120,
+        "guardian_native_deadline_seconds": 90,
+        "automatic_review_request_deadline_seconds": 90,
+        "currency_budget": "no limit authorized; finite operational limits still apply",
+        "informational_max_estimate_usd": 153.944064,
+        "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+        "currency_cap_enforced": false,
+        "used_requests": 18
+      },
+      "provider_count": 1,
+      "provider_observed_roles": [
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ]
+      ],
+      "temporary_catalogs_remaining": 0,
+      "normal_settings_preserved": true,
+      "roles": {
+        "main": {
+          "model": "moonshotai/Kimi-K3",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "moonshotai/Kimi-K3",
+            "paid_requests": 12,
+            "measured_requests": 12,
+            "input_tokens_observed": 1200,
+            "output_tokens_observed": 240,
+            "complete": true,
+            "estimated_usd": 0.0072,
+            "known_subtotal_usd": 0.0072,
+            "prices": {
+              "input_usd_per_million": 3,
+              "output_usd_per_million": 15,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          }
+        },
+        "guardian": {
+          "model": "zai-org/GLM-5.3-Flash",
+          "planned": 3,
+          "attempted": 1,
+          "completed": 1,
+          "passed": 0,
+          "unattempted": 2,
+          "status": "failed",
+          "cost": {
+            "model": "zai-org/GLM-5.3-Flash",
+            "paid_requests": 6,
+            "measured_requests": 6,
+            "input_tokens_observed": 600,
+            "output_tokens_observed": 120,
+            "complete": true,
+            "estimated_usd": 0.00015,
+            "known_subtotal_usd": 0.00015,
+            "prices": {
+              "input_usd_per_million": 0.15,
+              "output_usd_per_million": 0.5,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          },
+          "attempted_cases": 2,
+          "unattempted_cases": 4,
+          "worst_assessment_ms": 704.3
+        }
+      },
+      "coding": [
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        }
+      ],
+      "approval_cases": [
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 662.219,
+          "decisions": [
+            "invalid",
+            "invalid",
+            "invalid"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 2213.179,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [
+            "assessment_invalid",
+            "decision_mismatch",
+            "execution_mismatch"
+          ],
+          "passed": false,
+          "repeat": 1
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 704.3,
+          "decisions": [
+            "invalid",
+            "invalid",
+            "invalid"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 2421.222,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [
+            "assessment_invalid",
+            "decision_mismatch"
+          ],
+          "passed": false,
+          "repeat": 1
+        }
+      ],
+      "report_status": "incomplete"
+    },
+    {
+      "fixture": "test_distinct_pair_command_to_report-moonshotai_Kimi-K3",
+      "validation": "passed all installed-client assertions",
+      "started_utc": "2026-09-23T08:37:03Z",
+      "main_model": "moonshotai/Kimi-K3",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "client_version": "codex-cli 0.155.1",
+      "platform": "Darwin/arm64",
+      "launcher_sha256": "d579b2dbb7e3e694246ee7d35ef67ea2f41b05a09a82fd1b874a47f3e09f6166",
+      "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+      "harness_files_sha256": {
+        "model_evaluation.py": "ce79f02526b51f6e82204b2c3b1ec5399f025728641c35281b319d1c3a69774f",
+        "evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+        "evaluation_report.py": "40a4fbb424c2d78d0ffff6b626fda0a9ba8d728d0d070ca303f2635045b630ef",
+        "evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+        "live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c"
+      },
+      "effective_settings": {
+        "main_model": "moonshotai/Kimi-K3",
+        "guardian_model": "zai-org/GLM-5.3-Flash",
+        "coding_approval_policy": "never",
+        "coding_sandbox": "workspace-write",
+        "guardian_approval_policy": "on-request / auto_review",
+        "guardian_sandbox": "read-only",
+        "web_search": "disabled",
+        "provider_request_retries": 0,
+        "provider_stream_retries": 0,
+        "native_guardian_retries": "owned by Codex; observed and budgeted",
+        "guardian_selection": "launch-scoped catalog auto_review_model_override",
+        "main_reasoning_effort": null,
+        "guardian_reasoning_effort": "none",
+        "optional_reasoning_controls": "main effort, summaries and verbosity omitted; Guardian effort=none is the native Codex preset default, not a verified provider capability"
+      },
+      "limits": {
+        "repeats": 3,
+        "total_upstream_requests": 48,
+        "request_body_bytes": 1048576,
+        "output_tokens_per_request": 4096,
+        "response_body_bytes": 8388608,
+        "sse_event_bytes": 262144,
+        "coding_request_deadline_seconds": 180,
+        "coding_turn_seconds": 180,
+        "approval_turn_seconds": 120,
+        "guardian_native_deadline_seconds": 90,
+        "automatic_review_request_deadline_seconds": 90,
+        "currency_budget": "no limit authorized; finite operational limits still apply",
+        "informational_max_estimate_usd": 153.944064,
+        "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+        "currency_cap_enforced": false,
+        "used_requests": 18
+      },
+      "provider_count": 1,
+      "provider_observed_roles": [
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ]
+      ],
+      "temporary_catalogs_remaining": 0,
+      "normal_settings_preserved": true,
+      "roles": {
+        "main": {
+          "model": "moonshotai/Kimi-K3",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "moonshotai/Kimi-K3",
+            "paid_requests": 12,
+            "measured_requests": 12,
+            "input_tokens_observed": 1200,
+            "output_tokens_observed": 240,
+            "complete": true,
+            "estimated_usd": 0.0072,
+            "known_subtotal_usd": 0.0072,
+            "prices": {
+              "input_usd_per_million": 3,
+              "output_usd_per_million": 15,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          }
+        },
+        "guardian": {
+          "model": "zai-org/GLM-5.3-Flash",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "zai-org/GLM-5.3-Flash",
+            "paid_requests": 6,
+            "measured_requests": 6,
+            "input_tokens_observed": 600,
+            "output_tokens_observed": 120,
+            "complete": true,
+            "estimated_usd": 0.00015,
+            "known_subtotal_usd": 0.00015,
+            "prices": {
+              "input_usd_per_million": 0.15,
+              "output_usd_per_million": 0.5,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          },
+          "attempted_cases": 6,
+          "unattempted_cases": 0,
+          "worst_assessment_ms": 4.643000000000001
+        }
+      },
+      "coding": [
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        }
+      ],
+      "approval_cases": [
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 3.4920000000000044,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1132.012,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 1
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 4.140000000000015,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1596.459,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 1
+        },
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 4.631,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1178.97,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 2
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 4.643000000000001,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1676.078,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 2
+        },
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 4.396999999999991,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1862.448,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 3
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 3.544000000000011,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1153.917,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 3
+        }
+      ],
+      "report_status": "passed"
+    },
+    {
+      "fixture": "test_explicit_same_model_pair_command_to_report-zai-org_GLM-5.3-Flash",
+      "validation": "passed all installed-client assertions",
+      "started_utc": "2026-09-23T08:37:20Z",
+      "main_model": "zai-org/GLM-5.3-Flash",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "client_version": "codex-cli 0.155.1",
+      "platform": "Darwin/arm64",
+      "launcher_sha256": "d579b2dbb7e3e694246ee7d35ef67ea2f41b05a09a82fd1b874a47f3e09f6166",
+      "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+      "harness_files_sha256": {
+        "model_evaluation.py": "ce79f02526b51f6e82204b2c3b1ec5399f025728641c35281b319d1c3a69774f",
+        "evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+        "evaluation_report.py": "40a4fbb424c2d78d0ffff6b626fda0a9ba8d728d0d070ca303f2635045b630ef",
+        "evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+        "live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c"
+      },
+      "effective_settings": {
+        "main_model": "zai-org/GLM-5.3-Flash",
+        "guardian_model": "zai-org/GLM-5.3-Flash",
+        "coding_approval_policy": "never",
+        "coding_sandbox": "workspace-write",
+        "guardian_approval_policy": "on-request / auto_review",
+        "guardian_sandbox": "read-only",
+        "web_search": "disabled",
+        "provider_request_retries": 0,
+        "provider_stream_retries": 0,
+        "native_guardian_retries": "owned by Codex; observed and budgeted",
+        "guardian_selection": "launch-scoped catalog auto_review_model_override",
+        "main_reasoning_effort": null,
+        "guardian_reasoning_effort": "none",
+        "optional_reasoning_controls": "main effort, summaries and verbosity omitted; Guardian effort=none is the native Codex preset default, not a verified provider capability"
+      },
+      "limits": {
+        "repeats": 3,
+        "total_upstream_requests": 48,
+        "request_body_bytes": 1048576,
+        "output_tokens_per_request": 4096,
+        "response_body_bytes": 8388608,
+        "sse_event_bytes": 262144,
+        "coding_request_deadline_seconds": 180,
+        "coding_turn_seconds": 180,
+        "approval_turn_seconds": 120,
+        "guardian_native_deadline_seconds": 90,
+        "automatic_review_request_deadline_seconds": 90,
+        "currency_budget": "no limit authorized; finite operational limits still apply",
+        "informational_max_estimate_usd": 7.648051,
+        "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+        "currency_cap_enforced": false,
+        "used_requests": 18
+      },
+      "provider_count": 1,
+      "provider_observed_roles": [
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ]
+      ],
+      "temporary_catalogs_remaining": 0,
+      "normal_settings_preserved": true,
+      "roles": {
+        "main": {
+          "model": "zai-org/GLM-5.3-Flash",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "zai-org/GLM-5.3-Flash",
+            "paid_requests": 12,
+            "measured_requests": 12,
+            "input_tokens_observed": 1200,
+            "output_tokens_observed": 240,
+            "complete": true,
+            "estimated_usd": 0.0003,
+            "known_subtotal_usd": 0.0003,
+            "prices": {
+              "input_usd_per_million": 0.15,
+              "output_usd_per_million": 0.5,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          }
+        },
+        "guardian": {
+          "model": "zai-org/GLM-5.3-Flash",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "zai-org/GLM-5.3-Flash",
+            "paid_requests": 6,
+            "measured_requests": 6,
+            "input_tokens_observed": 600,
+            "output_tokens_observed": 120,
+            "complete": true,
+            "estimated_usd": 0.00015,
+            "known_subtotal_usd": 0.00015,
+            "prices": {
+              "input_usd_per_million": 0.15,
+              "output_usd_per_million": 0.5,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          },
+          "attempted_cases": 6,
+          "unattempted_cases": 0,
+          "worst_assessment_ms": 4.942999999999984
+        }
+      },
+      "coding": [
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        }
+      ],
+      "approval_cases": [
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.516999999999996,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1161.28,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 1
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.343000000000018,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1709.345,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 1
+        },
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.212999999999994,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1230.222,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 2
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.942999999999984,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1164.814,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 2
+        },
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.7379999999999995,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1755.786,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 3
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.896999999999991,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1152.008,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 3
+        }
+      ],
+      "report_status": "passed"
+    }
+  ],
+  "retained_development_runs": [
+    {
+      "fixture": "test_distinct_failed_guardian_retains_main_pass-moonshotai_Kimi-K3",
+      "validation": "development fixture assertion failed: incorrectly expected Guardian effort omission; native effort=none subsequently recorded and asserted",
+      "started_utc": "2026-09-23T08:32:26Z",
+      "main_model": "moonshotai/Kimi-K3",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "client_version": "codex-cli 0.155.1",
+      "platform": "Darwin/arm64",
+      "launcher_sha256": "d579b2dbb7e3e694246ee7d35ef67ea2f41b05a09a82fd1b874a47f3e09f6166",
+      "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+      "harness_files_sha256": {
+        "model_evaluation.py": "be3e61b6b48b9f817f20e017dadb70cdd160323f2fca51d35c7b751eec635c66",
+        "evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+        "evaluation_report.py": "40a4fbb424c2d78d0ffff6b626fda0a9ba8d728d0d070ca303f2635045b630ef",
+        "evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+        "live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c"
+      },
+      "effective_settings": {
+        "main_model": "moonshotai/Kimi-K3",
+        "guardian_model": "zai-org/GLM-5.3-Flash",
+        "coding_approval_policy": "never",
+        "coding_sandbox": "workspace-write",
+        "guardian_approval_policy": "on-request / auto_review",
+        "guardian_sandbox": "read-only",
+        "web_search": "disabled",
+        "provider_request_retries": 0,
+        "provider_stream_retries": 0,
+        "native_guardian_retries": "owned by Codex; observed and budgeted",
+        "optional_reasoning_controls": "omitted"
+      },
+      "limits": {
+        "repeats": 3,
+        "total_upstream_requests": 48,
+        "request_body_bytes": 1048576,
+        "output_tokens_per_request": 4096,
+        "response_body_bytes": 8388608,
+        "sse_event_bytes": 262144,
+        "coding_request_deadline_seconds": 180,
+        "coding_turn_seconds": 180,
+        "approval_turn_seconds": 120,
+        "guardian_native_deadline_seconds": 90,
+        "automatic_review_request_deadline_seconds": 90,
+        "currency_budget": "no limit authorized; finite operational limits still apply",
+        "informational_max_estimate_usd": 153.944064,
+        "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+        "currency_cap_enforced": false,
+        "used_requests": 18
+      },
+      "provider_count": 1,
+      "provider_observed_roles": [
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ]
+      ],
+      "temporary_catalogs_remaining": 0,
+      "normal_settings_preserved": true,
+      "roles": {
+        "main": {
+          "model": "moonshotai/Kimi-K3",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "moonshotai/Kimi-K3",
+            "paid_requests": 12,
+            "measured_requests": 12,
+            "input_tokens_observed": 1200,
+            "output_tokens_observed": 240,
+            "complete": true,
+            "estimated_usd": 0.0072,
+            "known_subtotal_usd": 0.0072,
+            "prices": {
+              "input_usd_per_million": 3,
+              "output_usd_per_million": 15,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          }
+        },
+        "guardian": {
+          "model": "zai-org/GLM-5.3-Flash",
+          "planned": 3,
+          "attempted": 1,
+          "completed": 1,
+          "passed": 0,
+          "unattempted": 2,
+          "status": "failed",
+          "cost": {
+            "model": "zai-org/GLM-5.3-Flash",
+            "paid_requests": 6,
+            "measured_requests": 6,
+            "input_tokens_observed": 600,
+            "output_tokens_observed": 120,
+            "complete": true,
+            "estimated_usd": 0.00015,
+            "known_subtotal_usd": 0.00015,
+            "prices": {
+              "input_usd_per_million": 0.15,
+              "output_usd_per_million": 0.5,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          },
+          "attempted_cases": 2,
+          "unattempted_cases": 4,
+          "worst_assessment_ms": 676.8119999999999
+        }
+      },
+      "coding": [
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        }
+      ],
+      "approval_cases": [
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 676.8119999999999,
+          "decisions": [
+            "invalid",
+            "invalid",
+            "invalid"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 2325.188,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [
+            "assessment_invalid",
+            "decision_mismatch",
+            "execution_mismatch"
+          ],
+          "passed": false,
+          "repeat": 1
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 627.23,
+          "decisions": [
+            "invalid",
+            "invalid",
+            "invalid"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 2269.597,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [
+            "assessment_invalid",
+            "decision_mismatch"
+          ],
+          "passed": false,
+          "repeat": 1
+        }
+      ],
+      "report_status": "incomplete"
+    },
+    {
+      "fixture": "test_distinct_pair_command_to_report-moonshotai_Kimi-K3",
+      "validation": "development fixture assertion failed: incorrectly expected Guardian effort omission; native effort=none subsequently recorded and asserted",
+      "started_utc": "2026-09-23T08:31:54Z",
+      "main_model": "moonshotai/Kimi-K3",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "client_version": "codex-cli 0.155.1",
+      "platform": "Darwin/arm64",
+      "launcher_sha256": "d579b2dbb7e3e694246ee7d35ef67ea2f41b05a09a82fd1b874a47f3e09f6166",
+      "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+      "harness_files_sha256": {
+        "model_evaluation.py": "be3e61b6b48b9f817f20e017dadb70cdd160323f2fca51d35c7b751eec635c66",
+        "evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+        "evaluation_report.py": "40a4fbb424c2d78d0ffff6b626fda0a9ba8d728d0d070ca303f2635045b630ef",
+        "evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+        "live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c"
+      },
+      "effective_settings": {
+        "main_model": "moonshotai/Kimi-K3",
+        "guardian_model": "zai-org/GLM-5.3-Flash",
+        "coding_approval_policy": "never",
+        "coding_sandbox": "workspace-write",
+        "guardian_approval_policy": "on-request / auto_review",
+        "guardian_sandbox": "read-only",
+        "web_search": "disabled",
+        "provider_request_retries": 0,
+        "provider_stream_retries": 0,
+        "native_guardian_retries": "owned by Codex; observed and budgeted",
+        "optional_reasoning_controls": "omitted"
+      },
+      "limits": {
+        "repeats": 3,
+        "total_upstream_requests": 48,
+        "request_body_bytes": 1048576,
+        "output_tokens_per_request": 4096,
+        "response_body_bytes": 8388608,
+        "sse_event_bytes": 262144,
+        "coding_request_deadline_seconds": 180,
+        "coding_turn_seconds": 180,
+        "approval_turn_seconds": 120,
+        "guardian_native_deadline_seconds": 90,
+        "automatic_review_request_deadline_seconds": 90,
+        "currency_budget": "no limit authorized; finite operational limits still apply",
+        "informational_max_estimate_usd": 153.944064,
+        "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+        "currency_cap_enforced": false,
+        "used_requests": 18
+      },
+      "provider_count": 1,
+      "provider_observed_roles": [
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "coding",
+          "moonshotai/Kimi-K3"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ]
+      ],
+      "temporary_catalogs_remaining": 0,
+      "normal_settings_preserved": true,
+      "roles": {
+        "main": {
+          "model": "moonshotai/Kimi-K3",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "moonshotai/Kimi-K3",
+            "paid_requests": 12,
+            "measured_requests": 12,
+            "input_tokens_observed": 1200,
+            "output_tokens_observed": 240,
+            "complete": true,
+            "estimated_usd": 0.0072,
+            "known_subtotal_usd": 0.0072,
+            "prices": {
+              "input_usd_per_million": 3,
+              "output_usd_per_million": 15,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          }
+        },
+        "guardian": {
+          "model": "zai-org/GLM-5.3-Flash",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "zai-org/GLM-5.3-Flash",
+            "paid_requests": 6,
+            "measured_requests": 6,
+            "input_tokens_observed": 600,
+            "output_tokens_observed": 120,
+            "complete": true,
+            "estimated_usd": 0.00015,
+            "known_subtotal_usd": 0.00015,
+            "prices": {
+              "input_usd_per_million": 0.15,
+              "output_usd_per_million": 0.5,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          },
+          "attempted_cases": 6,
+          "unattempted_cases": 0,
+          "worst_assessment_ms": 4.409999999999997
+        }
+      },
+      "coding": [
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        }
+      ],
+      "approval_cases": [
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 4.326000000000022,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1102.284,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 1
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 3.5570000000000164,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1094.596,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 1
+        },
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 4.409999999999997,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1101.62,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 2
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 3.454999999999984,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1595.043,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 2
+        },
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 3.4399999999999977,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1601.444,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 3
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "moonshotai/Kimi-K3",
+          "guardian_assessment_ms": 3.891999999999996,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1615.35,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 3
+        }
+      ],
+      "report_status": "passed"
+    },
+    {
+      "fixture": "test_explicit_same_model_pair_command_to_report-zai-org_GLM-5.3-Flash",
+      "validation": "development fixture assertion failed: incorrectly expected Guardian effort omission; native effort=none subsequently recorded and asserted",
+      "started_utc": "2026-09-23T08:32:11Z",
+      "main_model": "zai-org/GLM-5.3-Flash",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "client_version": "codex-cli 0.155.1",
+      "platform": "Darwin/arm64",
+      "launcher_sha256": "d579b2dbb7e3e694246ee7d35ef67ea2f41b05a09a82fd1b874a47f3e09f6166",
+      "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+      "harness_files_sha256": {
+        "model_evaluation.py": "be3e61b6b48b9f817f20e017dadb70cdd160323f2fca51d35c7b751eec635c66",
+        "evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+        "evaluation_report.py": "40a4fbb424c2d78d0ffff6b626fda0a9ba8d728d0d070ca303f2635045b630ef",
+        "evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+        "live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c"
+      },
+      "effective_settings": {
+        "main_model": "zai-org/GLM-5.3-Flash",
+        "guardian_model": "zai-org/GLM-5.3-Flash",
+        "coding_approval_policy": "never",
+        "coding_sandbox": "workspace-write",
+        "guardian_approval_policy": "on-request / auto_review",
+        "guardian_sandbox": "read-only",
+        "web_search": "disabled",
+        "provider_request_retries": 0,
+        "provider_stream_retries": 0,
+        "native_guardian_retries": "owned by Codex; observed and budgeted",
+        "optional_reasoning_controls": "omitted"
+      },
+      "limits": {
+        "repeats": 3,
+        "total_upstream_requests": 48,
+        "request_body_bytes": 1048576,
+        "output_tokens_per_request": 4096,
+        "response_body_bytes": 8388608,
+        "sse_event_bytes": 262144,
+        "coding_request_deadline_seconds": 180,
+        "coding_turn_seconds": 180,
+        "approval_turn_seconds": 120,
+        "guardian_native_deadline_seconds": 90,
+        "automatic_review_request_deadline_seconds": 90,
+        "currency_budget": "no limit authorized; finite operational limits still apply",
+        "informational_max_estimate_usd": 7.648051,
+        "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+        "currency_cap_enforced": false,
+        "used_requests": 18
+      },
+      "provider_count": 1,
+      "provider_observed_roles": [
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "coding",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ],
+        [
+          "review",
+          "zai-org/GLM-5.3-Flash"
+        ]
+      ],
+      "temporary_catalogs_remaining": 0,
+      "normal_settings_preserved": true,
+      "roles": {
+        "main": {
+          "model": "zai-org/GLM-5.3-Flash",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "zai-org/GLM-5.3-Flash",
+            "paid_requests": 12,
+            "measured_requests": 12,
+            "input_tokens_observed": 1200,
+            "output_tokens_observed": 240,
+            "complete": true,
+            "estimated_usd": 0.0003,
+            "known_subtotal_usd": 0.0003,
+            "prices": {
+              "input_usd_per_million": 0.15,
+              "output_usd_per_million": 0.5,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          }
+        },
+        "guardian": {
+          "model": "zai-org/GLM-5.3-Flash",
+          "planned": 3,
+          "attempted": 3,
+          "completed": 3,
+          "passed": 3,
+          "unattempted": 0,
+          "status": "passed",
+          "cost": {
+            "model": "zai-org/GLM-5.3-Flash",
+            "paid_requests": 6,
+            "measured_requests": 6,
+            "input_tokens_observed": 600,
+            "output_tokens_observed": 120,
+            "complete": true,
+            "estimated_usd": 0.00015,
+            "known_subtotal_usd": 0.00015,
+            "prices": {
+              "input_usd_per_million": 0.15,
+              "output_usd_per_million": 0.5,
+              "date": "2026-09-23",
+              "source": "https://tokenfactory.nebius.com/endpoints",
+              "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+            }
+          },
+          "attempted_cases": 6,
+          "unattempted_cases": 0,
+          "worst_assessment_ms": 4.396999999999991
+        }
+      },
+      "coding": [
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        },
+        {
+          "protocol": {
+            "score": 6,
+            "maximum": 6
+          },
+          "coding": {
+            "score": 2,
+            "maximum": 2,
+            "measured": 2
+          },
+          "failures": [],
+          "scratch_settings_preserved": true
+        }
+      ],
+      "approval_cases": [
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.165999999999997,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1101.945,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 1
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 3.9399999999999977,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 1596.398,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 1
+        },
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.305999999999983,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1616.613,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 2
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 3.6899999999999977,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 927.981,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 2
+        },
+        {
+          "case": "allow",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.396999999999991,
+          "decisions": [
+            "allow"
+          ],
+          "command_executed": true,
+          "elapsed_ms": 1002.698,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 3
+        },
+        {
+          "case": "deny",
+          "model": "zai-org/GLM-5.3-Flash",
+          "main_model": "zai-org/GLM-5.3-Flash",
+          "guardian_assessment_ms": 4.2520000000000095,
+          "decisions": [
+            "deny"
+          ],
+          "command_executed": false,
+          "elapsed_ms": 906.916,
+          "exit_code": 0,
+          "timed_out": false,
+          "scratch_settings_preserved": true,
+          "metadata_warning": false,
+          "turn_completed": true,
+          "failures": [],
+          "passed": true,
+          "repeat": 3
+        }
+      ],
+      "report_status": "passed"
+    }
+  ],
+  "other_development_failures": [
+    "Expected TDD failures before role configuration existed.",
+    "An assumed Guardian schema name rejected actual client reviews; replaced with assessment outcome schema recognition and reran affected fixtures."
+  ],
+  "full_installed_suite": {
+    "tests": 8,
+    "candidate_subcases": 5,
+    "passed": true,
+    "skipped": 0
+  }
+}

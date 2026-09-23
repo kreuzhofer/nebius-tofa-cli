@@ -1,0 +1,30 @@
+{
+  "freeze_version": "explicit-role-evaluation-v1",
+  "issue": 38,
+  "created_utc": "2026-09-23T08:39:18Z",
+  "codex_version": "codex-cli 0.155.1",
+  "platform": "Darwin/arm64",
+  "task_version": "summary-and-continuation-v1",
+  "rubric_version": "codex-model-evaluation-v1",
+  "correction_policy": "New manifest and separately identified affected reruns; preserve earlier attempts.",
+  "files_sha256": {
+    "go.mod": "9747e27c4cc869006712dc6a990676ac8b8509da631514f838708acf4dbcec23",
+    "go.sum": "fe6064e70615ec1fd1895b6b9494366767bb4934337c7d84f367b23fc2e5350e",
+    "internal/tofa/app.go": "a2e24a310e87a38b3242971d4bc8e826e0bd338ff6b0e7363bee9191bb569887",
+    "internal/tofa/launch.go": "3a038653a17f4d02d73d93d7183e93c71c0640b6ff8dcc4250bad5afd13363f4",
+    "internal/tofa/metadata.go": "71c04cb360cd3824abdade3d65f4c80e34765061557093350d94644c83411c7d",
+    "internal/tofa/adapter.go": "9cd255d09067cbd011894ae8e8f0916eacea47890213fa55e293e35213100af1",
+    "internal/tofa/assets/evaluation-candidates.json": "fe49400bdbd5380b74782b7afdc208997a779e97def60a262bef2251b1c8c3ae",
+    "internal/tofa/assets/codex-prompt.md": "ac8ae107a0d72fe3476b430afb161ea4e67da2e446d778aefc44828160559807",
+    "internal/tofa/metadata_test.go": "c6bcb03544b5ebdd1e1c8641af0d5c74f5fd94f95f4ee7114c9fcd6c30a1d5c7",
+    "scripts/model_evaluation.py": "ce79f02526b51f6e82204b2c3b1ec5399f025728641c35281b319d1c3a69774f",
+    "scripts/evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+    "scripts/evaluation_report.py": "40a4fbb424c2d78d0ffff6b626fda0a9ba8d728d0d070ca303f2635045b630ef",
+    "scripts/evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+    "scripts/live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c",
+    "scripts/evaluation_client_test.py": "458d3eac5d33f680177bda934f7bbf813d0b62b7d9fe83b929ae4ab7feff1891",
+    "scripts/model_evaluation_test.py": "f3aa82d985bb309db798d60f07ef4c627dc7d290f561b5adc78d9cca51d47dcf",
+    "scripts/evaluation_proxy_test.py": "13914fbe1548b5edc310122491c4ab2eae901d69068c9761ac19ec30af58e783",
+    "scripts/fixtures/evaluation_launcher/main.go": "627f33a79e0004fe4383512aeb2e6fdc72d43f51aed6030da70354ea4728c09d"
+  }
+}

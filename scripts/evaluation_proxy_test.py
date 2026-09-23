@@ -13,7 +13,48 @@ import urllib.request
 from evaluation_proxy import EvaluationProxy, BODY_LIMIT
 
 
+ASSESSMENT = {'required': ['outcome'], 'properties': {'outcome': {'type': 'string', 'enum': ['allow', 'deny']}}}
+
+
 class ProxyTests(unittest.TestCase):
+    def test_selected_pair_rejects_swapped_and_unexpected_roles_before_inference(self):
+        main, guardian = 'moonshotai/Kimi-K3', 'zai-org/GLM-5.3-Flash'
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            budget = root / 'budget.json'; budget.write_text('{"used":0,"maximum":48}')
+            report = root / 'observations.json'
+            with EvaluationProxy('http://127.0.0.1:1', 'fixture-token', report, budget,
+                                 'allow', 1, model=main, guardian_model=guardian) as proxy:
+                for model, review in ((guardian, False), (main, True), ('private/unexpected', True)):
+                    body = {'model': model, 'stream': True, 'input': []}
+                    if review:
+                        body['text'] = {'format': {'name': 'guardian_assessment', 'type': 'json_schema', 'schema': ASSESSMENT}}
+                    request = urllib.request.Request(proxy.url + '/responses', data=json.dumps(body).encode(),
+                        headers={'Authorization': 'Bearer fixture-token'})
+                    with self.assertRaises(urllib.error.HTTPError) as error:
+                        urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request)
+                    self.assertEqual(error.exception.code, 400)
+            self.assertEqual(json.loads(budget.read_text())['used'], 0)
+            self.assertEqual(len(json.loads(report.read_text())), 3)
+            self.assertNotIn('private/unexpected', report.read_text())
+
+    def test_guardian_only_routes_in_approval_cases_with_the_guardian_schema(self):
+        for case, schema in (('coding', 'guardian_assessment'), ('allow', 'other_schema')):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                budget = root / 'budget.json'; budget.write_text('{"used":0,"maximum":48}')
+                report = root / 'observations.json'
+                with EvaluationProxy('http://127.0.0.1:1', 'fixture-token', report, budget,
+                                     case, 1, model='moonshotai/Kimi-K3', guardian_model='zai-org/GLM-5.3') as proxy:
+                    body = {'model': 'zai-org/GLM-5.3', 'stream': True, 'input': [],
+                            'text': {'format': {'type': 'json_schema', 'name': schema, 'schema': ASSESSMENT if schema == 'guardian_assessment' else {}}}}
+                    request = urllib.request.Request(proxy.url + '/responses', data=json.dumps(body).encode(),
+                        headers={'Authorization': 'Bearer fixture-token'})
+                    with self.assertRaises(urllib.error.HTTPError) as error:
+                        urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request)
+                    self.assertEqual(error.exception.code, 400)
+                self.assertEqual(json.loads(budget.read_text())['used'], 0)
+
     def test_guardian_decision_is_measured_separately_from_synthetic_task(self, model="moonshotai/Kimi-K3"):
         seen = []
         class Upstream(http.server.BaseHTTPRequestHandler):
@@ -46,7 +87,7 @@ class ProxyTests(unittest.TestCase):
                     ordinary = post({'input': []})
                     self.assertIn(b'function_call', ordinary)
                     self.assertIn(model.encode(), ordinary)
-                    post({'text': {'format': {'name': 'guardian_assessment', 'type': 'json_schema'}},
+                    post({'text': {'format': {'name': 'guardian_assessment', 'type': 'json_schema', 'schema': ASSESSMENT}},
                           'instructions': 'Preserve this policy', 'tools': [{'name': 'exec_command'}]})
                 self.assertEqual(len(seen), 1)
                 self.assertEqual(seen[0]['max_output_tokens'], 4096)

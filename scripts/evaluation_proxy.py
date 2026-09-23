@@ -38,8 +38,10 @@ def message(text):
 
 
 class EvaluationProxy:
-    def __init__(self, endpoint, token, report, budget, case, timeout, model=MODEL):
+    def __init__(self, endpoint, token, report, budget, case, timeout, model=MODEL, guardian_model=None):
         candidate(model)
+        guardian_model = model if guardian_model is None else guardian_model
+        candidate(guardian_model)
         target = urlsplit(endpoint)
         if (target.scheme != 'http' or target.hostname != '127.0.0.1' or not target.port
                 or target.path or target.query or target.fragment or target.username):
@@ -70,7 +72,11 @@ class EvaluationProxy:
                     self.send_error(413); return
                 try:
                     body = json.loads(self.rfile.read(length))
-                    review = body.get('text', {}).get('format', {}).get('type') == 'json_schema'
+                    schema = body.get('text', {}).get('format', {})
+                    structured = schema.get('type') == 'json_schema'
+                    assessment = schema.get('schema', {})
+                    review = (structured and assessment.get('required') == ['outcome']
+                              and assessment.get('properties', {}).get('outcome') == {'type': 'string', 'enum': ['allow', 'deny']})
                 except (ValueError, AttributeError):
                     self.send_error(400); return
                 def unbounded(value):
@@ -82,7 +88,9 @@ class EvaluationProxy:
                         return any(unbounded(child) for child in value.values())
                     return isinstance(value, list) and any(unbounded(child) for child in value)
                 reasons = []
-                if body.get('model') != model: reasons.append('model')
+                if structured and (not review or case == 'coding'): reasons.append('review_role')
+                selected = guardian_model if review else model
+                if body.get('model') != selected: reasons.append('model')
                 if body.get('stream') is not True: reasons.append('stream')
                 if any(body.get(key) is not None for key in ('previous_response_id', 'conversation', 'prompt')):
                     reasons.append('server_context')
@@ -131,7 +139,7 @@ class EvaluationProxy:
                     budget_data['used'] += 1
                     owner.budget.write_text(json.dumps(budget_data))
                 record = {'kind': 'automatic_review' if review else 'task', 'status': 0,
-                          'model': model, 'role': 'guardian' if review else 'main', 'paid_inference': True,
+                          'model': selected, 'role': 'guardian' if review else 'main', 'paid_inference': True,
                           'request_id': budget_data['used'],
                           'completed': False, 'text_deltas': 0, 'tool_deltas': 0,
                           'headers_ms': None, 'first_delta_ms': None, 'completed_ms': None,
@@ -193,7 +201,7 @@ class EvaluationProxy:
                                 result = event.get('response', {})
                                 if not isinstance(result, dict):
                                     record['failure'] = 'response_incomplete'; break
-                                if result.get('model', model) != model:
+                                if result.get('model', selected) != selected:
                                     record['failure'] = 'response_model_mismatch'; break
                                 record['completed'] = True
                                 record['completed_ms'] = round((time.perf_counter() - start) * 1000, 3)

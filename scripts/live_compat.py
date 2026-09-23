@@ -348,6 +348,8 @@ def run_one(options, root):
                    TOFA_LIVE_SUPERVISOR=str(supervisor))
     base = [options.launcher, "launch", "codex", "--model", getattr(options, "model", MODEL), "--allow-unverified", "--",
             "--ask-for-approval", "never", "--sandbox", "workspace-write", "exec"]
+    if getattr(options, "guardian_model", None) is not None:
+        base[base.index("--"):base.index("--")] = ["--evaluation-guardian-model", options.guardian_model]
     turns = []
     session = None
     same_session = False

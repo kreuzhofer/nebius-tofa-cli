@@ -2,7 +2,8 @@
 
 This workflow evaluates one exact selected candidate with **Codex CLI 0.155.1,
 macOS ARM64, adapted connection**. The selected model serves both the main and
-Guardian roles. Omitting `--model` retains the original Kimi-K3 invocation. It extends the existing
+Guardian roles by default. `--guardian-model` explicitly selects a different reviewer
+for this invocation. Omitting `--model` retains the original Kimi-K3 invocation. It extends the existing
 [compatibility harness](../prototype/LIVE-COMPATIBILITY.md); it is not a model
 leaderboard. Available models are candidates, not supported models. The launcher
 continues to require `--allow-unverified`; evaluation never changes that policy.
@@ -115,9 +116,11 @@ No separate deployed output ceiling is published in those catalog records.
 `output_ceiling: null` preserves that gap: 4,096 is the evaluation's enforced
 request cap, not an invented provider maximum. The [Responses API contract](https://docs.tokenfactory.nebius.com/api-reference/inference/create-a-response)
 defines `max_output_tokens` to include reasoning and visible output; a provider
-rejection remains failed evidence. Optional Responses reasoning effort, summary
-and verbosity controls are omitted by launcher policy because model-specific
-contracts are unverified. Shell selection, prompt template, output truncation and
+rejection remains failed evidence. Launcher metadata omits unverified optional reasoning defaults, summary and
+verbosity controls. With an explicitly cataloged Guardian, Codex 0.155.1 itself
+sends `reasoning.effort = "none"`; main requests omit effort. This native preset
+default is recorded in effective settings, not advertised as a verified provider
+capability. Live provider rejection remains failed evidence. Shell selection, prompt template, output truncation and
 95% compaction headroom are client policy, not provider capabilities. The
 [existing Codex metadata investigation](../research/kimi-provider-metadata.md)
 records the pinned client's schema and prompt requirements. Metadata missing
@@ -142,8 +145,13 @@ python3 scripts/model_evaluation.py \
 
 Skip login when saved credentials are already present. Output must be a new file.
 Omit `--model` to reproduce the original Kimi command. Each command evaluates one
-candidate; separate Guardian selection and live campaign comparisons are follow-up
-work. Every real client has an isolated HOME, CODEX_HOME and synthetic workspace;
+main/reviewer pair; live campaign comparisons are subsequent work.
+For a distinct pair, add `--guardian-model 'zai-org/GLM-5.3-Flash'` while selecting
+`--model 'moonshotai/Kimi-K3'`. To record explicit same-model evidence, pass the
+same exact ID to both flags. Both models must be available with resolved metadata.
+The evaluator supplies the launch-only `--evaluation-guardian-model` flag; ordinary
+launcher invocations keep their previous single-model behavior. See
+[paired runtime evidence and frozen configuration](paired-routing-2026-09-23.md). Every real client has an isolated HOME, CODEX_HOME and synthetic workspace;
 normal launcher credentials are read only by the launcher. Normal configuration
 and credential-file hashes are compared in memory and never published. Native
 credential-store lifecycle is outside this evaluation. Scratch session files are
@@ -166,7 +174,12 @@ Report version `codex-model-evaluation-v2` adds independent `roles.main` and
 counts. The task and rubric versions remain v1. Earlier scoring fields remain
 available; legacy `completed_repeats` means stored attempts, so use the explicit
 role counters for actual completion. Guardian counts use pairs, with additional
-case counts. Failed repeats stay in the report, and a failure stops only its lane.
+case counts. Paired reports add `guardian_model`, `guardian_metadata`, and
+`guardian_price_snapshot`; `model`, `candidate_metadata`, and `price_snapshot`
+continue to describe the main model. Each approval case
+uses `model` for its reviewer and `main_model` for its synthetic proposer.
+Each role uses its own prices; the informational bound uses the more expensive
+per-request role across the shared 48-request budget. Failed repeats stay in the report, and a failure stops only its lane.
 `guardian_assessment_ms` spans the first review request through the last review
 request, including native retry waits; individual request times and whole-turn
 `elapsed_ms` remain separate. Missing timing is null, never zero. This observer

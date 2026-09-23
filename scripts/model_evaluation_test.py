@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from evaluation_candidates import candidate
-from evaluation_report import approval_failures
+from evaluation_report import approval_failures, role_report
 
 SCRIPT = Path(__file__).with_name('model_evaluation.py')
 
@@ -44,9 +44,60 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(missing['roles']['main']['cost']['complete'])
         self.assertIsNone(missing['roles']['main']['cost']['estimated_usd'])
 
+    def test_pair_costs_and_missing_guardian_measurements_use_each_role_identity(self):
+        main, guardian = 'moonshotai/Kimi-K3', 'zai-org/GLM-5.3-Flash'
+        evidence = {'model': main, 'guardian_model': guardian, 'runs': [{'turns': [{'streams': [
+            {'model': main, 'paid_inference': True, 'usage': {'input_tokens': 100, 'output_tokens': 20}}]}]}]}
+        approvals = [{'requests': [
+            {'kind': 'synthetic_task', 'model': main, 'paid_inference': False},
+            {'kind': 'automatic_review', 'model': guardian, 'paid_inference': True,
+             'usage': {'input_tokens': 100, 'output_tokens': 20}}]}]
+        roles = role_report(evidence, approvals)['roles']
+        self.assertEqual(roles['main']['cost']['estimated_usd'], 0.0006)
+        self.assertEqual(roles['guardian']['cost']['estimated_usd'], 0.000025)
+        self.assertEqual(roles['guardian']['cost']['paid_requests'], 1)
+        self.assertIsNone(roles['guardian']['worst_assessment_ms'])
+        approvals[0]['requests'].append({'kind': 'automatic_review', 'model': guardian, 'paid_inference': True})
+        cost = role_report(evidence, approvals)['roles']['guardian']['cost']
+        self.assertIsNone(cost['estimated_usd'])
+        self.assertEqual(cost['known_subtotal_usd'], 0.000025)
+
     def test_unknown_model_never_inherits_kimi_prices(self):
         report, _ = self.score({'streams': [{'usage': {'input_tokens': 10, 'output_tokens': 10}}]}, model='other/model')
         self.assertIsNone(report['roles']['main']['cost']['estimated_usd'])
+
+    def test_invalid_guardian_is_blocked_before_launcher_and_preserves_evidence(self):
+        for guardian in ('unlisted/candidate', '', 'PRIVATE INVALID VALUE'):
+            with self.subTest(guardian=guardian), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'report.json'
+                result = subprocess.run([sys.executable, str(SCRIPT), '--launcher', '/nonexistent-launcher',
+                    '--guardian-model', guardian, '--output', str(output)], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1)
+                report = json.loads(output.read_text())
+                self.assertEqual(report['blocked_reason'], 'candidate_not_shortlisted')
+                self.assertEqual(report['roles']['guardian']['attempted'], 0)
+                self.assertNotIn('PRIVATE INVALID VALUE', output.read_text())
+                original = output.read_bytes()
+                subprocess.run([sys.executable, str(SCRIPT), '--launcher', '/nonexistent-launcher',
+                    '--guardian-model', guardian, '--output', str(output)], capture_output=True)
+                self.assertEqual(output.read_bytes(), original)
+
+    def test_missing_guardian_metadata_blocks_before_catalog_or_inference(self):
+        import model_evaluation
+        from evaluation_candidates import snapshot
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = snapshot()
+            del data['models']['zai-org/GLM-5.3']['context_window']
+            metadata = root / 'metadata.json'; metadata.write_text(json.dumps(data))
+            output = root / 'report.json'
+            with patch('evaluation_candidates.SNAPSHOT_PATH', metadata), patch('sys.argv', [str(SCRIPT),
+                    '--launcher', '/nonexistent-launcher', '--guardian-model', 'zai-org/GLM-5.3', '--output', str(output)]):
+                self.assertEqual(model_evaluation.main(), 1)
+            report = json.loads(output.read_text())
+            self.assertEqual(report['blocked_reason'], 'candidate_metadata_unresolved')
+            self.assertEqual(report['roles']['guardian']['model'], 'zai-org/GLM-5.3')
+            self.assertEqual(report['roles']['guardian']['attempted'], 0)
         self.assertFalse(report['roles']['main']['cost']['complete'])
 
     def test_unknown_candidate_is_blocked_before_launcher_invocation(self):

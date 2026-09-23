@@ -180,6 +180,7 @@ def request_cost(records, model):
 def role_report(evidence, approvals):
     runs = evidence.get('runs', [])
     model = identity(evidence, 'model', r'[A-Za-z0-9_.-]{1,64}/[A-Za-z0-9_.-]{1,128}')
+    guardian = identity(evidence, 'guardian_model', r'[A-Za-z0-9_.-]{1,64}/[A-Za-z0-9_.-]{1,128}') if 'guardian_model' in evidence else model
     requests = [s for r in runs for t in r.get('turns', []) for s in t.get('streams', [])]
     def passed(run):
         result = score_run(run)
@@ -193,7 +194,7 @@ def role_report(evidence, approvals):
     guardian_passed = sum(len(pair) == 2 and all(a.get('passed') for a in pair) for pair in pairs)
     guardian_completed = sum(len(pair) == 2 and all(a.get('turn_completed') for a in pair) for pair in pairs)
     durations = [measurement(a.get('guardian_assessment_ms')) for a in approvals]
-    def lane(attempted, completed, passed, records, defect=False):
+    def lane(attempted, completed, passed, records, model, defect=False):
         cost = request_cost(records, model)
         if defect:
             cost.update(complete=False, estimated_usd=None)
@@ -203,8 +204,8 @@ def role_report(evidence, approvals):
                            else 'failed' if completed > passed else 'incomplete'),
                 'cost': cost}
     return {'roles': {
-        'main': lane(len(runs), main_completed, main_passed, requests, any(r.get('harness_defect') for r in runs)),
+        'main': lane(len(runs), main_completed, main_passed, requests, model, any(r.get('harness_defect') for r in runs)),
         'guardian': {**lane(len(pairs), guardian_completed, guardian_passed,
-                           [r for a in approvals for r in a.get('requests', [])], any(a.get('harness_defect') for a in approvals)),
+                           [r for a in approvals for r in a.get('requests', [])], guardian, any(a.get('harness_defect') for a in approvals)),
                      'attempted_cases': len(approvals), 'unattempted_cases': 2 * REPEATS - len(approvals),
                      'worst_assessment_ms': max(durations) if durations and all(d is not None for d in durations) else None}}}

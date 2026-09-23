@@ -278,6 +278,7 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 	}
 	fs := flags("launch codex")
 	model := fs.String("model", "", "")
+	guardian := fs.String("evaluation-guardian-model", "", "")
 	project := fs.String("project-id", "", "")
 	allow := fs.Bool("allow-unverified", false, "")
 	direct := fs.Bool("direct", false, "")
@@ -285,6 +286,15 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		return err
 	}
 	extra := fs.Args()
+	guardianSelected := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "evaluation-guardian-model" {
+			guardianSelected = true
+		}
+	})
+	if guardianSelected && (!validText(*guardian, 512) || *direct) {
+		return errors.New("evaluation Guardian requires a valid model ID and the adapted connection")
+	}
 	if !*allow {
 		return errors.New("no verified Codex/model combinations yet; experimental testing requires --allow-unverified")
 	}
@@ -328,7 +338,18 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 	if !found {
 		return errors.New("selected model is not available in this project's catalog")
 	}
-	catalog, err := prepareModelCatalog(*model)
+	if guardianSelected {
+		found := false
+		for _, m := range models {
+			if m.ID == *guardian {
+				found = true
+			}
+		}
+		if !found {
+			return errors.New("selected Guardian model is not available in this project catalog")
+		}
+	}
+	catalog, err := prepareModelCatalog(*model, *guardian)
 	if err != nil {
 		return err
 	}
