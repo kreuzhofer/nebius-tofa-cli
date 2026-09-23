@@ -73,6 +73,13 @@ directories. This first slice does not provide a resume command or a shared hist
 list: [#34](https://github.com/kreuzhofer/nebius-tofa-cli/issues/34) must establish
 ordinary-desktop history before a desktop prerelease.
 
+The [#34 contract check](research/desktop-shared-history.md) found a blocker in
+the tested client: its engine can list shared history, but an ordinary launch
+cannot resume a session whose temporary Token Factory provider is absent. The
+inspected desktop model picker does not expose the explicit provider switch
+needed to recover that session. Shared-history support remains incomplete;
+the synthetic engine checks are not a live desktop acceptance result.
+
 ## Limitations and verification
 
 Automatic thread titles work for the captured Kimi desktop contract through a
