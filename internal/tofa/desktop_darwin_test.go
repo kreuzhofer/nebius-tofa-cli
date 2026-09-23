@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"syscall"
@@ -31,6 +32,9 @@ func desktopFixture(t *testing.T, mode string) (string, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Never read the operator's startup files during offline desktop qualification.
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("ZDOTDIR", t.TempDir())
 	bundle := filepath.Join(t.TempDir(), "Renamed.app")
 	for _, dir := range []string{"Contents/MacOS", "Contents/Resources"} {
 		if err := os.MkdirAll(filepath.Join(bundle, dir), 0700); err != nil {
@@ -74,11 +78,21 @@ if 'app-server' in sys.argv:
             result = {'requirements': {'modelProvider': 'openai'} if MODE == 'managed' else None}
         print(json.dumps({'id': req['id'], 'result': result}), flush=True)
     sys.exit(0)
+# Desktop 26.915.31945 QDe/pq/gq: reload an interactive login shell,
+# merge its environment, then restore only the explicitly supplied CODEX_HOME.
+probe = "printf '\\0%%s\\0' '_SHELL_ENV_DELIMITER_'; command env -0 || exit; printf '\\0%%s\\0' '_SHELL_ENV_DELIMITER_'; exit"
+shell_env = dict(os.environ, CODEX_SHELL='1', DISABLE_AUTO_UPDATE='true', ZSH_TMUX_AUTOSTARTED='true', ZSH_TMUX_AUTOSTART='false')
+loaded = subprocess.run(['/bin/zsh', '-ilc', probe], env=shell_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout.split(b'\0_SHELL_ENV_DELIMITER_\0')[1]
+os.environ.update(dict(item.decode().split('=', 1) for item in loaded.split(b'\0') if b'=' in item))
+os.environ['CODEX_HOME'] = str(home)
 if MODE == 'exit': sys.exit(23)
 (home / 'sessions').mkdir(exist_ok=True)
 (home / 'sessions' / 'conversation.jsonl').write_text('preserve conversation')
 pathlib.Path('user-work.txt').write_text('preserve workspace')
 pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'env': dict(os.environ)}))
+if MODE == 'shell-commands':
+    result = subprocess.run(['/bin/zsh', '-ilc', 'printf "%%s|%%s" "$STARTUP_ENV" "$STARTUP_RC"'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    pathlib.Path(CAPTURE+'.commands').write_bytes(result.stdout)
 if MODE == 'http':
     results = []
     for model, key in [('gpt-5.6-luna', os.environ['TOFA_API_KEY']), ('moonshotai/Kimi-K3', 'wrong'), ('moonshotai/Kimi-K3', os.environ['TOFA_API_KEY'])]:
@@ -88,7 +102,7 @@ if MODE == 'http':
         except urllib.error.HTTPError as err: results.append({'status':err.code, 'body':err.read().decode()})
     pathlib.Path(CAPTURE+'.http').write_text(json.dumps(results))
 if MODE != 'exit':
-    engine = pathlib.Path(__file__).parent.parent / 'Resources' / 'codex'
+    engine = pathlib.Path(os.environ.get('CODEX_CLI_PATH') or pathlib.Path(__file__).parent.parent / 'Resources' / 'codex')
     worker_args = [str(engine), '-c', 'features.code_mode_host=true', 'app-server'] + ([] if engine.is_symlink() else ['--owned-worker'])
     worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     pathlib.Path(CAPTURE+'.pid').write_text(str(worker.pid))
@@ -102,6 +116,190 @@ if MODE != 'exit':
 		}
 	}
 	return bundle, capture
+}
+
+func TestDesktopShellReloadPreservesAdapterCredential(t *testing.T) {
+	bundle, capture := desktopFixture(t, "http")
+	startup := "export TOFA_API_KEY=shell-credential-must-not-replace-adapter-token\n"
+	if err := os.WriteFile(filepath.Join(os.Getenv("ZDOTDIR"), ".zshrc"), []byte(startup), 0600); err != nil {
+		t.Fatal(err)
+	}
+	requests := 0
+	app, _ := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		fmt.Fprint(w, "streamed through authenticated adapter")
+	}, nil)
+	if err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(capture + ".http")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var responses []struct {
+		Status int
+		Body   string
+	}
+	if err := json.Unmarshal(raw, &responses); err != nil {
+		t.Fatal(err)
+	}
+	if requests != 1 || len(responses) != 3 || responses[2].Status != 200 || responses[2].Body != "streamed through authenticated adapter" {
+		t.Fatalf("shell initialization broke authenticated inference: upstream=%d responses=%s", requests, raw)
+	}
+}
+
+func TestDesktopShellReloadPreservesEngineAndCodingStartup(t *testing.T) {
+	for _, custom := range []bool{false, true} {
+		t.Run(fmt.Sprintf("custom startup directory %v", custom), func(t *testing.T) {
+			bundle, capture := desktopFixture(t, "shell-commands")
+			startupDir := os.Getenv("HOME")
+			if custom {
+				startupDir = filepath.Join(t.TempDir(), "user's shell files")
+				if err := os.Mkdir(startupDir, 0700); err != nil {
+					t.Fatal(err)
+				}
+				t.Setenv("ZDOTDIR", startupDir)
+			} else {
+				if err := os.Unsetenv("ZDOTDIR"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			files := map[string]string{
+				".zshenv": "export STARTUP_ENV=normal-env\nexport CODEX_CLI_PATH=/unverified/engine\nexport OPENAI_API_KEY=synthetic-shell-secret\n",
+				".zshrc":  "export STARTUP_RC=normal-rc\nexport CODEX_APP_SERVER_OPENAI_BASE_URL=https://wrong.invalid\n",
+			}
+			for name, content := range files {
+				if err := os.WriteFile(filepath.Join(startupDir, name), []byte(content), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			app, output := adapterFixture(t, nil, nil)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
+				t.Fatal(err)
+			}
+			commands, err := os.ReadFile(capture + ".commands")
+			if err != nil || string(commands) != "normal-env|normal-rc" {
+				t.Fatalf("coding shell startup lost: %s %v", commands, err)
+			}
+			var child struct{ Env map[string]string }
+			raw, err := os.ReadFile(capture)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(raw, &child); err != nil {
+				t.Fatal(err)
+			}
+			for _, key := range []string{"CODEX_CLI_PATH", "OPENAI_API_KEY", "CODEX_APP_SERVER_OPENAI_BASE_URL"} {
+				if child.Env[key] != "" {
+					t.Errorf("shell reintroduced %s into desktop environment", key)
+				}
+			}
+			if _, err := os.Stat(child.Env["ZDOTDIR"]); !os.IsNotExist(err) {
+				t.Fatal("launcher shell files survived desktop exit")
+			}
+			for name, content := range files {
+				raw, err := os.ReadFile(filepath.Join(startupDir, name))
+				if err != nil || string(raw) != content {
+					t.Fatalf("ordinary %s modified", name)
+				}
+			}
+			if !strings.Contains(output.String(), "Desktop environment probe isolated") {
+				t.Fatal("environment isolation was not announced")
+			}
+			assertDesktopWorkerStopped(t, capture)
+		})
+	}
+}
+
+// Optional real Electron qualification: no inference or ordinary desktop state.
+// Inspect only the owned engine and authenticate to the local HTTP fixture using
+// its temporary credential; never log a process environment or credential value.
+func TestDesktopInstalledAppShellIsolation(t *testing.T) {
+	bundle := os.Getenv("TOFA_TEST_DESKTOP_APP")
+	if bundle == "" {
+		t.Skip("set TOFA_TEST_DESKTOP_APP to qualify installed Electron with synthetic shell exports")
+	}
+	if !filepath.IsAbs(bundle) {
+		t.Fatal("TOFA_TEST_DESKTOP_APP must be absolute")
+	}
+	t.Setenv("HOME", t.TempDir())
+	startupDir := t.TempDir()
+	t.Setenv("ZDOTDIR", startupDir)
+	if err := os.WriteFile(filepath.Join(startupDir, ".zshenv"), []byte("export TOFA_API_KEY=synthetic-wrong-key\nexport CODEX_CLI_PATH=/unverified/engine\nexport OPENAI_API_KEY=synthetic-shell-key\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	app, _ := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, "authenticated owned engine") }, nil)
+	listening := make(chan net.Listener, 1)
+	app.Listen = func(network, address string) (net.Listener, error) {
+		listener, err := net.Listen(network, address)
+		if err == nil {
+			listening <- listener
+		}
+		return listener, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	done := make(chan error, 1)
+	go func() {
+		done <- app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+	}()
+	defer func() {
+		cancel()
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Error("owned desktop cleanup exceeded deadline")
+		}
+	}()
+	var enginePID string
+	for enginePID == "" {
+		select {
+		case <-ctx.Done():
+			t.Fatal("owned bundled engine did not start with isolated shell environment")
+		default:
+		}
+		raw, err := exec.Command("/bin/ps", "-axo", "pid=,pgid=,args=").Output()
+		if err != nil {
+			t.Fatal("could not inspect owned processes")
+		}
+		lines := strings.Split(string(raw), "\n")
+		var group string
+		for _, line := range lines {
+			fields := strings.Fields(line)
+			if len(fields) > 2 && strings.Contains(line, filepath.Join(bundle, "Contents/MacOS/ChatGPT")+" ") && strings.Contains(line, "--user-data-dir="+app.Dir+"/desktop-sessions/") {
+				group = fields[1]
+			}
+		}
+		for _, line := range lines {
+			fields := strings.Fields(line)
+			if len(fields) > 2 && group != "" && fields[1] == group && strings.Contains(line, filepath.Join(bundle, "Contents/Resources/codex")+" ") && strings.Contains(line, "app-server") {
+				enginePID = fields[0]
+			}
+		}
+		if enginePID == "" {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	raw, err := exec.Command("/bin/ps", "eww", "-p", enginePID, "-o", "command=").Output()
+	if err != nil {
+		t.Fatal("could not inspect owned engine environment")
+	}
+	credential := regexp.MustCompile(`(?:^| )TOFA_API_KEY=([a-f0-9]{64})(?: |$)`).FindSubmatch(raw)
+	if len(credential) != 2 || strings.Contains(string(raw), "synthetic-wrong-key") || strings.Contains(string(raw), "synthetic-shell-key") || strings.Contains(string(raw), "/unverified/engine") {
+		t.Fatal("shell overwrote owned engine settings")
+	}
+	var listener net.Listener
+	select {
+	case listener = <-listening:
+	case <-ctx.Done():
+		t.Fatal("missing adapter listener")
+	}
+	response := adapterRequest(t, "http://"+listener.Addr().String(), string(credential[1]), `{"model":"moonshotai/Kimi-K3","input":[]}`)
+	if response.StatusCode != 200 {
+		t.Fatalf("owned engine credential rejected: %s", response.Status)
+	}
+	t.Log("Installed desktop loaded the bundled engine and retained its working adapter credential despite conflicting shell exports.")
 }
 
 func TestDesktopRejectsAuxiliaryModelsAndStreamsSelectedModel(t *testing.T) {

@@ -99,7 +99,7 @@ func desktopEnv(home, electron, token string) []string {
 	for _, entry := range os.Environ() {
 		name, _, _ := strings.Cut(entry, "=")
 		name = strings.ToUpper(name)
-		if strings.HasPrefix(name, "CODEX_") || strings.HasPrefix(name, "OPENAI_") || strings.HasPrefix(name, "TOFA_") || strings.HasPrefix(name, "ELECTRON_") || strings.HasPrefix(name, "DYLD_") || name == "NODE_OPTIONS" {
+		if strings.HasPrefix(name, "CODEX_") || strings.HasPrefix(name, "OPENAI_") || strings.HasPrefix(name, "TOFA_") || strings.HasPrefix(name, "ELECTRON_") || strings.HasPrefix(name, "DYLD_") || name == "NODE_OPTIONS" || name == "ZDOTDIR" {
 			continue
 		}
 		env = append(env, entry)
@@ -198,11 +198,19 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		return err
 	}
 	defer func() { result = errors.Join(result, os.Remove(configPath)) }()
-	env := desktopEnv(home, electron, adapter.token)
+	shellDir, err := prepareDesktopShell(ctx, root)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		result = errors.Join(result, os.Remove(filepath.Join(shellDir, ".zshenv")), os.Remove(shellDir))
+	}()
+	env := append(desktopEnv(home, electron, adapter.token), "ZDOTDIR="+shellDir)
 	if err := checkDesktopRouting(adapter.context, bundle.engine, workspace, env, *model, adapter.endpoint, catalog); err != nil {
 		return err
 	}
 	fmt.Fprintln(a.Out, "Bundled engine effective routing checked; verified provider metadata loaded. Keep this terminal open; Ctrl-C stops the owned desktop instance.")
+	fmt.Fprintln(a.Out, "Desktop environment probe isolated: using launch-time variables; coding commands retain normal shell startup.")
 	command := exec.Command(bundle.executable, "--user-data-dir="+electron, "codex://threads/new?mode=codex")
 	command.Env, command.Dir = env, workspace
 	return runDesktopProcess(adapter.context, command, bundle.engine)

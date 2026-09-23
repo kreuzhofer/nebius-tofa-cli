@@ -16,6 +16,8 @@ the unverified gate remains mandatory.
 The initial gate accepts macOS **26.6.2 arm64**, ChatGPT **26.915.31945 (9922)**,
 bundle ID `com.openai.codex`, and bundled engine **0.155.0-alpha.9.2**. The target is
 the application's **Codex mode**, selected with `codex://threads/new?mode=codex`.
+The isolated target also requires `/bin/zsh` as the account's login shell;
+other shells need separate qualification and should use `launch codex`.
 Discovery checks `/Applications` then `~/Applications`, with ChatGPT/Codex bundle
 names. For another location, pass `--app-bundle '/path/to/ChatGPT.app'`; its identity
 and versions still must match. An incompatible client fails with an actionable
@@ -28,6 +30,16 @@ separate `CODEX_HOME`, Electron user data, an empty workspace, and a verified
 one-model catalog. It does not use `open`, restart the ordinary app, copy account
 credentials, write ordinary configuration, or adopt an existing app-server.
 Conflicting inherited Codex/OpenAI/Electron routing variables are removed.
+
+The pinned desktop normally reloads an interactive login-shell environment after
+startup. A private, per-launch `ZDOTDIR/.zshenv` handles only that exact environment
+query, returning the launch-time variables before ordinary startup files can
+replace the adapter credential or engine selection. The launcher announces this
+behavior. Normal coding-shell commands restore the original `ZDOTDIR` (or its
+unset state) and source the original `.zshenv`; normal startup then continues.
+User shell files are never edited. This uses zsh's documented
+[startup-file ordering](https://zsh.sourceforge.io/Doc/Release/Files.html), with
+the environment query pinned to the inspected desktop source.
 
 The bundled engine resolves configuration in that isolated home/workspace before
 launch. The launcher checks the effective model, provider, endpoint, authentication
@@ -54,8 +66,8 @@ is signaled; ordinary desktop processes are not targeted.
 
 Every launch prints its private `desktop-sessions/session-*` directory beneath the
 tofa configuration directory. Conversation databases, session records, Electron
-state and workspace files remain there after exit. Generated routing configuration
-and the temporary model catalog are removed, and the local credential becomes
+state and workspace files remain there after exit. Generated routing configuration,
+shell-probe files and the temporary model catalog are removed; the local credential becomes
 unusable when the adapter closes. The launcher never recursively deletes session
 directories. This first slice does not provide a resume command or a shared history
 list: [#34](https://github.com/kreuzhofer/nebius-tofa-cli/issues/34) must establish
@@ -76,6 +88,8 @@ or arbitrary desktop argument passthrough is exposed.
 Offline executable/HTTP tests cover isolated state, credential separation, selected
 model streaming, auxiliary rejection, managed/effective routing conflicts, startup
 and exit errors, engine loss, cancellation, adapter failure, and owned-worker cleanup.
+They reproduce the desktop's zsh environment query, including conflicting shell
+exports and normal coding-shell startup with default/custom `ZDOTDIR`.
 The desktop executable tests run on the exact gated macOS/architecture combination;
 other hosts skip them. Portable launcher/adapter regressions still run normally.
 To additionally exercise the actual bundled engine against dummy offline settings:
@@ -88,6 +102,19 @@ TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex \
 This optional test starts the real engine but a fixture desktop executable; it does
 not perform paid inference. The earlier human-operated streaming/tool/continuation
 proof and its limitations remain in the [feasibility evidence](research/codex-desktop-feasibility.md).
+
+An additional opt-in test starts the installed Electron app with dummy credentials,
+synthetic conflicting shell exports and fresh state, checks the owned bundled
+engine's temporary credential against a local fixture, then stops the owned app:
+
+```sh
+TOFA_TEST_DESKTOP_APP=/Applications/ChatGPT.app \
+  go test ./internal/tofa -run '^TestDesktopInstalledAppShellIsolation$' -count=1 -v
+```
+
+This passed on the pinned combination on 2026-09-23. It uses no paid inference;
+it verifies that shell-exported credentials and an engine override do not reach
+the actual desktop engine. It does not claim another live-model coding session.
 
 ### Live source-build check, 2026-09-23
 
