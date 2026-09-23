@@ -1,0 +1,31 @@
+{
+  "freeze_version": "selected-pairs-v1",
+  "issue": 40,
+  "created_utc": "2026-09-23T09:26:16Z",
+  "source_commit": "e987a25c79fbf4ce3b516e41572c69eb9ea9a708",
+  "individual_freeze": {
+    "file": "individual-models-2026-09-23/freeze.json",
+    "sha256": "d80e7fd6dcb86f232ef34b73d916245ca19af0097009e1469ccb3a0689c3c6bb"
+  },
+  "individual_comparison": {
+    "file": "individual-models-2026-09-23/comparison.json",
+    "sha256": "a4152d122f6df6d366cd9f001157fd59c8701f3848c443f39598d2bcd6dd69eb"
+  },
+  "guardian_selection": {
+    "file": "individual-models-2026-09-23/guardian-selection.json",
+    "sha256": "6b7aeb3a505e5c5b02116209d062a87cb5f778e852253d17ad6d4fb5ef5a339e"
+  },
+  "selected_guardian": "zai-org/GLM-5.3-Flash",
+  "selected_main_models": [
+    "deepseek-ai/DeepSeek-V4.1-Flash",
+    "zai-org/GLM-5.3"
+  ],
+  "planned_new_runs": 2,
+  "reused_pair_reports": [],
+  "same_model_reuse": "Selected Guardian did not pass the main role; its individual report supplies selection evidence only.",
+  "harness_changes": "None: use exact individual campaign source, launcher and Codex hashes.",
+  "price_policy": "Explicitly retain approximate 2026-09-23 snapshot; not a billing guarantee.",
+  "currency_cap_enforced": false,
+  "prerequisite_issue_39": "Closed with maintainer authorization before paired evaluation.",
+  "correction_policy": "Preserve original attempts; separately identify any defect correction and affected reruns."
+}

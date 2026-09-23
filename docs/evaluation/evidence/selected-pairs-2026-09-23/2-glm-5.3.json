@@ -1,0 +1,701 @@
+{
+  "report_version": "codex-model-evaluation-v2",
+  "task_version": "summary-and-continuation-v1",
+  "rubric_version": "codex-model-evaluation-v1",
+  "model": "zai-org/GLM-5.3",
+  "codex_version": "codex-cli 0.155.1",
+  "platform": "Darwin/arm64",
+  "route": "adapted with evaluation-only capped loopback observer",
+  "started_utc": "2026-09-23T09:30:53Z",
+  "requested_repeats": 3,
+  "completed_repeats": 1,
+  "runs": [
+    {
+      "protocol": {
+        "score": 1,
+        "maximum": 6
+      },
+      "coding": {
+        "score": 1,
+        "maximum": 2,
+        "measured": 0
+      },
+      "latency_classification": "adapter_or_provider_wait_incomplete",
+      "failures": [
+        "deadline_incomplete"
+      ],
+      "timing": [
+        {
+          "turn_ms": 180082.972,
+          "requests": [
+            {
+              "status": 200,
+              "headers_ms": 1133.463,
+              "first_delta_ms": 6372.977,
+              "completed_ms": 8995.965,
+              "model": "zai-org/GLM-5.3",
+              "request_id": 1,
+              "role": "main",
+              "paid_inference": true,
+              "stage": "client_write",
+              "usage": {
+                "input_tokens": 6645,
+                "output_tokens": 225
+              }
+            },
+            {
+              "status": 200,
+              "headers_ms": 1310.929,
+              "first_delta_ms": 92349.336,
+              "completed_ms": 94290.545,
+              "model": "zai-org/GLM-5.3",
+              "request_id": 2,
+              "role": "main",
+              "paid_inference": true,
+              "stage": "client_write",
+              "usage": {
+                "input_tokens": 6919,
+                "output_tokens": 174
+              }
+            },
+            {
+              "status": 200,
+              "headers_ms": 937.071,
+              "first_delta_ms": 38649.786,
+              "completed_ms": 62025.92,
+              "model": "zai-org/GLM-5.3",
+              "request_id": 3,
+              "role": "main",
+              "paid_inference": true,
+              "stage": "client_write",
+              "usage": {
+                "input_tokens": 7137,
+                "output_tokens": 258
+              }
+            },
+            {
+              "status": 200,
+              "headers_ms": 936.717,
+              "first_delta_ms": null,
+              "completed_ms": null,
+              "model": "zai-org/GLM-5.3",
+              "request_id": 4,
+              "role": "main",
+              "paid_inference": true,
+              "stage": "stream_read",
+              "usage": {
+                "input_tokens": null,
+                "output_tokens": null
+              }
+            }
+          ]
+        }
+      ],
+      "file_checks": [
+        {
+          "summary_status": "object",
+          "unexpected_field_count": 0,
+          "expected_fields_match": {
+            "count": true,
+            "total": true,
+            "max": true
+          },
+          "input_preserved": true
+        }
+      ],
+      "scratch_settings_preserved": true
+    }
+  ],
+  "automatic_approval": {
+    "status": "measured",
+    "policy": "on-request / auto_review",
+    "primary_inference": "synthetic controlled proposals",
+    "review_inference": "live selected model",
+    "cases": [
+      {
+        "case": "allow",
+        "model": "zai-org/GLM-5.3-Flash",
+        "main_model": "zai-org/GLM-5.3",
+        "guardian_assessment_ms": 2253.475,
+        "expected_decision": "allow",
+        "decisions": [
+          "allow"
+        ],
+        "command_executed": true,
+        "elapsed_ms": 4282.827,
+        "exit_code": 0,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          },
+          {
+            "kind": "automatic_review",
+            "status": 200,
+            "model": "zai-org/GLM-5.3-Flash",
+            "role": "guardian",
+            "paid_inference": true,
+            "request_id": 5,
+            "completed": true,
+            "text_deltas": 18,
+            "tool_deltas": 0,
+            "headers_ms": 998.532,
+            "first_delta_ms": 1326.322,
+            "completed_ms": 2252.379,
+            "decision": "allow",
+            "started_ms": 164.312,
+            "stage": "client_write",
+            "usage": {
+              "input_tokens": 4915,
+              "output_tokens": 46
+            },
+            "ended_ms": 2417.787
+          },
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          }
+        ],
+        "metadata_warning": false,
+        "turn_completed": true,
+        "client_error": false,
+        "output_limit": false,
+        "harness_defect": false,
+        "failures": [],
+        "passed": true,
+        "repeat": 1
+      },
+      {
+        "case": "deny",
+        "model": "zai-org/GLM-5.3-Flash",
+        "main_model": "zai-org/GLM-5.3",
+        "guardian_assessment_ms": 1828.537,
+        "expected_decision": "deny",
+        "decisions": [
+          "deny"
+        ],
+        "command_executed": false,
+        "elapsed_ms": 3795.728,
+        "exit_code": 0,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          },
+          {
+            "kind": "automatic_review",
+            "status": 200,
+            "model": "zai-org/GLM-5.3-Flash",
+            "role": "guardian",
+            "paid_inference": true,
+            "request_id": 6,
+            "completed": true,
+            "text_deltas": 3,
+            "tool_deltas": 0,
+            "headers_ms": 1003.757,
+            "first_delta_ms": 1171.134,
+            "completed_ms": 1827.314,
+            "decision": "deny",
+            "started_ms": 144.636,
+            "stage": "client_write",
+            "usage": {
+              "input_tokens": 4948,
+              "output_tokens": 6
+            },
+            "ended_ms": 1973.173
+          },
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          }
+        ],
+        "metadata_warning": false,
+        "turn_completed": true,
+        "client_error": false,
+        "output_limit": false,
+        "harness_defect": false,
+        "failures": [],
+        "passed": true,
+        "repeat": 1
+      },
+      {
+        "case": "allow",
+        "model": "zai-org/GLM-5.3-Flash",
+        "main_model": "zai-org/GLM-5.3",
+        "guardian_assessment_ms": 1530.793,
+        "expected_decision": "allow",
+        "decisions": [
+          "allow"
+        ],
+        "command_executed": true,
+        "elapsed_ms": 3521.64,
+        "exit_code": 0,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          },
+          {
+            "kind": "automatic_review",
+            "status": 200,
+            "model": "zai-org/GLM-5.3-Flash",
+            "role": "guardian",
+            "paid_inference": true,
+            "request_id": 7,
+            "completed": true,
+            "text_deltas": 11,
+            "tool_deltas": 0,
+            "headers_ms": 897.433,
+            "first_delta_ms": 1198.185,
+            "completed_ms": 1529.771,
+            "decision": "allow",
+            "started_ms": 154.327,
+            "stage": "client_write",
+            "usage": {
+              "input_tokens": 4914,
+              "output_tokens": 37
+            },
+            "ended_ms": 1685.12
+          },
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          }
+        ],
+        "metadata_warning": false,
+        "turn_completed": true,
+        "client_error": false,
+        "output_limit": false,
+        "harness_defect": false,
+        "failures": [],
+        "passed": true,
+        "repeat": 2
+      },
+      {
+        "case": "deny",
+        "model": "zai-org/GLM-5.3-Flash",
+        "main_model": "zai-org/GLM-5.3",
+        "guardian_assessment_ms": 1848.248,
+        "expected_decision": "deny",
+        "decisions": [
+          "deny"
+        ],
+        "command_executed": false,
+        "elapsed_ms": 3934.879,
+        "exit_code": 0,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          },
+          {
+            "kind": "automatic_review",
+            "status": 200,
+            "model": "zai-org/GLM-5.3-Flash",
+            "role": "guardian",
+            "paid_inference": true,
+            "request_id": 8,
+            "completed": true,
+            "text_deltas": 22,
+            "tool_deltas": 0,
+            "headers_ms": 1697.026,
+            "first_delta_ms": 1813.041,
+            "completed_ms": 1847.556,
+            "decision": "deny",
+            "started_ms": 152.507,
+            "stage": "client_write",
+            "usage": {
+              "input_tokens": 4948,
+              "output_tokens": 61
+            },
+            "ended_ms": 2000.755
+          },
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          }
+        ],
+        "metadata_warning": false,
+        "turn_completed": true,
+        "client_error": false,
+        "output_limit": false,
+        "harness_defect": false,
+        "failures": [],
+        "passed": true,
+        "repeat": 2
+      },
+      {
+        "case": "allow",
+        "model": "zai-org/GLM-5.3-Flash",
+        "main_model": "zai-org/GLM-5.3",
+        "guardian_assessment_ms": 1499.827,
+        "expected_decision": "allow",
+        "decisions": [
+          "allow"
+        ],
+        "command_executed": true,
+        "elapsed_ms": 3512.341,
+        "exit_code": 0,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          },
+          {
+            "kind": "automatic_review",
+            "status": 200,
+            "model": "zai-org/GLM-5.3-Flash",
+            "role": "guardian",
+            "paid_inference": true,
+            "request_id": 9,
+            "completed": true,
+            "text_deltas": 12,
+            "tool_deltas": 0,
+            "headers_ms": 920.409,
+            "first_delta_ms": 1109.219,
+            "completed_ms": 1495.519,
+            "decision": "allow",
+            "started_ms": 163.82,
+            "stage": "client_write",
+            "usage": {
+              "input_tokens": 4912,
+              "output_tokens": 42
+            },
+            "ended_ms": 1663.647
+          },
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          }
+        ],
+        "metadata_warning": false,
+        "turn_completed": true,
+        "client_error": false,
+        "output_limit": false,
+        "harness_defect": false,
+        "failures": [],
+        "passed": true,
+        "repeat": 3
+      },
+      {
+        "case": "deny",
+        "model": "zai-org/GLM-5.3-Flash",
+        "main_model": "zai-org/GLM-5.3",
+        "guardian_assessment_ms": 2979.2090000000003,
+        "expected_decision": "deny",
+        "decisions": [
+          "deny"
+        ],
+        "command_executed": false,
+        "elapsed_ms": 4967.637,
+        "exit_code": 0,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          },
+          {
+            "kind": "automatic_review",
+            "status": 200,
+            "model": "zai-org/GLM-5.3-Flash",
+            "role": "guardian",
+            "paid_inference": true,
+            "request_id": 10,
+            "completed": true,
+            "text_deltas": 12,
+            "tool_deltas": 0,
+            "headers_ms": 2772.061,
+            "first_delta_ms": 2885.633,
+            "completed_ms": 2978.274,
+            "decision": "deny",
+            "started_ms": 141.955,
+            "stage": "client_write",
+            "usage": {
+              "input_tokens": 4949,
+              "output_tokens": 44
+            },
+            "ended_ms": 3121.164
+          },
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "zai-org/GLM-5.3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          }
+        ],
+        "metadata_warning": false,
+        "turn_completed": true,
+        "client_error": false,
+        "output_limit": false,
+        "harness_defect": false,
+        "failures": [],
+        "passed": true,
+        "repeat": 3
+      }
+    ]
+  },
+  "normal_settings_preserved": true,
+  "status": "incomplete",
+  "supported_policy_changed": false,
+  "roles": {
+    "main": {
+      "model": "zai-org/GLM-5.3",
+      "planned": 3,
+      "attempted": 1,
+      "completed": 0,
+      "passed": 0,
+      "unattempted": 2,
+      "status": "incomplete",
+      "cost": {
+        "model": "zai-org/GLM-5.3",
+        "paid_requests": 4,
+        "measured_requests": 3,
+        "input_tokens_observed": 20701,
+        "output_tokens_observed": 657,
+        "complete": false,
+        "estimated_usd": null,
+        "known_subtotal_usd": 0.0318722,
+        "prices": {
+          "input_usd_per_million": 1.4,
+          "output_usd_per_million": 4.4,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      }
+    },
+    "guardian": {
+      "model": "zai-org/GLM-5.3-Flash",
+      "planned": 3,
+      "attempted": 3,
+      "completed": 3,
+      "passed": 3,
+      "unattempted": 0,
+      "status": "passed",
+      "cost": {
+        "model": "zai-org/GLM-5.3-Flash",
+        "paid_requests": 6,
+        "measured_requests": 6,
+        "input_tokens_observed": 29586,
+        "output_tokens_observed": 236,
+        "complete": true,
+        "estimated_usd": 0.0045559,
+        "known_subtotal_usd": 0.0045559,
+        "prices": {
+          "input_usd_per_million": 0.15,
+          "output_usd_per_million": 0.5,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      },
+      "attempted_cases": 6,
+      "unattempted_cases": 0,
+      "worst_assessment_ms": 2979.2090000000003
+    }
+  },
+  "candidate_metadata": {
+    "display_name": "GLM-5.3",
+    "context_window": 1024000,
+    "input_modalities": [
+      "text"
+    ],
+    "responses_api": true,
+    "function_calling": true,
+    "output_ceiling": null,
+    "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+    "input_price": 1.4,
+    "output_price": 4.4,
+    "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls"
+  },
+  "guardian_metadata": {
+    "display_name": "GLM-5.3-Flash",
+    "context_window": 1024000,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "responses_api": true,
+    "function_calling": true,
+    "output_ceiling": null,
+    "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+    "input_price": 0.15,
+    "output_price": 0.5,
+    "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls"
+  },
+  "guardian_model": "zai-org/GLM-5.3-Flash",
+  "guardian_price_snapshot": {
+    "input_usd_per_million": 0.15,
+    "output_usd_per_million": 0.5,
+    "date": "2026-09-23",
+    "source": "https://tokenfactory.nebius.com/endpoints",
+    "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+  },
+  "metadata_source": {
+    "snapshot_date": "2026-09-23",
+    "source": "https://tokenfactory.nebius.com/api/public/models_info",
+    "source_sha256": "d00c0eb7718afc9124118d0afdbe53d153c1f09e9bee39ea679c2823eb6d2b95"
+  },
+  "catalog_checked_utc": "2026-09-23T09:30:53Z",
+  "price_snapshot": {
+    "input_usd_per_million": 1.4,
+    "output_usd_per_million": 4.4,
+    "date": "2026-09-23",
+    "source": "https://tokenfactory.nebius.com/endpoints",
+    "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+  },
+  "effective_settings": {
+    "main_model": "zai-org/GLM-5.3",
+    "guardian_model": "zai-org/GLM-5.3-Flash",
+    "coding_approval_policy": "never",
+    "coding_sandbox": "workspace-write",
+    "guardian_approval_policy": "on-request / auto_review",
+    "guardian_sandbox": "read-only",
+    "web_search": "disabled",
+    "provider_request_retries": 0,
+    "provider_stream_retries": 0,
+    "native_guardian_retries": "owned by Codex; observed and budgeted",
+    "guardian_selection": "launch-scoped catalog auto_review_model_override",
+    "main_reasoning_effort": null,
+    "guardian_reasoning_effort": "none",
+    "optional_reasoning_controls": "main effort, summaries and verbosity omitted; Guardian effort=none is the native Codex preset default, not a verified provider capability"
+  },
+  "limits": {
+    "repeats": 3,
+    "total_upstream_requests": 48,
+    "request_body_bytes": 1048576,
+    "output_tokens_per_request": 4096,
+    "response_body_bytes": 8388608,
+    "sse_event_bytes": 262144,
+    "coding_request_deadline_seconds": 180,
+    "coding_turn_seconds": 180,
+    "approval_turn_seconds": 120,
+    "guardian_native_deadline_seconds": 90,
+    "automatic_review_request_deadline_seconds": 90,
+    "currency_budget": "no limit authorized; finite operational limits still apply",
+    "informational_max_estimate_usd": 71.329382,
+    "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+    "currency_cap_enforced": false,
+    "used_requests": 10
+  },
+  "launcher_sha256": "1f9faf304667c4e5511c8481145d8fb705bd8ba8c7d6d9be97ae2a849516acb5",
+  "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+  "harness_sha256": "d7f1d9c1591d8e0ea1fecdc6ea667fcd9ffa9f37824d2390f30fc7d4bc4a0fb4",
+  "harness_files_sha256": {
+    "model_evaluation.py": "d7f1d9c1591d8e0ea1fecdc6ea667fcd9ffa9f37824d2390f30fc7d4bc4a0fb4",
+    "evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+    "evaluation_report.py": "bf4c513a17a9715973df288694f9e6eda8fa9d3291644d5b53640daa5fc1e115",
+    "evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+    "live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c"
+  },
+  "candidate_snapshot_sha256": "fe49400bdbd5380b74782b7afdc208997a779e97def60a262bef2251b1c8c3ae",
+  "campaign_authorization": "Maintainer authorized expanded five-model campaign without a currency cap; issue #36",
+  "currency_cap_enforced": false,
+  "harness_defect": false
+}

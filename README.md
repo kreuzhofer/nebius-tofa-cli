@@ -380,7 +380,8 @@ continuation evidence. Live runs are separate from the offline commands above.
 For separate coding/protocol scores, controlled automatic-review allow/deny cases,
 and a dated five-model candidate selection, use the bounded
 [model evaluation workflow](docs/evaluation/README.md). Reports do not change the
-launcher's supported-model policy.
+launcher's supported-model policy. The [2026-09-23 final comparison](docs/evaluation/selected-pairs-2026-09-23.md)
+links all five individual evaluations, selected-pair qualification and campaign cost totals.
 
 For opt-in request diagnosis, see [Codex request tracing](docs/codex-tracing.md).
 The standalone harness records sanitized request metadata, status and timing;

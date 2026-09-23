@@ -147,6 +147,9 @@ Skip login when saved credentials are already present. Output must be a new file
 Omit `--model` to reproduce the original Kimi command. Each command evaluates one
 main/reviewer pair. The [2026-09-23 individual-role comparison](individual-models-2026-09-23.md)
 retains all five live attempts, a fresh Kimi baseline, and the Guardian selection.
+The [final selected-pair comparison](selected-pairs-2026-09-23.md) records the two
+eligible main models with the selected Guardian, exact qualification results,
+and campaign totals without counting selection evidence twice.
 For a distinct pair, add `--guardian-model 'zai-org/GLM-5.3-Flash'` while selecting
 `--model 'moonshotai/Kimi-K3'`. To record explicit same-model evidence, pass the
 same exact ID to both flags. Both models must be available with resolved metadata.

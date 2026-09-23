@@ -1,0 +1,196 @@
+{
+  "issue": 40,
+  "checked_utc": "2026-09-23T09:38:11Z",
+  "changes": "Reports, sanitized evidence and documentation links only; frozen runtime and test code unchanged.",
+  "preflight": {
+    "scoring_selection_tests_passed": 30,
+    "installed_client_tests_passed": 8,
+    "installed_client_tests_skipped": 0,
+    "go_vet_passed": true
+  },
+  "final_checks": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./..."
+      ],
+      "passed": true
+    },
+    {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "passed": true
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/build_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 6,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/evaluation_proxy_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 11,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/install_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 2,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/lifecycle_test.py",
+        "dist",
+        "v0.1.0-rc.1",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 4,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/live_compat_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 19,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/model_evaluation_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 30,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/qualify_macos_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 18,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/qualify_windows_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 17,
+      "skipped": 17
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/release_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 6,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/terminal_test.py",
+        "<frozen-launcher>",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 2,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/trace_codex_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 6,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/windows_process_test.py",
+        "-v"
+      ],
+      "passed": true,
+      "tests": 9,
+      "skipped": 7
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "scripts"
+      ],
+      "passed": true
+    }
+  ],
+  "python_suite": {
+    "tests": 130,
+    "passed": 106,
+    "skipped": 24,
+    "skip_reason": "Windows-only qualification/process checks unavailable on macOS; the eight installed-client tests ran separately before inference.",
+    "installed_client_additional_passes": 8
+  },
+  "evidence_checks": {
+    "frozen_source_and_executable_hashes": true,
+    "five_individual_report_hashes": true,
+    "guardian_selection_recomputed": true,
+    "only_two_passing_main_models_selected": true,
+    "observed_role_identities": true,
+    "same_provider_routing_fixture": true,
+    "unchanged_limits_metadata_prices_and_effective_settings": true,
+    "preservation_and_failure_gates": true,
+    "repeat_counts_and_lane_stop_rules": true,
+    "contiguous_budget_ids_including_native_attempts": true,
+    "assessment_intervals": true,
+    "usage_and_cost_arithmetic": true,
+    "unique_campaign_reports_no_double_counting": true,
+    "markdown_tables_match_source_evidence": true,
+    "local_document_links_resolve": true,
+    "sanitized_report_fields_reviewed": true
+  },
+  "live_outcomes": {
+    "attempts": 2,
+    "qualified": 1,
+    "incomplete": 1,
+    "setup_failures": 0,
+    "harness_defects": 0,
+    "defect_reruns": 0
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "campaign_version": "selected-pairs-v1",
+  "issue": 40,
+  "created_utc": "2026-09-23T09:34:34Z",
+  "selected_guardian": "zai-org/GLM-5.3-Flash",
+  "selection_status": "selected",
+  "selection_evidence": {
+    "file": "individual-models-2026-09-23/guardian-selection.json",
+    "sha256": "6b7aeb3a505e5c5b02116209d062a87cb5f778e852253d17ad6d4fb5ef5a339e"
+  },
+  "freeze": {
+    "file": "selected-pairs-2026-09-23/freeze.json",
+    "sha256": "e80877ec93f51516003800be5a788e2885ea8367010441a1ec67daaef1634a59"
+  },
+  "reused_pair_reports": [],
+  "defect_reruns": [],
+  "setup_failures": [],
+  "harness_defects": 0,
+  "consistency_checks_passed": true,
+  "normal_settings_preserved": true,
+  "currency_cap_enforced": false,
+  "paired_totals": {
+    "unique_runs": 2,
+    "total_upstream_requests": 37,
+    "roles": {
+      "main": {
+        "planned": 6,
+        "attempted": 4,
+        "completed": 3,
+        "passed": 3,
+        "unattempted": 2,
+        "cost": {
+          "paid_requests": 25,
+          "measured_requests": 24,
+          "input_tokens_observed": 196077,
+          "output_tokens_observed": 3110,
+          "complete": false,
+          "estimated_usd": null,
+          "known_subtotal_usd": 0.0874286
+        }
+      },
+      "guardian": {
+        "planned": 6,
+        "attempted": 6,
+        "completed": 6,
+        "passed": 6,
+        "unattempted": 0,
+        "cost": {
+          "paid_requests": 12,
+          "measured_requests": 12,
+          "input_tokens_observed": 59186,
+          "output_tokens_observed": 522,
+          "complete": true,
+          "estimated_usd": 0.0091389,
+          "known_subtotal_usd": 0.0091389
+        }
+      }
+    },
+    "estimated_usd": null,
+    "known_subtotal_usd": 0.0965675
+  },
+  "campaign_totals": {
+    "unique_runs": 7,
+    "total_upstream_requests": 104,
+    "roles": {
+      "main": {
+        "planned": 21,
+        "attempted": 13,
+        "completed": 10,
+        "passed": 9,
+        "unattempted": 8,
+        "cost": {
+          "paid_requests": 74,
+          "measured_requests": 71,
+          "input_tokens_observed": 569031,
+          "output_tokens_observed": 10637,
+          "complete": false,
+          "estimated_usd": null,
+          "known_subtotal_usd": 0.43550445
+        }
+      },
+      "guardian": {
+        "planned": 21,
+        "attempted": 15,
+        "completed": 15,
+        "passed": 11,
+        "unattempted": 6,
+        "cost": {
+          "paid_requests": 30,
+          "measured_requests": 28,
+          "input_tokens_observed": 142580,
+          "output_tokens_observed": 1302,
+          "complete": false,
+          "estimated_usd": null,
+          "known_subtotal_usd": 0.06569735
+        }
+      }
+    },
+    "estimated_usd": null,
+    "known_subtotal_usd": 0.5012018
+  },
+  "reports": [
+    {
+      "file": "individual-models-2026-09-23/1-glm-5.3-flash.json",
+      "sha256": "f77a04c348142e9ad5cc3537aaee0979fe16135b09f2126e0ad590d7b23bc6f2",
+      "model": "zai-org/GLM-5.3-Flash",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "phase": "individual",
+      "status": "incomplete",
+      "main_status": "failed",
+      "guardian_status": "passed"
+    },
+    {
+      "file": "individual-models-2026-09-23/2-deepseek-v4.1-flash.json",
+      "sha256": "9c55ed95eba855952572b1aab168d18f1adac942f759af1bc889aedd6c010985",
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "guardian_model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "phase": "individual",
+      "status": "incomplete",
+      "main_status": "passed",
+      "guardian_status": "failed"
+    },
+    {
+      "file": "individual-models-2026-09-23/3-glm-5.3.json",
+      "sha256": "8928c9fc2eb0805eeebbe78fd93d2e0298c797dfae0dd72eaa6e7c2cde7a7e58",
+      "model": "zai-org/GLM-5.3",
+      "guardian_model": "zai-org/GLM-5.3",
+      "phase": "individual",
+      "status": "incomplete",
+      "main_status": "passed",
+      "guardian_status": "failed"
+    },
+    {
+      "file": "individual-models-2026-09-23/4-kimi-k3.json",
+      "sha256": "69b3b4e31754db49ecc812a4c63475437b06fc17b25f7c3fa26bf43a19d6401a",
+      "model": "moonshotai/Kimi-K3",
+      "guardian_model": "moonshotai/Kimi-K3",
+      "phase": "individual",
+      "status": "incomplete",
+      "main_status": "incomplete",
+      "guardian_status": "failed"
+    },
+    {
+      "file": "individual-models-2026-09-23/5-nemotron-3-ultra-550b-a55b.json",
+      "sha256": "961a7d0906944c87c21f1425a9dd9777a56e521328409d756fa418a31826c8cd",
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "guardian_model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "phase": "individual",
+      "status": "incomplete",
+      "main_status": "incomplete",
+      "guardian_status": "failed"
+    },
+    {
+      "file": "selected-pairs-2026-09-23/1-deepseek-v4.1-flash.json",
+      "sha256": "9990e8ccaf9cce2809048610e775cd08635ade49b4d4a164f08623f305d69a70",
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "phase": "pair",
+      "status": "passed",
+      "main_status": "passed",
+      "guardian_status": "passed"
+    },
+    {
+      "file": "selected-pairs-2026-09-23/2-glm-5.3.json",
+      "sha256": "ea7205bbecff3a2907e9339fb4b4b1703904d1f854e7376c1719dfdf3763a826",
+      "model": "zai-org/GLM-5.3",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "phase": "pair",
+      "status": "incomplete",
+      "main_status": "incomplete",
+      "guardian_status": "passed"
+    }
+  ],
+  "qualified_pairs": [
+    {
+      "main_model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "guardian_model": "zai-org/GLM-5.3-Flash",
+      "evidence": {
+        "file": "selected-pairs-2026-09-23/1-deepseek-v4.1-flash.json",
+        "sha256": "9990e8ccaf9cce2809048610e775cd08635ade49b4d4a164f08623f305d69a70"
+      }
+    }
+  ],
+  "limitations": "Bounded compatibility, observed latency and approximate workload cost only; no SLA, broad approval-safety guarantee, general software-engineering benchmark or support-policy change."
+}
