@@ -33,6 +33,9 @@ class InstalledEvaluationTests(unittest.TestCase):
     def test_failure_starting_continuation_retains_measured_first_turn(self):
         self.candidate_run('zai-org/GLM-5.3-Flash', coding_pass=True, disappear=True)
 
+    def test_unreadable_normal_settings_retains_completed_measurements(self):
+        self.candidate_run('zai-org/GLM-5.3-Flash', coding_pass=True, unreadable_settings=True)
+
     def test_distinct_pair_command_to_report(self):
         self.candidate_run('moonshotai/Kimi-K3', guardian='zai-org/GLM-5.3-Flash', coding_pass=True)
 
@@ -42,7 +45,7 @@ class InstalledEvaluationTests(unittest.TestCase):
     def test_distinct_failed_guardian_retains_main_pass(self):
         self.candidate_run('moonshotai/Kimi-K3', guardian='zai-org/GLM-5.3-Flash', coding_pass=True, guardian_pass=False)
 
-    def candidate_run(self, model, explicit=True, coding_pass=False, guardian_pass=True, disappear=False, guardian=None):
+    def candidate_run(self, model, explicit=True, coding_pass=False, guardian_pass=True, disappear=False, guardian=None, unreadable_settings=False):
         reviewer = guardian or model
         seen = []
         optional_controls = []
@@ -60,6 +63,10 @@ class InstalledEvaluationTests(unittest.TestCase):
                 seen.append(('review' if review else 'coding', body.get('model')))
                 optional_controls.append((review, body.get('reasoning')))
                 if disappear and launcher.exists(): launcher.unlink()
+                # Simulate a final preservation-read failure in the isolated
+                # normal home; never touch the maintainer's actual settings.
+                if unreadable_settings and sentinel.is_file():
+                    sentinel.chmod(0)
                 text = json.dumps({'outcome': 'deny' if deny else 'allow'}) if review and guardian_pass else 'Fixture complete.'
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/event-stream')
@@ -121,8 +128,24 @@ class InstalledEvaluationTests(unittest.TestCase):
                             'provider_observed_roles': seen, 'provider_count': 1,
                             'temporary_catalogs_remaining': len(list(scratch.glob('tofa-model-catalog-*'))),
                             'report': report}, saved, indent=2)
-                self.assertEqual(result.returncode, 0 if coding_pass and guardian_pass and not disappear else 1, json.dumps(report))
+                self.assertEqual(result.returncode, 0 if coding_pass and guardian_pass and not disappear and not unreadable_settings else 1, json.dumps(report))
                 self.assertEqual(list(scratch.glob('tofa-model-catalog-*')), [])
+                if unreadable_settings:
+                    self.assertEqual(report['status'], 'incomplete')
+                    self.assertTrue(report['harness_defect'])
+                    self.assertFalse(report['normal_settings_preserved'])
+                    self.assertEqual(len(report['runs']), 3)
+                    self.assertEqual(len(report['automatic_approval']['cases']), 6)
+                    for role, requests, subtotal in (('main', 12, 0.0003), ('guardian', 6, 0.00015)):
+                        lane = report['roles'][role]
+                        self.assertEqual(lane['attempted'], 3)
+                        self.assertEqual(lane['completed'], 3)
+                        self.assertEqual(lane['passed'], 0)
+                        self.assertEqual(lane['status'], 'failed')
+                        self.assertEqual(lane['cost']['paid_requests'], requests)
+                        self.assertEqual(lane['cost']['known_subtotal_usd'], subtotal)
+                    self.assertNotIn('synthetic-fixture-token', output.read_text())
+                    return
                 self.assertEqual(sentinel.read_text(), 'model = "ordinary-model"\n')
                 self.assertTrue(all(controls == {'effort': 'none'} if review else not controls
                                     for review, controls in optional_controls), optional_controls)

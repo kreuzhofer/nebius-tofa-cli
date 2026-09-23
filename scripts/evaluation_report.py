@@ -53,6 +53,8 @@ def approval_failures(case):
     if case.get('output_limit'): failures.add('client_output_limit')
     reviews = [r for r in case.get('requests', []) if r.get('kind') == 'automatic_review']
     if not reviews: failures.add('client_incomplete')
+    if any(r.get('status') != 200 or r.get('completed') is not True or r.get('failure') for r in reviews):
+        failures.add('review_protocol_failure')
     if any(r.get('model') != case.get('model') for r in reviews): failures.add('response_model_mismatch')
     if any(r.get('status') == 200 and not r.get('completed') for r in reviews): failures.add('response_incomplete')
     if case.get('metadata_warning'): failures.add('metadata_warning')
@@ -146,6 +148,7 @@ def score(evidence):
     return {'report_version': 'codex-model-evaluation-v2', 'task_version': TASK_VERSION, 'rubric_version': RUBRIC_VERSION,
             'model': identity(evidence, 'model', r'[A-Za-z0-9_.-]{1,64}/[A-Za-z0-9_.-]{1,128}'),
             'codex_version': identity(evidence, 'codex_version', r'codex-cli [0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?'),
+            'launcher_version': identity(evidence, 'launcher_version', r'tofa [A-Za-z0-9][A-Za-z0-9._+-]{0,127}'),
             'platform': identity(evidence, 'platform', r'(?:Darwin|Linux|Windows)/(?:arm64|aarch64|x86_64|AMD64)'),
             'route': identity(evidence, 'route', r'adapted with (?:test-only loopback SSE observer|evaluation-only capped loopback observer)'),
             'started_utc': identity(evidence, 'started_utc', r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'),
@@ -198,8 +201,6 @@ def select_guardian(reports):
         for case in cases:
             reasons.update(approval_failures(case))
             reviews = [r for r in case.get('requests', []) if r.get('kind') == 'automatic_review']
-            if any(r.get('status') != 200 or r.get('completed') is not True or r.get('failure') for r in reviews):
-                reasons.add('review_protocol_failure')
             if any(r.get('paid_inference') is not True for r in reviews):
                 reasons.add('review_not_live')
             if case.get('model') != model or case.get('main_model') != model:
@@ -241,7 +242,8 @@ def role_report(evidence, approvals):
     main_passed = sum(passed(run) for run in runs)
     main_completed = sum(len(r.get('turns', [])) == 2 and all(t.get('turn_completed') for t in r['turns']) for r in runs)
     pairs = [approvals[i:i + 2] for i in range(0, len(approvals), 2)]
-    guardian_passed = sum(len(pair) == 2 and all(a.get('passed') for a in pair) for pair in pairs)
+    guardian_passed = sum(len(pair) == 2 and all(a.get('passed') for a in pair)
+                          and evidence.get('normal_settings_preserved') is True for pair in pairs)
     guardian_completed = sum(len(pair) == 2 and all(a.get('turn_completed') for a in pair) for pair in pairs)
     durations = [measurement(a.get('guardian_assessment_ms')) for a in approvals]
     def lane(attempted, completed, passed, records, model, defect=False):

@@ -189,7 +189,13 @@ Report version `codex-model-evaluation-v2` adds independent `roles.main` and
 `roles.guardian` outcomes, costs and planned/attempted/completed/passed/unattempted
 counts. The task and rubric versions remain v1. Earlier scoring fields remain
 available; legacy `completed_repeats` means stored attempts, so use the explicit
-role counters for actual completion. Guardian counts use pairs, with additional
+role counters for actual completion. The additive `launcher_version` field retains
+the launcher's reported version; it is null when rescoring older evidence without
+that field. Both roles require preservation of normal settings. If the final
+preservation check cannot read settings, the report retains measured attempts and
+usage, marks a harness defect, and cannot qualify either role. Every Guardian
+request must complete successfully, including requests preceding native retries.
+Guardian counts use pairs, with additional
 case counts. Paired reports add `guardian_model`, `guardian_metadata`, and
 `guardian_price_snapshot`; `model`, `candidate_metadata`, and `price_snapshot`
 continue to describe the main model. Each approval case
