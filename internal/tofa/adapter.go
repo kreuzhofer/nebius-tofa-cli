@@ -99,6 +99,7 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 		},
 	}
 	var approvalNotice sync.Once
+	var titleNotice sync.Once
 	adapter.server = &http.Server{
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
@@ -149,6 +150,19 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 					http.Error(writer, "request adapter: unsupported model; request was not sent upstream", http.StatusBadRequest)
 					return
 				}
+			}
+			body, titleAdapted, err := adaptDesktopTitle(body)
+			if err != nil {
+				notice(err.Error())
+				http.Error(writer, "request adapter: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			if titleAdapted {
+				titleNotice.Do(func() {
+					noticeMu.Lock()
+					defer noticeMu.Unlock()
+					fmt.Fprintln(a.Out, "Request adapter: Kimi-K3 desktop title schema moved to final-answer instructions; tools retained, desktop still validates the title.")
+				})
 			}
 			body, adapted, err := adaptApprovalReview(body)
 			if err != nil {

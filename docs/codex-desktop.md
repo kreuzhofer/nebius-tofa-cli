@@ -63,8 +63,11 @@ ordinary-desktop history before a desktop prerelease.
 
 ## Limitations and verification
 
-Automatic thread titles can fail on the existing tools-plus-JSON-schema restriction;
-[#33](https://github.com/kreuzhofer/nebius-tofa-cli/issues/33) owns that follow-up.
+Automatic thread titles work for the captured Kimi desktop contract through a
+narrow schema-to-instructions adaptation; the desktop still validates the generated
+title and description. The launcher announces this adaptation. Different title
+schemas or tool inventories fail explicitly; read-only app title lookups that add
+tools remain unqualified. See the [#33 contract and live evidence](research/desktop-title-generation.md).
 The recognized non-strict automatic-review workaround remains unchanged. Native
 auxiliary model IDs, compaction endpoints, web search, account-backed services, and
 Chat/Work/voice are not qualified. No `--direct`, Guardian evaluation model, profile,
