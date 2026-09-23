@@ -199,7 +199,7 @@ class DesktopHistoryContract(unittest.TestCase):
                          ["Synthetic history answer."] * len(user_messages))
         return thread
 
-    def test_engine_history_survives_relaunch_but_missing_provider_blocks_desktop_resume(self):
+    def test_engine_history_preserves_explicit_provider_change(self):
         with self.launch() as engine:
             ordinary = self.create(engine, "Ordinary fixture conversation")
         with self.launch(tofa=True) as engine:
@@ -221,7 +221,7 @@ class DesktopHistoryContract(unittest.TestCase):
                 self.assertEqual((thread["id"], thread["name"], thread["modelProvider"], thread["cwd"]),
                                  (thread_id, name, provider, str(self.root / "workspace")))
             # This is the inspected desktop's resume shape. The passing assertion
-            # records a blocker; it does NOT assert #34 desktop acceptance.
+            # records the accepted unavailable-provider limitation, not UI acceptance.
             request_count = len(self.requests)
             failed = engine.response("thread/resume", {"threadId": adapted, "model": None, "modelProvider": None})
             self.assertIn("Model provider `nebius-tofa` not found", failed["error"]["message"])
@@ -244,6 +244,31 @@ class DesktopHistoryContract(unittest.TestCase):
                          ["fixture-native", "fixture-native", "moonshotai/Kimi-K3", "fixture-native"])
         self.assertTrue(all(request["path"] == "/responses" and request["authorization"] == "Bearer synthetic"
                             for request in self.requests))
+
+    def test_tofa_history_resumes_when_provider_returns(self):
+        with self.launch(tofa=True) as engine:
+            thread_id = self.create(engine, "Relaunch fixture conversation")
+        with self.launch() as engine:
+            listed = engine.call("thread/list", {"modelProviders": [], "useStateDbOnly": True})["data"]
+            self.assertEqual([row["id"] for row in listed], [thread_id])
+            thread = self.read_history(engine, thread_id, ["Relaunch fixture conversation"])
+            self.assertEqual(thread["name"], "Relaunch fixture conversation")
+            failed = engine.response("thread/resume", {"threadId": thread_id})
+            self.assertIn("Model provider `nebius-tofa` not found", failed["error"]["message"])
+            self.assertEqual(len(self.requests), 1)
+        with self.launch(tofa=True) as engine:
+            resumed = engine.call("thread/resume", {"threadId": thread_id})
+            self.assertEqual((resumed["thread"]["id"], resumed["modelProvider"], resumed["model"]),
+                             (thread_id, "nebius-tofa", "moonshotai/Kimi-K3"))
+            engine.turn(thread_id, "Continue after relaunching with Token Factory")
+        with self.launch() as engine:
+            listed = engine.call("thread/list", {"modelProviders": [], "useStateDbOnly": True})["data"]
+            self.assertEqual([row["id"] for row in listed], [thread_id])
+            thread = self.read_history(engine, thread_id, ["Relaunch fixture conversation",
+                                                        "Continue after relaunching with Token Factory"])
+            self.assertEqual((thread["name"], thread["modelProvider"], thread["cwd"]),
+                             ("Relaunch fixture conversation", "nebius-tofa", str(self.root / "workspace")))
+        self.assertEqual([request["model"] for request in self.requests], ["moonshotai/Kimi-K3"] * 2)
 
 
 if __name__ == "__main__":

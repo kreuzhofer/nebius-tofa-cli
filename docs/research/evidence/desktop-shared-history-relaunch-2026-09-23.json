@@ -1,0 +1,38 @@
+{
+  "issue": 34,
+  "date": "2026-09-23",
+  "status": "accepted_relaunch_recovery_verified_at_engine_boundary",
+  "engine": {
+    "version": "0.155.0-alpha.9.2",
+    "sha256": "9280c0754e8f1f6b72f495d30c8c82a006dbc4995bf0492916fa0901f6bfd1f9",
+    "source_commit": "4607249e430dac1c961df4dc615beae88e33cec8"
+  },
+  "test": {
+    "path": "scripts/desktop_history_test.py",
+    "command": "TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex python3 scripts/desktop_history_test.py -v",
+    "result": "passed",
+    "tests": 2,
+    "engine_launches": 8,
+    "synthetic_inference_requests": 6,
+    "external_inference_requests": 0
+  },
+  "relaunch_recovery": {
+    "ordinary_mode_lists_same_thread_once": true,
+    "ordinary_mode_preserves_title_workspace_and_messages": true,
+    "missing_provider_resume_fails_without_inference": true,
+    "restored_provider_resumes_same_id_and_model": true,
+    "continuation_uses_original_token_factory_provider": true,
+    "subsequent_ordinary_launch_reads_both_complete_turns": true,
+    "provider_switch_required": false
+  },
+  "boundaries": {
+    "desktop_ui_launched": false,
+    "ordinary_profile_used": false,
+    "ordinary_credentials_read_or_modified": false,
+    "ordinary_app_interrupted": false,
+    "database_copied_or_modified_directly": false,
+    "temporary_state_removed": true
+  },
+  "production_shared_history_implemented": false,
+  "interpretation": "Tests verify the actual engine using synthetic modes and one loopback fixture per test. This does not verify production launcher integration, refreshed adapter endpoints or credentials, or live desktop UI parity."
+}

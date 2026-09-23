@@ -5,6 +5,21 @@ Investigation for [#34](https://github.com/kreuzhofer/nebius-tofa-cli/issues/34)
 from the installed desktop's user-facing behavior. Sharing a database alone does
 not qualify the required ordinary/Token Factory launch experience.
 
+## Accepted requirement revision
+
+On 2026-09-23, the maintainer explicitly accepted launcher-scoped Token Factory
+availability. Tofa sessions must remain visible in ordinary desktop launches,
+with their identities, titles, messages, and workspace associations retained.
+Continuing a tofa session may require relaunching through tofa; switching an
+existing session to GPT is not guaranteed. A missing-provider error while tofa is
+inactive is an accepted limitation, **not a blocker for #34**. This supersedes
+the earlier requirement to offer an available-provider switch in ordinary mode.
+
+The shared-profile implementation, safe routing lifecycle, and live desktop
+verification remain required. The revision accepts unavailable inference while
+tofa is inactive; it does not accept hidden or lost conversations, stale routing,
+account changes, or silent provider switching.
+
 ## Scope and provenance
 
 The inspected client is ChatGPT **26.915.31945 (9922)**, bundle ID
@@ -62,9 +77,10 @@ does not intentionally convert existing threads to Token Factory.
 **A missing recorded provider is an explicit error.** Configuration resolution
 looks up the selected provider and returns `Model provider '<id>' not found`
 (with backticks around the actual ID in the implementation) when absent.
-Removing a launch-only provider definition therefore cannot itself supply the
-required ordinary-mode recovery flow. Leaving a definition pointing at an exited
-adapter would instead retain an unusable endpoint; that is not a recovery design.
+Removing a launch-only provider definition therefore makes ordinary-mode
+continuation unavailable, as accepted above. The intended recovery is relaunching
+through tofa with a fresh provider route. Leaving a definition pointing at an
+exited adapter would instead retain an unusable endpoint.
 [Pinned configuration lookup](https://github.com/openai/codex/blob/4607249e430dac1c961df4dc615beae88e33cec8/codex-rs/core/src/config/mod.rs#L3710).
 
 **The inspected desktop model picker does not implement arbitrary provider
@@ -103,10 +119,10 @@ other engine or database coordination protects a particular concurrent launch.
 
 ## Installed-engine boundary experiment
 
-The [opt-in diagnostic](../../scripts/desktop_history_test.py) starts the actual
-bundled engine four times against a single temporary synthetic home/workspace
-and a loopback Responses fixture. It uses dummy credentials and no paid
-inference, ordinary desktop process, or user conversation store.
+The [opt-in diagnostics](../../scripts/desktop_history_test.py) start the actual
+bundled engine against temporary synthetic homes/workspaces and a loopback
+Responses fixture. They use dummy credentials and no paid inference, ordinary
+desktop process, or user conversation store.
 
 ```sh
 TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex \
@@ -115,9 +131,9 @@ TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex \
 
 On 2026-09-23, the initial desired ordinary-mode resume failed with
 ``Model provider `nebius-tofa` not found``.
-The final diagnostic **passed: one test**,
-because it asserts that observed blocker explicitly; this is not a passing
-shared-history acceptance test. It demonstrated:
+The original diagnostic **passed: one test**, because it asserted the observed
+unavailable-provider behavior explicitly; this is not a passing shared-history
+acceptance test. It demonstrated:
 
 1. A synthetic ordinary conversation retained its `openai` provider and
    `fixture-native` model when the engine restarted with Token Factory defaults,
@@ -149,16 +165,22 @@ the spec review explicitly retained the incomplete feature acceptance below.
 Native distribution lifecycle/terminal scripts and live desktop UI qualification
 were not run for this diagnostic/documentation change.
 
-## Remaining qualification and decision
+The follow-up `test_tofa_history_resumes_when_provider_returns` exercises the
+accepted recovery path without changing providers: create a Token Factory
+conversation, reopen in ordinary mode and read its history despite failed
+resume, relaunch with the Token Factory provider and continue the same ID, then
+reopen in ordinary mode again and read both complete turns. This tests the
+engine contract; production launcher integration and live UI evidence remain
+outstanding. Both installed-engine diagnostics passed on 2026-09-23; see the
+[sanitized relaunch evidence](evidence/desktop-shared-history-relaunch-2026-09-23.json).
 
-The concrete missing client integration is a verified way to explicitly choose
-another provider for an unavailable-provider conversation, retain that same
-conversation identity, and reconnect it safely after an adapter exits. The
-installed picker path above does not provide it. No alternate recovery UI has
-been verified. Patching the installed desktop, intercepting its app-server
-protocol, keeping a permanent router, or rewriting stored provider identities
-would introduce separate designs and ownership questions; none is implemented
-or qualified here.
+## Remaining implementation and qualification
+
+Explicit provider switching in the desktop is no longer required for acceptance.
+The launcher must reconnect retained Token Factory conversations to a fresh
+owned route on relaunch. The installed picker's switching limitation above does
+not prevent pursuing that design. Shared-profile routing and lifecycle are not
+implemented or qualified by these engine diagnostics.
 
 The following remain **unverified**, rather than proven impossible:
 

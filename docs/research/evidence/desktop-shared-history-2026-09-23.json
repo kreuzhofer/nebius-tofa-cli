@@ -1,7 +1,7 @@
 {
   "issue": 34,
   "date": "2026-09-23",
-  "status": "blocked_client_recovery_path",
+  "status": "accepted_provider_lifetime_limitation",
   "production_shared_history_implemented": false,
   "app": {
     "version": "26.915.31945",
@@ -54,5 +54,12 @@
     "shared-profile crash recovery and upgrade",
     "shared-history uninstall preservation"
   ],
-  "interpretation": "Passing test characterizes engine behavior and reproduces the blocker; it does not satisfy issue #34 desktop acceptance."
+  "interpretation": "Original engine observations retained. The maintainer subsequently accepted unavailable Token Factory inference outside an active launcher; this is no longer a blocker. Shared-profile implementation and desktop acceptance remain outstanding.",
+  "acceptance_revision": {
+    "date": "2026-09-23",
+    "maintainer_confirmed": true,
+    "ordinary_mode_visibility_required": true,
+    "relaunch_through_tofa_to_continue_acceptable": true,
+    "switch_to_gpt_guaranteed": false
+  }
 }
