@@ -41,6 +41,7 @@ const help = `tofa — Token Factory launcher (prototype)
   tofa auth logout                          Remove locally saved credentials
   tofa models [--project-id ID]              List available models
   tofa launch codex --model ID [--project-id ID] [--allow-unverified] [--direct] [-- ARGS]
+  tofa launch codex-desktop --model ID --allow-unverified [--app-bundle PATH]
   tofa doctor                               Check local prerequisites; no inference
   tofa uninstall [--purge]                   Remove installation; optionally saved data
   tofa --version
@@ -273,6 +274,9 @@ func (a *App) ask(label string, secret bool) (string, error) {
 	return strings.TrimSpace(b.String()), nil
 }
 func (a *App) launch(ctx context.Context, s Store, args []string) (result error) {
+	if len(args) > 0 && args[0] == "codex-desktop" {
+		return a.launchDesktop(ctx, s, args[1:])
+	}
 	if len(args) == 0 || args[0] != "codex" {
 		return errors.New("only Codex CLI is available in this prototype")
 	}
@@ -380,7 +384,7 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		fmt.Fprintln(a.Out, "Route: direct Token Factory connection (--direct); no request adaptation.")
 		return run(ctx, child, childEnv(key))
 	}
-	adapter, err := a.startAdapter(ctx, c.ProjectID, key)
+	adapter, err := a.startAdapter(ctx, c.ProjectID, key, "")
 	if err != nil {
 		return err
 	}

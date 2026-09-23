@@ -31,7 +31,7 @@ type requestAdapter struct {
 	done     chan error
 }
 
-func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAdapter, error) {
+func (a *App) startAdapter(ctx context.Context, project, key, selectedModel string) (*requestAdapter, error) {
 	endpoint := a.Endpoint
 	if endpoint == "" {
 		endpoint = Endpoint
@@ -56,6 +56,14 @@ func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAd
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	adapter := &requestAdapter{endpoint: "http://" + listener.Addr().String(), token: hex.EncodeToString(secret), cancel: cancel, context: ctx, done: make(chan error, 1)}
+	var noticeMu sync.Mutex
+	notice := func(message string) {
+		if selectedModel != "" {
+			noticeMu.Lock()
+			defer noticeMu.Unlock()
+			fmt.Fprintln(a.Out, "Desktop request failed:", message)
+		}
+	}
 	transport := http.DefaultTransport
 	if a.HTTP != nil && a.HTTP.Transport != nil {
 		transport = a.HTTP.Transport
@@ -77,9 +85,13 @@ func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAd
 		FlushInterval: -1,
 		ErrorLog:      log.New(io.Discard, "", 0),
 		ErrorHandler: func(writer http.ResponseWriter, request *http.Request, err error) {
+			notice("upstream connection failed; request was not retried")
 			http.Error(writer, "request adapter: upstream connection failed; request was not retried", http.StatusBadGateway)
 		},
 		ModifyResponse: func(response *http.Response) error {
+			if response.StatusCode >= 400 {
+				notice(fmt.Sprintf("upstream HTTP %d", response.StatusCode))
+			}
 			if response.StatusCode >= 300 && response.StatusCode < 400 {
 				return errors.New("upstream redirect rejected")
 			}
@@ -100,6 +112,7 @@ func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAd
 				return
 			}
 			if request.URL.Path != "/responses" || request.URL.RawPath != "" || request.URL.RawQuery != "" {
+				notice("unsupported route (including auxiliary/compaction endpoints)")
 				http.Error(writer, "request adapter: unsupported route", http.StatusNotFound)
 				return
 			}
@@ -127,13 +140,26 @@ func (a *App) startAdapter(ctx context.Context, project, key string) (*requestAd
 				http.Error(writer, "request adapter: expected a JSON object", http.StatusBadRequest)
 				return
 			}
+			if selectedModel != "" {
+				var payload struct {
+					Model string `json:"model"`
+				}
+				if json.Unmarshal(body, &payload) != nil || payload.Model != selectedModel {
+					notice("unsupported model; only the explicitly selected model is routed")
+					http.Error(writer, "request adapter: unsupported model; request was not sent upstream", http.StatusBadRequest)
+					return
+				}
+			}
 			body, adapted, err := adaptApprovalReview(body)
 			if err != nil {
+				notice(err.Error())
 				http.Error(writer, "request adapter: "+err.Error(), http.StatusBadRequest)
 				return
 			}
 			if adapted {
 				approvalNotice.Do(func() {
+					noticeMu.Lock()
+					defer noticeMu.Unlock()
 					fmt.Fprintln(a.Out, "Request adapter: Kimi-K3 approval-review schema moved to final-answer instructions; Codex still validates the decision.")
 				})
 			}
