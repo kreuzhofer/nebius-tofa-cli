@@ -14,19 +14,17 @@ import time
 from urllib.parse import urlsplit
 
 from live_compat import LoopbackServer, MODEL
+from evaluation_candidates import candidate
 
 BODY_LIMIT = 1024 * 1024
 OUTPUT_LIMIT = 4096
-INPUT_PRICE = 3.0
-OUTPUT_PRICE = 15.0
-REQUEST_ESTIMATE_USD = (BODY_LIMIT * INPUT_PRICE + OUTPUT_LIMIT * OUTPUT_PRICE) / 1000000
 MARKER = 'tofa-evaluation-benign-marker'
 
 
-def fixture_response(item):
+def fixture_response(item, model=MODEL, usage=None):
     response = {'id': 'resp_eval_fixture', 'object': 'response', 'status': 'completed',
-                'model': 'moonshotai/Kimi-K3', 'output': [item],
-                'usage': {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0}}
+                'model': model, 'output': [item],
+                'usage': usage if usage is not None else {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0}}
     events = [{'type': 'response.created', 'response': {**response, 'status': 'in_progress', 'output': []}},
               {'type': 'response.output_item.added', 'output_index': 0, 'item': item},
               {'type': 'response.output_item.done', 'output_index': 0, 'item': item},
@@ -40,7 +38,8 @@ def message(text):
 
 
 class EvaluationProxy:
-    def __init__(self, endpoint, token, report, budget, case, timeout):
+    def __init__(self, endpoint, token, report, budget, case, timeout, model=MODEL):
+        candidate(model)
         target = urlsplit(endpoint)
         if (target.scheme != 'http' or target.hostname != '127.0.0.1' or not target.port
                 or target.path or target.query or target.fragment or target.username):
@@ -51,6 +50,7 @@ class EvaluationProxy:
         self.report, self.budget = Path(report), Path(budget)
         self.lock = threading.Lock()
         self.primary_calls = 0
+        self.started = time.monotonic()
         owner = self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -66,7 +66,7 @@ class EvaluationProxy:
                 except ValueError:
                     self.send_error(400); return
                 if not 0 < length <= BODY_LIMIT:
-                    owner.append({'kind': 'unknown', 'status': 413, 'failure': 'request_body_limit'})
+                    owner.append({'kind': 'unknown', 'status': 413, 'failure': 'request_body_limit', 'paid_inference': False})
                     self.send_error(413); return
                 try:
                     body = json.loads(self.rfile.read(length))
@@ -82,7 +82,7 @@ class EvaluationProxy:
                         return any(unbounded(child) for child in value.values())
                     return isinstance(value, list) and any(unbounded(child) for child in value)
                 reasons = []
-                if body.get('model') != MODEL: reasons.append('model')
+                if body.get('model') != model: reasons.append('model')
                 if body.get('stream') is not True: reasons.append('stream')
                 if any(body.get(key) is not None for key in ('previous_response_id', 'conversation', 'prompt')):
                     reasons.append('server_context')
@@ -90,13 +90,14 @@ class EvaluationProxy:
                 if unbounded(body): reasons.append('nontext_or_server_tool')
                 if reasons:
                     owner.append({'kind': 'unknown', 'status': 400, 'failure': 'unsupported_request_contract',
-                                  'contract_failures': reasons})
+                                  'contract_failures': reasons, 'paid_inference': False})
                     self.send_error(400); return
                 if case in ('allow', 'deny') and not review:
                     with owner.lock:
                         owner.primary_calls += 1
                         number = owner.primary_calls
-                    owner.append({'kind': 'synthetic_task', 'status': 200})
+                    owner.append({'kind': 'synthetic_task', 'status': 200, 'model': model,
+                                  'role': 'main', 'paid_inference': False})
                     if number == 1:
                         item = {'id': 'fc_eval', 'type': 'function_call', 'call_id': 'call_eval',
                                 'name': 'exec_command', 'status': 'completed',
@@ -109,32 +110,39 @@ class EvaluationProxy:
                     self.send_response(200)
                     self.send_header('Content-Type', 'text/event-stream')
                     self.end_headers()
-                    self.wfile.write(fixture_response(item))
+                    self.wfile.write(fixture_response(item, model))
                     return
+                # Check the actual forwarded encoding, including the output cap.
+                body['max_output_tokens'] = OUTPUT_LIMIT
+                encoded = json.dumps(body, separators=(',', ':'), ensure_ascii=False).encode()
+                if len(encoded) > BODY_LIMIT:
+                    owner.append({'kind': 'automatic_review' if review else 'task', 'status': 413,
+                                  'failure': 'request_body_limit', 'paid_inference': False})
+                    self.send_error(413); return
                 with owner.lock:
                     budget_data = json.loads(owner.budget.read_text())
                     if budget_data['used'] >= budget_data['maximum']:
                         owner.records.append({'kind': 'automatic_review' if review else 'task', 'status': 429,
                             'completed': False, 'text_deltas': 0, 'tool_deltas': 0,
                             'first_delta_ms': None, 'completed_ms': None,
-                            'failure': 'request_budget_limit'})
+                            'failure': 'request_budget_limit', 'paid_inference': False})
                         owner.persist()
                         self.send_error(429); return
                     budget_data['used'] += 1
                     owner.budget.write_text(json.dumps(budget_data))
-                # Only evaluation limits are added. Never alter policy, tools or history.
-                body['max_output_tokens'] = OUTPUT_LIMIT
                 record = {'kind': 'automatic_review' if review else 'task', 'status': 0,
+                          'model': model, 'role': 'guardian' if review else 'main', 'paid_inference': True,
+                          'request_id': budget_data['used'],
                           'completed': False, 'text_deltas': 0, 'tool_deltas': 0,
                           'headers_ms': None, 'first_delta_ms': None, 'completed_ms': None,
-                          'decision': None}
+                          'decision': None, 'started_ms': round((time.monotonic() - owner.started) * 1000, 3)}
                 index = owner.append(record)
                 start = time.perf_counter()
                 deadline = time.monotonic() + timeout
                 text = ''
                 connection = http.client.HTTPConnection(target.hostname, target.port, timeout=timeout)
                 try:
-                    connection.request('POST', '/responses', json.dumps(body).encode(),
+                    connection.request('POST', '/responses', encoded,
                         {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json',
                          'Accept': 'text/event-stream'})
                     record['stage'] = 'response_headers'
@@ -149,6 +157,7 @@ class EvaluationProxy:
                     self.end_headers()
                     total = 0
                     pending = b''
+                    event_bytes = 0
                     while True:
                         remaining = deadline - time.monotonic()
                         if remaining <= 0: raise TimeoutError()
@@ -163,8 +172,11 @@ class EvaluationProxy:
                         pending += chunk
                         while b'\n' in pending:
                             line, pending = pending.split(b'\n', 1)
-                            if len(line) > 256 * 1024:
+                            event_bytes += len(line) + 1
+                            if event_bytes > 256 * 1024:
                                 record['failure'] = 'event_body_limit'; break
+                            if not line.rstrip(b'\r'):
+                                event_bytes = 0
                             if not line.startswith(b'data: '): continue
                             try: event = json.loads(line[6:])
                             except (ValueError, UnicodeDecodeError): continue
@@ -178,6 +190,11 @@ class EvaluationProxy:
                                 if review and kind == 'response.output_text.delta' and len(text) < 8192:
                                     text += delta
                             if kind == 'response.completed':
+                                result = event.get('response', {})
+                                if not isinstance(result, dict):
+                                    record['failure'] = 'response_incomplete'; break
+                                if result.get('model', model) != model:
+                                    record['failure'] = 'response_model_mismatch'; break
                                 record['completed'] = True
                                 record['completed_ms'] = round((time.perf_counter() - start) * 1000, 3)
                                 usage = event.get('response', {}).get('usage', {})
@@ -190,8 +207,8 @@ class EvaluationProxy:
                                     except (ValueError, AttributeError): record['decision'] = 'invalid'
                             if kind in ('response.failed', 'response.incomplete', 'error'):
                                 record['failure'] = 'response_incomplete'
-                        if record.get('failure') == 'event_body_limit': break
-                        if len(pending) > 256 * 1024:
+                        if record.get('failure'): break
+                        if event_bytes + len(pending) > 256 * 1024:
                             record['failure'] = 'event_body_limit'; break
                         owner.publish(index, record)
                         record['stage'] = 'client_write'
@@ -205,6 +222,9 @@ class EvaluationProxy:
                         record['transport_error'] = True
                 finally:
                     connection.close()
+                    if not record['completed'] and not record.get('failure') and record['status'] == 200:
+                        record['failure'] = 'response_incomplete'
+                    record['ended_ms'] = round((time.monotonic() - owner.started) * 1000, 3)
                     owner.publish(index, record)
 
         self.server = LoopbackServer(('127.0.0.1', 0), Handler)

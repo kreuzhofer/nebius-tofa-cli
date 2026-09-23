@@ -341,7 +341,7 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 				}
 			}
 		}()
-		fmt.Fprintln(a.Out, "Model metadata: bundled Kimi-K3 catalog (provider snapshot 2026-09-21).")
+		fmt.Fprintln(a.Out, "Model metadata: bundled candidate catalog (provider snapshot 2026-09-23).")
 	}
 	run := func(ctx context.Context, args, env []string) error {
 		if catalog != "" {

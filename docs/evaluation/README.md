@@ -1,7 +1,8 @@
 # Bounded Codex model evaluation
 
-This workflow evaluates one exact combination, initially **moonshotai/Kimi-K3,
-Codex CLI 0.155.1, macOS ARM64, adapted connection**. It extends the existing
+This workflow evaluates one exact selected candidate with **Codex CLI 0.155.1,
+macOS ARM64, adapted connection**. The selected model serves both the main and
+Guardian roles. Omitting `--model` retains the original Kimi-K3 invocation. It extends the existing
 [compatibility harness](../prototype/LIVE-COMPATIBILITY.md); it is not a model
 leaderboard. Available models are candidates, not supported models. The launcher
 continues to require `--allow-unverified`; evaluation never changes that policy.
@@ -20,8 +21,8 @@ retry, route switch, model switch, or replacement of a failed attempt is allowed
 Codex may itself retry a Guardian assessment; every upstream request counts and
 remains in the evidence. Incomplete and failed attempts stay in denominators.
 
-The maintainer explicitly authorized this baseline without a Token Factory
-currency limit. Hard operational limits remain: **48 upstream requests across the
+The maintainer explicitly authorized the expanded five-model campaign without a
+Token Factory currency cap ([agreed specification #36](https://github.com/kreuzhofer/nebius-tofa-cli/issues/36)). Hard operational limits remain: **48 upstream requests across the
 whole run, 1 MiB per input body, 4,096 output tokens per request, 8 MiB per response,
 256 KiB per SSE event**. The evaluator adds `max_output_tokens`; this is an
 observable evaluation condition, not a production launcher change. The provider's
@@ -33,14 +34,15 @@ turns have a 120-second outer deadline and requests a 90-second observer deadlin
 Codex 0.155.1's native Guardian deadline is independently fixed at 90 seconds;
 raising the outer timeout does not extend it. [Pinned source](https://github.com/openai/codex/blob/be2951ea34f0d295ed0becf97079f92fa5f6950e/codex-rs/ext/guardian-reviewer/src/lib.rs)
 
-Reported usage is retained when the provider supplies it. Informational estimates
-use $3/M input tokens and $15/M output tokens from the
-[first-party cookbook](https://dev.nebius.com/cookbook/opencode-nebius-token-factory)
-(its pricing check is dated 2026-08-28; consulted 2026-09-22). These are not billing
-guarantees. A body-byte estimate assumes input tokens do not exceed UTF-8 request
-bytes and excludes unknown provider-added overhead. The evaluator enforces no
-currency cap. Server context references, multimodal inputs, server-side tools and
-unexpected models are refused; web search is disabled in scratch client settings.
+Reported usage is retained per request and attributed to its observed model and
+role. Estimates use the exact candidate's dated prices below; each invocation
+explicitly retains that snapshot in its report. Missing usage or prices makes the
+estimate incomplete (`estimated_usd: null`); any measured subtotal stays separate.
+Synthetic approval proposals never count as paid inference. A body-byte estimate
+assumes input tokens do not exceed UTF-8 request bytes and excludes unknown
+provider-added overhead. The evaluator enforces no currency cap. Server context
+references, multimodal inputs, server-side tools and unexpected models are refused;
+web search is disabled in scratch client settings.
 
 ## Tasks and rubric
 
@@ -82,25 +84,45 @@ it does not prove that the ordinary model would naturally request the same actio
 
 ## Candidate selection
 
-Selection date: **2026-09-22**. The saved project's authenticated `tofa models`
-listing returned 24 available IDs; no project ID or credential is retained here.
-For an evaluation expansion, re-fetch that project's catalog, record the UTC date,
-and choose five using these coverage slots rather than an unexplained “top five”:
+The maintainer's **2026-09-23** shortlist replaces the earlier coverage slots.
+All five were available in the authenticated project catalog on that date. Every
+run re-fetches the catalog through the launcher and records its UTC check time;
+unavailable candidates produce blocked, unmeasured reports without replacement.
 
-| Available candidate | Selection rationale |
-| --- | --- |
-| `moonshotai/Kimi-K3` | Baseline requested by issue #27; existing client metadata and adapted-route evidence |
-| `moonshotai/Kimi-K2.7-Code` | Same-provider comparison with an explicitly code-named model; specialization is a hypothesis to test |
-| `deepseek-ai/DeepSeek-V4.1-Flash` | Different provider and Flash-labelled candidate for a latency/quality comparison, without assuming it is faster |
-| `Qwen/Qwen3.5-397B-A17B` | Different model family for cross-family coverage |
-| `zai-org/GLM-5.3` | Fifth slot adds another model family instead of another Kimi variant |
+| Exact candidate ID | Input USD/M | Output USD/M | Provider context tokens | Inputs |
+| --- | ---: | ---: | ---: | --- |
+| `zai-org/GLM-5.3-Flash` | 0.15 | 0.50 | 1,024,000 | text, image |
+| `deepseek-ai/DeepSeek-V4.1-Flash` | 0.30 | 1.20 | 1,048,000 | text, image |
+| `zai-org/GLM-5.3` | 1.40 | 4.40 | 1,024,000 | text |
+| `moonshotai/Kimi-K3` | 3.00 | 15.00 | 1,024,000 | text, image |
+| `nvidia/Nemotron-3-Ultra-550b-a55b` | 1.00 | 3.00 | 1,048,576 | text |
 
-These five IDs were present on that date. This is purposeful coverage, not a
-performance ranking or compatibility claim. Exclude embedding-only models and
-models absent from the project's catalog. If a selected ID disappears, record the
-replacement and rationale before running; do not silently substitute. The initial
-runner deliberately accepts only Kimi: expanding it requires checking the new
-model's metadata, protocol, context/output caps and prices first.
+Prices are the approximate [signed-in endpoints page](https://tokenfactory.nebius.com/endpoints)
+snapshot agreed on 2026-09-23, corroborated by the public catalog. They are not
+billing guarantees. Refresh the shared snapshot deliberately before a later
+campaign, or retain it explicitly as the current runner does.
+
+Capabilities use exact `max_model_len`, modality and Responses API fields from the
+[provider's authoritative public catalog](https://tokenfactory.nebius.com/api/public/models_info),
+retrieved 2026-09-23. Tool calling is tagged there for four candidates; DeepSeek's
+[primary model card](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/README.md)
+describes its tool calling and Responses encoding. This establishes advertised
+capabilities, not deployment compatibility. Source hashes and per-model facts are
+stored in [the shared snapshot](../../internal/tofa/assets/evaluation-candidates.json),
+which supplies both launch-scoped metadata and evaluation preflight.
+
+No separate deployed output ceiling is published in those catalog records.
+`output_ceiling: null` preserves that gap: 4,096 is the evaluation's enforced
+request cap, not an invented provider maximum. The [Responses API contract](https://docs.tokenfactory.nebius.com/api-reference/inference/create-a-response)
+defines `max_output_tokens` to include reasoning and visible output; a provider
+rejection remains failed evidence. Optional Responses reasoning effort, summary
+and verbosity controls are omitted by launcher policy because model-specific
+contracts are unverified. Shell selection, prompt template, output truncation and
+95% compaction headroom are client policy, not provider capabilities. The
+[existing Codex metadata investigation](../research/kimi-provider-metadata.md)
+records the pinned client's schema and prompt requirements. Metadata missing
+required context, modality, Responses or tool capabilities blocks evaluation.
+Unknown ordinary launcher models retain their existing behavior.
 
 ## Reproduce
 
@@ -114,11 +136,14 @@ go build -o /tmp/tofa-evaluation ./cmd/tofa
 python3 scripts/model_evaluation.py \
   --launcher /tmp/tofa-evaluation \
   --codex /absolute/path/to/codex \
-  --output /tmp/kimi-evaluation.json
+  --model 'zai-org/GLM-5.3-Flash' \
+  --output /tmp/glm-flash-evaluation.json
 ```
 
 Skip login when saved credentials are already present. Output must be a new file.
-Every real client has an isolated HOME, CODEX_HOME and synthetic workspace;
+Omit `--model` to reproduce the original Kimi command. Each command evaluates one
+candidate; separate Guardian selection and live campaign comparisons are follow-up
+work. Every real client has an isolated HOME, CODEX_HOME and synthetic workspace;
 normal launcher credentials are read only by the launcher. Normal configuration
 and credential-file hashes are compared in memory and never published. Native
 credential-store lifecycle is outside this evaluation. Scratch session files are
@@ -135,6 +160,18 @@ rejection. A harness defect makes affected results invalid and requires a separa
 identified rerun after correction; retain the original sanitized attempt.
 
 ## Evidence and support recommendation
+
+Report version `codex-model-evaluation-v2` adds independent `roles.main` and
+`roles.guardian` outcomes, costs and planned/attempted/completed/passed/unattempted
+counts. The task and rubric versions remain v1. Earlier scoring fields remain
+available; legacy `completed_repeats` means stored attempts, so use the explicit
+role counters for actual completion. Guardian counts use pairs, with additional
+case counts. Failed repeats stay in the report, and a failure stops only its lane.
+`guardian_assessment_ms` spans the first review request through the last review
+request, including native retry waits; individual request times and whole-turn
+`elapsed_ms` remain separate. Missing timing is null, never zero. This observer
+interval excludes client preparation before its first review request and is not
+pure model compute latency.
 
 Retain the JSON report, launcher/client/harness hashes, version/platform/route,
 predeclared limits, task/rubric versions, selection date, per-repeat scoring,
@@ -154,5 +191,11 @@ TOFA_TEST_CODEX=/absolute/path/to/codex python3 scripts/evaluation_client_test.p
 python3 scripts/live_compat_test.py
 ```
 
-The optional installed-client fixture proves actual decision parsing and benign
-execution gating with synthetic responses. It does not qualify Kimi's decisions.
+The installed-client fixture invokes the evaluation command using the real
+`tofa.App` launcher and request adapter through a loopback-only test executable.
+It exercises all five exact IDs, the two-turn artifacts, allow/deny command
+execution, costs, and independent failed lanes. It uses synthetic credentials in
+temporary stores and never changes ordinary credentials. A missing pinned client
+is an explicit skip, not an installed-client pass. Synthetic responses validate
+the harness, not any real candidate's compatibility, policy decisions or broad
+coding quality; those require separately retained live evidence.

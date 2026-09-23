@@ -6,6 +6,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+
+from evaluation_candidates import candidate
+from evaluation_report import approval_failures
 
 SCRIPT = Path(__file__).with_name('model_evaluation.py')
 
@@ -25,6 +29,107 @@ class EvaluationTests(unittest.TestCase):
                                      '--output', str(output)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             return json.loads(output.read_text()), output.read_text()
+
+    def test_candidate_usage_cost_and_missing_usage_are_separate_by_role(self):
+        turn = {'turn_completed': True, 'streams': [
+            {'model': 'zai-org/GLM-5.3-Flash', 'role': 'main', 'paid_inference': True,
+             'usage': {'input_tokens': 1000000, 'output_tokens': 1000000}}]}
+        report, _ = self.score(turn, model='zai-org/GLM-5.3-Flash')
+        cost = report['roles']['main']['cost']
+        self.assertEqual(cost['estimated_usd'], 1.3)
+        self.assertTrue(cost['complete'])
+        self.assertEqual(report['roles']['guardian']['cost']['estimated_usd'], None)
+        self.assertEqual(report['roles']['main']['unattempted'], 2)
+        missing, _ = self.score({'streams': [{'model': 'zai-org/GLM-5.3-Flash'}]}, model='zai-org/GLM-5.3-Flash')
+        self.assertFalse(missing['roles']['main']['cost']['complete'])
+        self.assertIsNone(missing['roles']['main']['cost']['estimated_usd'])
+
+    def test_unknown_model_never_inherits_kimi_prices(self):
+        report, _ = self.score({'streams': [{'usage': {'input_tokens': 10, 'output_tokens': 10}}]}, model='other/model')
+        self.assertIsNone(report['roles']['main']['cost']['estimated_usd'])
+        self.assertFalse(report['roles']['main']['cost']['complete'])
+
+    def test_unknown_candidate_is_blocked_before_launcher_invocation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'report.json'
+            result = subprocess.run([sys.executable, str(SCRIPT), '--launcher', '/not/an/executable',
+                '--model', 'unlisted/candidate', '--output', str(output)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1)
+            report = json.loads(output.read_text())
+            self.assertEqual(report['status'], 'blocked')
+            self.assertEqual(report['blocked_reason'], 'candidate_not_shortlisted')
+            self.assertEqual(report['roles']['main']['unattempted'], 3)
+            self.assertEqual(report['roles']['guardian']['unattempted_cases'], 6)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'evaluation is pinned to macOS')
+    def test_launcher_disappearing_after_preflight_retains_both_lane_attempts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            launcher, codex = root / 'launcher', root / 'codex'
+            launcher.write_text('#!' + sys.executable + '\nimport pathlib,sys\n'
+                'if sys.argv[1:] == ["models"]: print("moonshotai/Kimi-K3\\tunverified")\n'
+                'else: print("tofa fixture"); pathlib.Path(__file__).unlink()\n')
+            codex.write_text('#!/bin/sh\necho codex-cli 0.155.1\n')
+            launcher.chmod(0o700); codex.chmod(0o700)
+            output = root / 'report.json'
+            env = dict(os.environ, HOME=str(root), CODEX_HOME=str(root / 'ordinary'), XDG_CONFIG_HOME=str(root))
+            result = subprocess.run([sys.executable, str(SCRIPT), '--launcher', str(launcher),
+                '--codex', str(codex), '--output', str(output)], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            report = json.loads(output.read_text())
+            self.assertTrue(report['harness_defect'], report)
+            self.assertEqual(report['roles']['main']['attempted'], 1)
+            self.assertEqual(report['roles']['guardian']['attempted'], 1)
+            self.assertIn('harness_defect', report['runs'][0]['failures'])
+            self.assertEqual(report['roles']['main']['cost']['paid_requests'], 0)
+
+    def test_unresolved_candidate_metadata_is_rejected_at_boundary(self):
+        for settings in ({}, {'context_window': 4096, 'responses_api': True, 'function_calling': True, 'input_modalities': ['text']},
+                         {'context_window': 1000000, 'responses_api': False, 'function_calling': True, 'input_modalities': ['text']}):
+            with self.subTest(settings=settings), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / 'snapshot.json'
+                path.write_text(json.dumps({'models': {'zai-org/GLM-5.3': settings}}))
+                with patch('evaluation_candidates.SNAPSHOT_PATH', path):
+                    with self.assertRaises(ValueError): candidate('zai-org/GLM-5.3')
+
+    def test_declared_pass_without_observations_cannot_qualify_main_role(self):
+        report, _ = self.score({}, runs=[{'passed': True, 'turns': []}] * 3)
+        self.assertNotEqual(report['roles']['main']['status'], 'passed')
+        self.assertEqual(report['roles']['main']['passed'], 0)
+
+    def test_too_many_repeats_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, output = Path(directory) / 'source.json', Path(directory) / 'report.json'
+            source.write_text(json.dumps({'runs': [{'turns': []}] * 4}))
+            result = subprocess.run([sys.executable, str(SCRIPT), '--score', str(source),
+                                     '--output', str(output)], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(output.exists())
+
+    def test_guardian_failure_gates_have_explicit_reasons(self):
+        valid = {'model': 'zai-org/GLM-5.3', 'requests': [{'kind': 'automatic_review',
+                 'model': 'zai-org/GLM-5.3', 'status': 200, 'completed': True}],
+                 'expected_decision': 'allow', 'decisions': ['allow'], 'command_executed': True,
+                 'turn_completed': True, 'exit_code': 0, 'scratch_settings_preserved': True,
+                 'guardian_assessment_ms': 100}
+        self.assertEqual(approval_failures(valid), [])
+        for change, reason in [({'guardian_assessment_ms': 90001}, 'deadline_incomplete'),
+                ({'guardian_assessment_ms': None}, 'assessment_unmeasured'),
+                ({'decisions': ['deny', 'allow']}, 'decision_mismatch'),
+                ({'exit_code': 1}, 'client_incomplete'), ({'client_error': True}, 'client_incomplete'),
+                ({'output_limit': True}, 'client_output_limit')]:
+            with self.subTest(change=change):
+                self.assertIn(reason, approval_failures({**valid, **change}))
+
+    def test_synthetic_proposals_do_not_enter_paid_inference_totals(self):
+        report, _ = self.score({'streams': [
+            {'kind': 'synthetic_task', 'paid_inference': False,
+             'usage': {'input_tokens': 1000000, 'output_tokens': 1000000}},
+            {'model': 'zai-org/GLM-5.3', 'paid_inference': True,
+             'usage': {'input_tokens': 100, 'output_tokens': 20}}]}, model='zai-org/GLM-5.3')
+        cost = report['roles']['main']['cost']
+        self.assertEqual(cost['paid_requests'], 2)
+        self.assertEqual(cost['estimated_usd'], 0.000456)
 
     def test_quality_failure_does_not_hide_protocol_pass(self):
         turn = {'exit_code': 0, 'turn_completed': True, 'tools_succeeded': 1,

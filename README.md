@@ -267,14 +267,13 @@ Existing Codex
 skills, hooks and policy still apply. Web search is disabled for this unverified
 provider. `doctor` is local only and does not read a key or trigger inference.
 
-For `moonshotai/Kimi-K3`, a launch-scoped model catalog supplies Nebius's advertised
-1,024,000-token context limit and text/image modalities, with Codex's pinned default
-coding instructions preserved. Optional reasoning-effort, reasoning-summary and
-verbosity controls are not advertised because their Kimi Responses behavior is
-not yet established. This does not disable Kimi's own reasoning. The catalog is
-removed on normal exit/failure; abrupt process termination can leave a nonsecret
-`tofa-model-catalog-*.json` file in the OS temporary directory. Other model IDs keep
-their existing metadata behavior. All models still require `--allow-unverified`.
+For the [five evaluation candidates](docs/evaluation/README.md#candidate-selection),
+a launch-scoped catalog supplies each model's provider-advertised context and
+input modalities, alongside the pinned Codex coding prompt. Optional Responses
+reasoning effort, summary and verbosity controls are omitted until their contracts
+are established. Catalog files are removed after launch; forced termination can
+leave a `tofa-model-catalog-*.json` file in the OS temporary directory. Unknown
+model IDs retain existing metadata behavior. All models require `--allow-unverified`.
 See [the metadata research](https://github.com/kreuzhofer/nebius-tofa-cli/blob/03d47a502c09debc36a2072c3aa3a929beb6c38d/docs/research/kimi-provider-metadata.md)
 for the provider snapshot and remaining gaps.
 

@@ -14,7 +14,7 @@ from evaluation_proxy import EvaluationProxy, BODY_LIMIT
 
 
 class ProxyTests(unittest.TestCase):
-    def test_guardian_decision_is_measured_separately_from_synthetic_task(self):
+    def test_guardian_decision_is_measured_separately_from_synthetic_task(self, model="moonshotai/Kimi-K3"):
         seen = []
         class Upstream(http.server.BaseHTTPRequestHandler):
             def log_message(self, *unused): pass
@@ -26,7 +26,7 @@ class ProxyTests(unittest.TestCase):
                 for event in [
                     {'type': 'response.output_text.delta', 'delta': '{"out'},
                     {'type': 'response.output_text.delta', 'delta': 'come":"deny","rationale":"PRIVATE"}'},
-                    {'type': 'response.completed'}]:
+                    {'type': 'response.completed', 'response': {'model': model, 'usage': {'input_tokens': 100, 'output_tokens': 20}}}]:
                     self.wfile.write(('data: ' + json.dumps(event) + '\n\n').encode())
         server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Upstream)
         threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -37,14 +37,15 @@ class ProxyTests(unittest.TestCase):
                 budget.write_text('{"used":0,"maximum":8}')
                 report = root / 'observations.json'
                 with EvaluationProxy('http://127.0.0.1:' + str(server.server_port), 'fixture-token',
-                                     report, budget, 'deny', 10) as proxy:
+                                     report, budget, 'deny', 10, model=model) as proxy:
                     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
                     def post(body):
-                        request = urllib.request.Request(proxy.url + '/responses', data=json.dumps({'model': 'moonshotai/Kimi-K3', 'stream': True, 'input': [], **body}).encode(),
+                        request = urllib.request.Request(proxy.url + '/responses', data=json.dumps({'model': model, 'stream': True, 'input': [], **body}).encode(),
                             headers={'Authorization': 'Bearer fixture-token'})
                         return opener.open(request).read()
                     ordinary = post({'input': []})
                     self.assertIn(b'function_call', ordinary)
+                    self.assertIn(model.encode(), ordinary)
                     post({'text': {'format': {'name': 'guardian_assessment', 'type': 'json_schema'}},
                           'instructions': 'Preserve this policy', 'tools': [{'name': 'exec_command'}]})
                 self.assertEqual(len(seen), 1)
@@ -54,10 +55,46 @@ class ProxyTests(unittest.TestCase):
                 data = json.loads(report.read_text())
                 self.assertEqual(data[-1]['kind'], 'automatic_review')
                 self.assertEqual(data[-1]['decision'], 'deny')
+                self.assertEqual(data[-1]['model'], model)
+                self.assertEqual(data[-1]['role'], 'guardian')
+                self.assertEqual(seen[0]['model'], model)
+                self.assertEqual(data[0]['model'], model)
+                self.assertFalse(data[0]['paid_inference'])
+                self.assertTrue(data[-1]['paid_inference'])
                 self.assertNotIn('PRIVATE', report.read_text())
         finally:
             server.shutdown()
             server.server_close()
+
+    def test_selected_candidate_routes_guardian_and_synthetic_proposal(self):
+        self.test_guardian_decision_is_measured_separately_from_synthetic_task("zai-org/GLM-5.3-Flash")
+
+    def test_provider_cannot_complete_with_a_different_model_identity(self):
+        class Upstream(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *unused): pass
+            def do_POST(self):
+                self.rfile.read(int(self.headers['Content-Length']))
+                self.send_response(200); self.end_headers()
+                self.wfile.write(b'data: {"type":"response.completed","response":{"model":"PRIVATE_UNEXPECTED_MODEL"}}\n\n')
+        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Upstream)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                budget = root / 'budget.json'; budget.write_text('{"used":0,"maximum":8}')
+                report = root / 'observations.json'
+                with EvaluationProxy('http://127.0.0.1:' + str(server.server_port), 'fixture-token',
+                                     report, budget, 'coding', 5) as proxy:
+                    request = urllib.request.Request(proxy.url + '/responses',
+                        data=b'{"model":"moonshotai/Kimi-K3","stream":true,"input":[]}',
+                        headers={'Authorization': 'Bearer fixture-token'})
+                    urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request).read()
+                observed = json.loads(report.read_text())[0]
+                self.assertEqual(observed['failure'], 'response_model_mismatch')
+                self.assertFalse(observed['completed'])
+                self.assertNotIn('PRIVATE_UNEXPECTED_MODEL', report.read_text())
+        finally:
+            server.shutdown(); server.server_close()
 
     def test_budget_and_body_limits_stop_before_upstream(self):
         for body, used, expected_status, failure in [
@@ -83,6 +120,23 @@ class ProxyTests(unittest.TestCase):
                 self.assertFalse(records[0]['completed'])
                 self.assertEqual(records[0]['status'], expected_status)
                 self.assertEqual(json.loads(budget.read_text())['used'], used)
+
+    def test_output_cap_cannot_make_upstream_input_exceed_body_limit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            budget = root / 'budget.json'; budget.write_text('{"used":0,"maximum":8}')
+            report = root / 'observations.json'
+            with EvaluationProxy('http://127.0.0.1:1', 'fixture-token', report, budget, 'coding', 1) as proxy:
+                body = {'model': 'moonshotai/Kimi-K3', 'stream': True, 'input': [], 'instructions': ''}
+                encoded = json.dumps(body, separators=(',', ':')).encode()
+                body['instructions'] = 'a' * (BODY_LIMIT - len(encoded))
+                request = urllib.request.Request(proxy.url + '/responses',
+                    data=json.dumps(body, separators=(',', ':')).encode(), headers={'Authorization': 'Bearer fixture-token'})
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request)
+                self.assertEqual(error.exception.code, 413)
+            self.assertEqual(json.loads(budget.read_text())['used'], 0)
+            self.assertEqual(json.loads(report.read_text())[0]['failure'], 'request_body_limit')
 
     def test_unknown_models_server_context_and_nontext_inputs_are_refused(self):
         for change in ({'model': 'other/model'}, {'stream': False},
@@ -137,7 +191,7 @@ class ProxyTests(unittest.TestCase):
         finally:
             server.shutdown(); server.server_close()
 
-    def test_complete_oversized_event_is_rejected_before_json_parsing(self):
+    def test_complete_oversized_event_is_rejected_before_json_parsing(self, multiline=False):
         class Upstream(http.server.BaseHTTPRequestHandler):
             def log_message(self, *unused): pass
             def do_POST(self):
@@ -145,6 +199,7 @@ class ProxyTests(unittest.TestCase):
                 self.send_response(200); self.end_headers()
                 line = ('data: ' + json.dumps({'type': 'response.output_text.delta',
                                               'delta': 'x' * 263000}) + '\n\n').encode()
+                if multiline: line = (b':' + b'x' * 150000 + b'\n') * 2 + b'\n'
                 self.wfile.write(line)
                 self.wfile.write(b'data: {"type":"response.completed"}\n\n')
         server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Upstream)
@@ -167,6 +222,9 @@ class ProxyTests(unittest.TestCase):
                 self.assertEqual(observed['text_deltas'], 0)
         finally:
             server.shutdown(); server.server_close()
+
+    def test_multiline_sse_event_has_one_shared_size_limit(self):
+        self.test_complete_oversized_event_is_rejected_before_json_parsing(multiline=True)
 
 
 if __name__ == '__main__': unittest.main()

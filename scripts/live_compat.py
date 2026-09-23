@@ -346,7 +346,7 @@ def run_one(options, root):
     if os.name == "nt":
         env.update(TOFA_LIVE_PYTHON=sys.executable, TOFA_LIVE_HARNESS=str(Path(__file__).resolve()),
                    TOFA_LIVE_SUPERVISOR=str(supervisor))
-    base = [options.launcher, "launch", "codex", "--model", MODEL, "--allow-unverified", "--",
+    base = [options.launcher, "launch", "codex", "--model", getattr(options, "model", MODEL), "--allow-unverified", "--",
             "--ask-for-approval", "never", "--sandbox", "workspace-write", "exec"]
     turns = []
     session = None
@@ -356,7 +356,14 @@ def run_one(options, root):
         observation_path = root / f"stream-{number}.json"
         env["TOFA_LIVE_OBSERVATIONS"] = str(observation_path)
         args = (["resume", session] if number else []) + ["--skip-git-repo-check", "--json", "-"]
-        result, identities = turn(base + args, env, workspace, prompt, options.timeout)
+        try:
+            result, identities = turn(base + args, env, workspace, prompt, options.timeout)
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+            # Preserve earlier turns and the current observer's persisted requests.
+            result = {"exit_code": None, "tools_succeeded": 0, "turn_completed": False,
+                      "client_error": True, "metadata_warning": False, "timed_out": False,
+                      "elapsed_ms": None, "harness_defect": True}
+            identities = []
         if number == 0:
             session = identities[0] if len(identities) == 1 else None
         else:
@@ -404,11 +411,16 @@ def run_one(options, root):
         print("  Turn passed" if result["passed"] else "  Turn failed", flush=True)
         if not session or result["exit_code"] != 0:
             break
-    config_preserved = digest(config) == before
+    try:
+        config_preserved = digest(config) == before
+    except OSError:
+        config_preserved = False
+        turns[-1]["harness_defect"] = True
     auth_absent = not (client_home / "auth.json").exists()
     preserved = config_preserved and auth_absent
     return {"turns": turns, "same_session": same_session, "scratch_config_preserved": config_preserved,
             "scratch_auth_absent": auth_absent, "scratch_settings_preserved": preserved,
+            "harness_defect": any(t.get("harness_defect") for t in turns),
             "passed": len(turns) == 2 and same_session and preserved and all(t["passed"] for t in turns)}
 
 

@@ -1,0 +1,85 @@
+{
+  "snapshot_date": "2026-09-23",
+  "source": "https://tokenfactory.nebius.com/api/public/models_info",
+  "source_sha256": "d00c0eb7718afc9124118d0afdbe53d153c1f09e9bee39ea679c2823eb6d2b95",
+  "price_source": "https://tokenfactory.nebius.com/endpoints",
+  "price_date": "2026-09-23",
+  "price_policy": "explicitly retain dated approximate snapshot; not a billing guarantee",
+  "models": {
+    "zai-org/GLM-5.3-Flash": {
+      "display_name": "GLM-5.3-Flash",
+      "context_window": 1024000,
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "responses_api": true,
+      "function_calling": true,
+      "output_ceiling": null,
+      "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+      "input_price": 0.15,
+      "output_price": 0.5,
+      "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls"
+    },
+    "deepseek-ai/DeepSeek-V4.1-Flash": {
+      "display_name": "DeepSeek V4.1 Flash",
+      "context_window": 1048000,
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "responses_api": true,
+      "function_calling": true,
+      "output_ceiling": null,
+      "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+      "input_price": 0.3,
+      "output_price": 1.2,
+      "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls",
+      "tool_source": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/README.md",
+      "tool_source_sha256": "347c9db4e5506acb531cbc3b724407ab88e9af8781679152f0823d7bac16d251"
+    },
+    "zai-org/GLM-5.3": {
+      "display_name": "GLM-5.3",
+      "context_window": 1024000,
+      "input_modalities": [
+        "text"
+      ],
+      "responses_api": true,
+      "function_calling": true,
+      "output_ceiling": null,
+      "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+      "input_price": 1.4,
+      "output_price": 4.4,
+      "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls"
+    },
+    "moonshotai/Kimi-K3": {
+      "display_name": "Kimi-K3",
+      "context_window": 1024000,
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "responses_api": true,
+      "function_calling": true,
+      "output_ceiling": null,
+      "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+      "input_price": 3,
+      "output_price": 15,
+      "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls"
+    },
+    "nvidia/Nemotron-3-Ultra-550b-a55b": {
+      "display_name": "Nemotron-3-Ultra-550b-a55b",
+      "context_window": 1048576,
+      "input_modalities": [
+        "text"
+      ],
+      "responses_api": true,
+      "function_calling": true,
+      "output_ceiling": null,
+      "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+      "input_price": 1,
+      "output_price": 3,
+      "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls"
+    }
+  }
+}

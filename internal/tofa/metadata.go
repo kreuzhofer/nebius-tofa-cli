@@ -10,14 +10,33 @@ import (
 //go:embed assets/codex-prompt.md
 var codexPrompt string
 
+//go:embed assets/evaluation-candidates.json
+var candidateSnapshot []byte
+
 func prepareModelCatalog(model string) (string, error) {
-	if model != "moonshotai/Kimi-K3" {
+	var snapshot struct {
+		Models map[string]struct {
+			DisplayName string   `json:"display_name"`
+			Context     int      `json:"context_window"`
+			Modalities  []string `json:"input_modalities"`
+			Responses   bool     `json:"responses_api"`
+			Tools       bool     `json:"function_calling"`
+		} `json:"models"`
+	}
+	if err := json.Unmarshal(candidateSnapshot, &snapshot); err != nil {
+		return "", errors.New("invalid bundled model metadata")
+	}
+	candidate, known := snapshot.Models[model]
+	if !known {
 		return "", nil
+	}
+	if candidate.Context <= 4096 || len(candidate.Modalities) == 0 || !candidate.Responses || !candidate.Tools {
+		return "", errors.New("unresolved candidate model metadata")
 	}
 	catalog := map[string]any{"models": []any{map[string]any{
 		"slug":                                 model,
-		"display_name":                         "Kimi-K3 (Token Factory)",
-		"description":                          "Provider catalog snapshot 2026-09-21; experimental Codex integration",
+		"display_name":                         candidate.DisplayName + " (Token Factory)",
+		"description":                          "Provider catalog snapshot 2026-09-23; experimental Codex integration",
 		"supported_reasoning_levels":           []any{},
 		"shell_type":                           "unified_exec",
 		"visibility":                           "list",
@@ -27,11 +46,11 @@ func prepareModelCatalog(model string) (string, error) {
 		"supports_reasoning_summary_parameter": false,
 		"support_verbosity":                    false,
 		"truncation_policy":                    map[string]any{"mode": "bytes", "limit": 10000},
-		"context_window":                       1024000,
-		"max_context_window":                   1024000,
+		"context_window":                       candidate.Context,
+		"max_context_window":                   candidate.Context,
 		"effective_context_window_percent":     95,
 		"experimental_supported_tools":         []any{},
-		"input_modalities":                     []string{"text", "image"},
+		"input_modalities":                     candidate.Modalities,
 		"model_messages":                       map[string]any{"instructions_template": codexPrompt},
 	}}}
 	data, err := json.Marshal(catalog)
