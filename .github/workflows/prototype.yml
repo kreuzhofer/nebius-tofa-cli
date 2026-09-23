@@ -23,6 +23,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27.1'
+      - name: Configure qualified desktop login shell
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          runner_user="$(id -un)"
+          sudo chsh -s /bin/zsh "$runner_user"
+          test "$(/usr/bin/dscl /Search -read "/Users/$runner_user" UserShell)" = "UserShell: /bin/zsh"
       - run: go test -race ./...
       - run: go vet ./...
       - run: python3 scripts/install_test.py
