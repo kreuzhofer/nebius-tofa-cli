@@ -46,8 +46,8 @@ def check(condition, message):
 
 
 class Fixture:
-    def __init__(self, lane, allowed, records):
-        self.token = secrets.token_hex(32)
+    def __init__(self, lane, allowed, records, *, token=None, port=0):
+        self.token = token or secrets.token_hex(32)
         token = self.token
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -92,7 +92,7 @@ class Fixture:
                 self.end_headers()
                 self.wfile.write(body)
 
-        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
         self.port = self.server.server_port
         self.endpoint = "http://127.0.0.1:" + str(self.port)
         self.worker = threading.Thread(target=self.server.serve_forever, daemon=True)
@@ -148,8 +148,14 @@ def route(root, mode, native_catalog, merged, records, routes):
     for override in overrides:
         args.extend(["-c", override])
     wrapper = directory / "codex"
+    # app-server has its own config overrides. When present, they displace the
+    # root CLI overrides, so inject launch settings at the subcommand boundary.
+    app_server_exec = ("for arg do\n  if [ \"$arg\" = app-server ]; then\n    exec " +
+                       shlex.quote(str(ENGINE)) + ' "$@" ' + shlex.join(args[1:]) +
+                       "\n  fi\ndone\n") if overrides else ""
     wrapper.write_text("#!/bin/sh\n# THROWAWAY routing; never written into the shared profile.\n" +
                        ("export TOFA_PROTOTYPE_KEY=" + shlex.quote(fixture.token) + "\n" if fixture else "") +
+                       app_server_exec +
                        "exec " + shlex.join(args) + ' "$@"\n')
     wrapper.chmod(0o700)
     try:

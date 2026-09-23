@@ -1,0 +1,37 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "real_user_profile_used": false,
+  "engine_version": "codex-cli 0.155.0-alpha.16.3",
+  "user_observations": {
+    "ordinary_session_in_tofa_launch": "history loads; continuation returns native synthetic reply",
+    "tofa_session_before_fix": "repeated ChatGPT logo; other conversations still usable"
+  },
+  "failed_resume_count": 1575,
+  "error": "failed to load configuration: Model provider `nebius-tofa` not found",
+  "probe_before_fix": {
+    "desktop_plugin_override": "FAIL",
+    "unrelated_web_search_override": "FAIL",
+    "no_subcommand_override": "PASS"
+  },
+  "probe_after_fix": {
+    "desktop_plugin_override": "PASS"
+  },
+  "cause": "app-server config arguments displace root CLI overrides; inject launch settings at app-server boundary",
+  "desktop_ui_after_fix": "User opened the same tofa conversation and received: PROTOTYPE reply from Token Factory. Shared history remains the same conversation.",
+  "shared_config_persistence_failure": "unresolved",
+  "ordinary_mode_after_tofa": {
+    "user_observation": "Selecting the tofa history item enters the logo loop again.",
+    "history_viewable": false,
+    "missing_provider_resume_failures": 41,
+    "tofa_inference_available": false,
+    "interpretation": "The absent provider prevents desktop history hydration as well as continuation; list visibility does not establish readable history."
+  },
+  "relaunch_recovery": {
+    "user_observation": "After ordinary mode, reopened the same tofa conversation through tofa and received: PROTOTYPE reply from Token Factory. Shared history remains the same conversation.",
+    "same_scratch_profile": true,
+    "same_tofa_thread": true,
+    "successful_fixture_requests_after_relaunch": 2,
+    "owned_desktop_and_routes_closed": true
+  }
+}

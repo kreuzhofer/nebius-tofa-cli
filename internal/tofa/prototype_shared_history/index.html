@@ -20,7 +20,7 @@
 <div class="eyebrow">Throwaway logic prototype · Issue #34</div>
 <h1>One history, two ways to launch</h1>
 <p>Can ordinary and tofa launches share the same conversations while Token Factory access exists only during a tofa launch? Explore visibility, continuation and temporary route ownership below.</p>
-<p class="notice"><strong>This page is a simulation.</strong> It makes no network requests and changes no desktop files. The accompanying bundled-engine experiment observed shared history and relaunch recovery. Desktop UI parity, onboarding and crash handling still need qualification.</p>
+<p class="notice"><strong>This page is a simulation.</strong> It makes no network requests and changes no desktop files. Engine and human desktop experiments observed shared history and relaunch recovery. In ordinary mode, opening a tofa conversation actually loops on the logo; readable history there is not established. Onboarding and crash handling still need qualification.</p>
 <section aria-labelledby="state-title">
   <h2 id="state-title">Current state</h2>
   <p id="message" role="status" aria-live="polite"></p>
@@ -33,6 +33,7 @@
 <section><h2>What the runnable experiment established</h2>
   <p>The installed bundled engine preserved both session identities, titles and workspace associations across ordinary → tofa → ordinary → tofa launches. Native continuation used the native route. Tofa continuation failed explicitly without its provider, then succeeded using a fresh temporary route. Synthetic config and auth files stayed unchanged; expired listeners closed.</p>
   <p class="notice"><strong>Desktop result: this wrapper needs revision.</strong> Actual desktop startup persisted its temporary executable path into shared tool settings. Cleanup leaves a stale path. Engine-only preservation does not establish desktop preservation. See <a href="desktop-evidence.json">desktop-evidence.json</a>.</p>
+  <p>A later human walkthrough confirmed tofa continuation and recovery after relaunch. We corrected argument placement that had caused the active tofa launch to lose its provider. Ordinary mode still loops when opening the tofa history item. See <a href="logo-loop-evidence.json">human observations and diagnosis</a>.</p>
   <p>The merged catalog retained the shipped native model descriptors. This is a bundled snapshot, not a live account catalog. Desktop auxiliary requests for native models under the tofa provider remain a routing question; this prototype rejects mismatches.</p>
   <p class="small">Observed evidence: <a href="evidence.json">evidence.json</a> · Run instructions and limits: <a href="README.md">README.md</a>. The simulation's running-app refusal and interruption behavior are proposals, not measured desktop guarantees.</p>
 </section>

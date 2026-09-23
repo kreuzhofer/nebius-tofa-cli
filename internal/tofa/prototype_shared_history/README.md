@@ -12,6 +12,13 @@ a missing executable. This was reproduced in a synthetic profile during the firs
 ordinary-mode desktop phase, before trying tofa mode. The accepted limitation
 (relaunch through tofa to continue a tofa conversation) is not the problem.
 
+The subsequent human walkthrough confirmed ordinary-session continuation during a
+tofa launch, tofa-session continuation, and recovery of that same tofa session
+after ordinary → tofa relaunch. It also found that ordinary mode cannot display
+the tofa conversation's messages: selecting its list item loops on the logo while
+resume repeatedly reports the missing provider. Stored history survives; readable
+history in ordinary mode was **not** demonstrated.
+
 ## Open or run
 
 Double-click [index.html](index.html) for an in-memory walkthrough. It has free-play
@@ -48,6 +55,22 @@ Requires `/Applications/ChatGPT.app`, bundled engine
 versions. Scratch directories use short `/private/tmp/PROTOTYPE-tofa34-*` names:
 the original longer default temp path caused an IPC socket `EINVAL`.
 
+The installed engine updated to `0.155.0-alpha.16.3` before the subsequent human
+walkthrough. Keep the initial evidence above scoped to its recorded version.
+`run.py` deliberately retains its original version gate. The current-version
+resume probe creates its own fresh synthetic profile:
+
+```sh
+python3 internal/tofa/prototype_shared_history/resume_probe.py
+```
+
+`continue_desktop.py /private/tmp/PROTOTYPE-tofa34-...` continues a previously
+created, marked scratch profile. It preserves its synthetic native endpoint and
+credentials and pauses for human observation. It records known config mutation
+without claiming config preservation. It can restart phase 2 using the existing
+sessions rather than duplicating them. Pressing Enter only advances the runner;
+user observations are captured separately in the evidence below.
+
 ## Evidence and limits
 
 | Observation | Result |
@@ -61,10 +84,15 @@ the original longer default temp path caused an IPC socket `EINVAL`.
 | Actual desktop startup | Selected temporary executable and completed engine handshake |
 | Actual desktop shared config | Changed: desktop/plugin defaults plus persisted temporary executable path |
 | Actual desktop auth and native model/provider | Unchanged in failing scratch run |
-| Session list and full history in desktop UI | Not visually verified |
+| Ordinary session through tofa launch (human follow-up) | Opened and continued through native fixture |
+| Tofa session through tofa launch (human follow-up) | Opened and continued after correcting argument placement |
+| Tofa session selected in ordinary mode (human follow-up) | List item selectable, but history view loops on missing-provider resume |
+| Same tofa session after relaunch (human follow-up) | Opened and continued through a fresh Token Factory fixture |
 
 [evidence.json](evidence.json) captures the successful engine-only run.
 [desktop-evidence.json](desktop-evidence.json) captures the desktop failure.
+[logo-loop-evidence.json](logo-loop-evidence.json) captures the later human
+observations and the argument-placement reproduction/fix on engine alpha.16.3.
 Reports omit bearer values, local ports, session IDs and personal paths. The runner
 prints its marked scratch directory; retained scratch files contain only synthetic
 credentials. Desktop startup may contact vendor services for its normal metadata
@@ -82,6 +110,25 @@ also leaves a source-identified question: desktop title helpers request a native
 model under the active provider. The fixture rejects mismatched models rather than
 silently remapping them; no title-helper request was observed in this run.
 
+## Logo-loop diagnosis during the human walkthrough
+
+The initial tofa launch's desktop process received provider overrides before
+`app-server`, plus the desktop's plugin override after it. App-server overrides
+displaced those root CLI settings, producing `Model provider nebius-tofa not
+found` even with the launcher active. The renderer retried resume indefinitely.
+
+`resume_probe.py` reproduced that exact RPC failure in under a second without the
+renderer. Removing the app-server override passed; replacing the plugin setting
+with an unrelated `web_search` setting still failed. Moving launch overrides to
+the app-server arguments made the original probe pass. The human then confirmed
+the same tofa session opened and continued in the actual desktop. The wrapper
+keeps its original argument placement for other commands such as catalog export.
+
+This fixes the **prototype's active-tofa launch**. The ordinary-mode loop remains:
+there the provider is intentionally absent. The separate stale executable setting
+also remains unresolved. No production launcher code was changed and no automated
+test suite was added; the throwaway reproduction and human checks are the evidence.
+
 ## Decision to carry into #34
 
 Keep one history owner and retain recorded provider/model routing. Use a merged
@@ -91,8 +138,11 @@ wrapper into the ordinary desktop profile yet.
 
 Next bounded experiment: find a source-supported way to keep the executable
 reference durable or prevent launch-specific environment propagation into shared
-tool settings, without rewriting user credentials/settings on exit. Then rerun
-the four desktop phases and verify session-list parity and full history visually.
+tool settings, without rewriting user credentials/settings on exit. Preserve the
+validated app-server argument placement. Treat ordinary-mode readable history as
+an unmet part of the current issue wording, distinct from the accepted requirement
+to relaunch through tofa for continuation; do not call the observed logo loop an
+explicit user-facing unavailable-provider error.
 Only after that should #34 move into production launcher implementation and its
 already-approved executable/HTTP and engine-RPC test boundaries.
 
