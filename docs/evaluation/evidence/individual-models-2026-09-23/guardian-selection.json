@@ -1,0 +1,174 @@
+{
+  "selection_version": "guardian-selection-v1",
+  "metric": "worst elapsed Guardian assessment across six cases, including native retry waits",
+  "status": "selected",
+  "tied_models": [],
+  "selected_model": "zai-org/GLM-5.3-Flash",
+  "candidates": [
+    {
+      "model": "zai-org/GLM-5.3-Flash",
+      "eligible": true,
+      "reasons": [],
+      "assessment_ms": [
+        1840.163,
+        1685.404,
+        1387.4370000000001,
+        1680.922,
+        1492.171,
+        1220.233
+      ],
+      "worst_assessment_ms": 1840.163,
+      "six_case_estimated_usd": 0.00451525,
+      "cost": {
+        "model": "zai-org/GLM-5.3-Flash",
+        "paid_requests": 6,
+        "measured_requests": 6,
+        "input_tokens_observed": 29585,
+        "output_tokens_observed": 155,
+        "complete": true,
+        "estimated_usd": 0.00451525,
+        "known_subtotal_usd": 0.00451525,
+        "prices": {
+          "input_usd_per_million": 0.15,
+          "output_usd_per_million": 0.5,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      }
+    },
+    {
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "eligible": false,
+      "reasons": [
+        "approval_cases_incomplete",
+        "decision_mismatch",
+        "execution_mismatch"
+      ],
+      "assessment_ms": [
+        1169.0500000000002,
+        1409.142
+      ],
+      "worst_assessment_ms": 1409.142,
+      "six_case_estimated_usd": 0.0033468,
+      "cost": {
+        "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+        "paid_requests": 2,
+        "measured_requests": 2,
+        "input_tokens_observed": 10828,
+        "output_tokens_observed": 82,
+        "complete": true,
+        "estimated_usd": 0.0033468,
+        "known_subtotal_usd": 0.0033468,
+        "prices": {
+          "input_usd_per_million": 0.3,
+          "output_usd_per_million": 1.2,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      }
+    },
+    {
+      "model": "zai-org/GLM-5.3",
+      "eligible": false,
+      "reasons": [
+        "approval_cases_incomplete",
+        "decision_mismatch",
+        "execution_mismatch"
+      ],
+      "assessment_ms": [
+        1591.317,
+        1564.223
+      ],
+      "worst_assessment_ms": 1591.317,
+      "six_case_estimated_usd": 0.0142354,
+      "cost": {
+        "model": "zai-org/GLM-5.3",
+        "paid_requests": 2,
+        "measured_requests": 2,
+        "input_tokens_observed": 9747,
+        "output_tokens_observed": 134,
+        "complete": true,
+        "estimated_usd": 0.0142354,
+        "known_subtotal_usd": 0.0142354,
+        "prices": {
+          "input_usd_per_million": 1.4,
+          "output_usd_per_million": 4.4,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      }
+    },
+    {
+      "model": "moonshotai/Kimi-K3",
+      "eligible": false,
+      "reasons": [
+        "approval_cases_incomplete",
+        "client_incomplete",
+        "deadline_incomplete",
+        "execution_mismatch",
+        "review_protocol_failure"
+      ],
+      "assessment_ms": [
+        90002.243,
+        90002.37999999999
+      ],
+      "worst_assessment_ms": 90002.37999999999,
+      "six_case_estimated_usd": null,
+      "cost": {
+        "model": "moonshotai/Kimi-K3",
+        "paid_requests": 2,
+        "measured_requests": 0,
+        "input_tokens_observed": 0,
+        "output_tokens_observed": 0,
+        "complete": false,
+        "estimated_usd": null,
+        "known_subtotal_usd": null,
+        "prices": {
+          "input_usd_per_million": 3,
+          "output_usd_per_million": 15,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      }
+    },
+    {
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "eligible": false,
+      "reasons": [
+        "decision_mismatch",
+        "execution_mismatch"
+      ],
+      "assessment_ms": [
+        1811.358,
+        1335.98,
+        1206.067,
+        1688.32,
+        1549.987,
+        1747.922
+      ],
+      "worst_assessment_ms": 1811.358,
+      "six_case_estimated_usd": 0.034461,
+      "cost": {
+        "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+        "paid_requests": 6,
+        "measured_requests": 6,
+        "input_tokens_observed": 33234,
+        "output_tokens_observed": 409,
+        "complete": true,
+        "estimated_usd": 0.034461,
+        "known_subtotal_usd": 0.034461,
+        "prices": {
+          "input_usd_per_million": 1,
+          "output_usd_per_million": 3,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      }
+    }
+  ]
+}

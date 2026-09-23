@@ -1,0 +1,123 @@
+{
+  "campaign_version": "individual-models-v1",
+  "issue": 39,
+  "created_utc": "2026-09-23T09:07:03Z",
+  "candidate_count": 5,
+  "completed_evaluations": 5,
+  "attempts_per_candidate": 1,
+  "currency_cap_enforced": false,
+  "authorization": "Maintainer authorized expanded campaign without currency cap; #36 and #39",
+  "normal_settings_preserved": true,
+  "harness_defects": 0,
+  "consistency_checks_passed": true,
+  "roles": {
+    "main": {
+      "planned": 15,
+      "attempted": 9,
+      "completed": 7,
+      "passed": 6,
+      "unattempted": 6,
+      "cost": {
+        "paid_requests": 49,
+        "measured_requests": 47,
+        "input_tokens_observed": 372954,
+        "output_tokens_observed": 7527,
+        "complete": false,
+        "estimated_usd": null,
+        "known_subtotal_usd": 0.34807585
+      }
+    },
+    "guardian": {
+      "planned": 15,
+      "attempted": 9,
+      "completed": 9,
+      "passed": 5,
+      "unattempted": 6,
+      "cost": {
+        "paid_requests": 18,
+        "measured_requests": 16,
+        "input_tokens_observed": 83394,
+        "output_tokens_observed": 780,
+        "complete": false,
+        "estimated_usd": null,
+        "known_subtotal_usd": 0.05655845
+      }
+    }
+  },
+  "total_upstream_requests": 67,
+  "estimated_usd": null,
+  "selected_guardian": "zai-org/GLM-5.3-Flash",
+  "selection_status": "selected",
+  "reports": [
+    {
+      "file": "1-glm-5.3-flash.json",
+      "sha256": "f77a04c348142e9ad5cc3537aaee0979fe16135b09f2126e0ad590d7b23bc6f2",
+      "model": "zai-org/GLM-5.3-Flash",
+      "catalog_checked_utc": "2026-09-23T08:57:02Z",
+      "main_status": "failed",
+      "guardian_status": "passed",
+      "guardian_native_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "file": "2-deepseek-v4.1-flash.json",
+      "sha256": "9c55ed95eba855952572b1aab168d18f1adac942f759af1bc889aedd6c010985",
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "catalog_checked_utc": "2026-09-23T08:57:38Z",
+      "main_status": "passed",
+      "guardian_status": "failed",
+      "guardian_native_attempts": [
+        1,
+        1
+      ]
+    },
+    {
+      "file": "3-glm-5.3.json",
+      "sha256": "8928c9fc2eb0805eeebbe78fd93d2e0298c797dfae0dd72eaa6e7c2cde7a7e58",
+      "model": "zai-org/GLM-5.3",
+      "catalog_checked_utc": "2026-09-23T08:58:26Z",
+      "main_status": "passed",
+      "guardian_status": "failed",
+      "guardian_native_attempts": [
+        1,
+        1
+      ]
+    },
+    {
+      "file": "4-kimi-k3.json",
+      "sha256": "69b3b4e31754db49ecc812a4c63475437b06fc17b25f7c3fa26bf43a19d6401a",
+      "model": "moonshotai/Kimi-K3",
+      "catalog_checked_utc": "2026-09-23T09:00:09Z",
+      "main_status": "incomplete",
+      "guardian_status": "failed",
+      "guardian_native_attempts": [
+        1,
+        1
+      ]
+    },
+    {
+      "file": "5-nemotron-3-ultra-550b-a55b.json",
+      "sha256": "961a7d0906944c87c21f1425a9dd9777a56e521328409d756fa418a31826c8cd",
+      "model": "nvidia/Nemotron-3-Ultra-550b-a55b",
+      "catalog_checked_utc": "2026-09-23T09:06:13Z",
+      "main_status": "incomplete",
+      "guardian_status": "failed",
+      "guardian_native_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "pair_qualification": "Not performed in #39; individual role results do not qualify mixed pairs.",
+  "limitations": "Three coding repeats and three Guardian allow/deny pairs planned per model; stop failed lanes. Narrow synthetic task and benign approvals; no broad coding-quality or approval-safety claim. No supported-model policy change."
+}

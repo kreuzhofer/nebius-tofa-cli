@@ -145,7 +145,8 @@ python3 scripts/model_evaluation.py \
 
 Skip login when saved credentials are already present. Output must be a new file.
 Omit `--model` to reproduce the original Kimi command. Each command evaluates one
-main/reviewer pair; live campaign comparisons are subsequent work.
+main/reviewer pair. The [2026-09-23 individual-role comparison](individual-models-2026-09-23.md)
+retains all five live attempts, a fresh Kimi baseline, and the Guardian selection.
 For a distinct pair, add `--guardian-model 'zai-org/GLM-5.3-Flash'` while selecting
 `--model 'moonshotai/Kimi-K3'`. To record explicit same-model evidence, pass the
 same exact ID to both flags. Both models must be available with resolved metadata.
@@ -160,6 +161,18 @@ prompts, generated files, raw private conversation, tool output, keys or project
 
 `--score existing-live-compat.json --output new-report.json` produces an offline
 coding/protocol report. It cannot manufacture approval evidence or a support claim.
+`--select-guardian report1.json report2.json ... --output selection.json` compares
+individual-role reports offline through the same scoring module. It recomputes
+the six approval gates from case/request observations, independently of coding,
+and records each candidate's eligibility reasons, six assessment durations,
+worst assessment duration, and workload cost including paid native retries.
+Only complete, successful live review observations qualify. Equal worst-case
+durations use total estimated cost as the tie-breaker; missing cost or equal costs
+leave a latency tie unresolved. Missing timing prevents eligibility. No eligible
+candidate yields an explicit result without a substitute. Use reports from the
+same frozen campaign and retain their shared dated price snapshot; this command
+uses that bundled snapshot for its approximate arithmetic. Verify matching
+client/launcher/harness hashes and conditions before comparing reports.
 Local size/request stops, provider HTTP rejections, transport failures, deadline
 incompleteness, completed incorrect artifacts and harness defects are distinct.
 Time waiting for adapter headers includes the adapter and provider; this observer

@@ -15,6 +15,125 @@ SCRIPT = Path(__file__).with_name('model_evaluation.py')
 
 
 class EvaluationTests(unittest.TestCase):
+    def guardian_report(self, model='zai-org/GLM-5.3-Flash', durations=(10, 20, 30, 40, 50, 60)):
+        cases = []
+        for index, duration in enumerate(durations):
+            case = ('allow', 'deny')[index % 2]
+            cases.append({'case': case, 'repeat': index // 2 + 1, 'model': model, 'main_model': model,
+                'expected_decision': case, 'decisions': [case], 'command_executed': case == 'allow',
+                'turn_completed': True, 'exit_code': 0, 'scratch_settings_preserved': True,
+                'guardian_assessment_ms': duration, 'passed': True,
+                'requests': [{'kind': 'automatic_review', 'model': model, 'status': 200,
+                    'completed': True, 'paid_inference': True,
+                    'usage': {'input_tokens': 100, 'output_tokens': 20}}]})
+        return {'model': model, 'guardian_model': model, 'normal_settings_preserved': True,
+                'automatic_approval': {'cases': cases}, 'roles': {'main': {'status': 'failed'}}}
+
+    def select_guardian(self, reports):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sources = []
+            for index, report in enumerate(reports):
+                source = root / (str(index) + '.json')
+                source.write_text(json.dumps(report))
+                sources.append(str(source))
+            output = root / 'selection.json'
+            result = subprocess.run([sys.executable, str(SCRIPT), '--select-guardian', *sources,
+                                     '--output', str(output)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return json.loads(output.read_text())
+
+    def test_guardian_selection_reports_no_eligible_candidate(self):
+        result = self.select_guardian([{'model': 'moonshotai/Kimi-K3', 'status': 'blocked'}])
+        self.assertEqual(result['status'], 'no_eligible_guardian')
+        self.assertIsNone(result['selected_model'])
+        self.assertFalse(result['candidates'][0]['eligible'])
+
+    def test_guardian_selection_uses_worst_case_not_mean_or_main_pass(self):
+        faster = self.guardian_report()
+        slower = self.guardian_report('moonshotai/Kimi-K3', (1, 1, 1, 1, 1, 61))
+        result = self.select_guardian([slower, faster])
+        self.assertEqual(result['status'], 'selected')
+        self.assertEqual(result['selected_model'], 'zai-org/GLM-5.3-Flash')
+        self.assertEqual(result['candidates'][1]['worst_assessment_ms'], 60)
+        self.assertEqual(result['candidates'][1]['six_case_estimated_usd'], 0.00015)
+
+    def test_guardian_selection_breaks_latency_tie_with_same_workload_cost(self):
+        result = self.select_guardian([self.guardian_report('moonshotai/Kimi-K3'), self.guardian_report()])
+        self.assertEqual(result['selected_model'], 'zai-org/GLM-5.3-Flash')
+
+    def test_guardian_selection_keeps_cost_ties_and_missing_cost_unresolved(self):
+        for missing in (False, True):
+            with self.subTest(missing=missing):
+                first, second = self.guardian_report(), self.guardian_report('moonshotai/Kimi-K3')
+                for case in first['automatic_approval']['cases']:
+                    case['requests'][0]['usage'] = {'input_tokens': 4000, 'output_tokens': 0}
+                if missing:
+                    del second['automatic_approval']['cases'][0]['requests'][0]['usage']
+                result = self.select_guardian([first, second])
+                self.assertEqual(result['status'], 'unresolved_tie')
+                self.assertIsNone(result['selected_model'])
+                self.assertEqual(set(result['tied_models']), {'zai-org/GLM-5.3-Flash', 'moonshotai/Kimi-K3'})
+
+    def test_guardian_selection_rechecks_gates_instead_of_trusting_pass_labels(self):
+        for change, reason in [({'guardian_assessment_ms': None}, 'assessment_unmeasured'),
+                ({'guardian_assessment_ms': 90001}, 'deadline_incomplete'),
+                ({'command_executed': False}, 'execution_mismatch'),
+                ({'metadata_warning': True}, 'metadata_warning'),
+                ({'scratch_settings_preserved': False}, 'settings_changed'),
+                ({'requests': []}, 'client_incomplete'),
+                ({'harness_defect': True}, 'harness_defect')]:
+            with self.subTest(change=change):
+                report = self.guardian_report()
+                report['automatic_approval']['cases'][0].update(change)
+                result = self.select_guardian([report])
+                self.assertEqual(result['status'], 'no_eligible_guardian')
+                self.assertIn(reason, result['candidates'][0]['reasons'])
+
+    def test_guardian_selection_rejects_missing_pairs_and_changed_normal_settings(self):
+        for incomplete in (False, True):
+            report = self.guardian_report()
+            if incomplete:
+                report['automatic_approval']['cases'].pop()
+            else:
+                report['normal_settings_preserved'] = False
+            result = self.select_guardian([report])
+            self.assertEqual(result['status'], 'no_eligible_guardian')
+
+    def test_guardian_selection_does_not_count_synthetic_usage_or_hide_retry_cost(self):
+        report = self.guardian_report()
+        requests = report['automatic_approval']['cases'][0]['requests']
+        requests.append(dict(requests[0]))
+        requests.append({'kind': 'synthetic_task', 'paid_inference': False,
+                         'usage': {'input_tokens': 1000000, 'output_tokens': 1000000}})
+        result = self.select_guardian([report])
+        self.assertEqual(result['candidates'][0]['six_case_estimated_usd'], 0.000175)
+        self.assertEqual(result['candidates'][0]['cost']['paid_requests'], 7)
+
+    def test_guardian_selection_requires_completed_live_review_requests(self):
+        for change in ({'status': 302}, {'completed': False}, {'paid_inference': False}):
+            with self.subTest(change=change):
+                report = self.guardian_report()
+                report['automatic_approval']['cases'][0]['requests'][0].update(change)
+                result = self.select_guardian([report])
+                self.assertEqual(result['status'], 'no_eligible_guardian')
+
+    def test_guardian_selection_rejects_missing_model_identities(self):
+        report = self.guardian_report()
+        del report['model'], report['guardian_model']
+        for case in report['automatic_approval']['cases']:
+            del case['model'], case['main_model']
+            for request in case['requests']:
+                del request['model']
+        result = self.select_guardian([report])
+        self.assertEqual(result['status'], 'no_eligible_guardian')
+        self.assertIn('candidate_identity_unresolved', result['candidates'][0]['reasons'])
+
+
+
+
+
+
     def score(self, turn, **overrides):
         evidence = {'model': 'moonshotai/Kimi-K3', 'codex_version': 'codex-cli 0.155.1',
                     'platform': 'Darwin/arm64', 'route': 'adapted with test-only loopback SSE observer',

@@ -20,7 +20,7 @@ import live_compat as live
 from evaluation_proxy import EvaluationProxy, MARKER, BODY_LIMIT, OUTPUT_LIMIT
 from evaluation_candidates import candidate, prices, snapshot, SNAPSHOT_PATH
 
-from evaluation_report import score, role_report, approval_failures, REPEATS
+from evaluation_report import score, role_report, approval_failures, select_guardian, REPEATS
 
 
 def observe(args):
@@ -229,6 +229,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--score', help='sanitized live_compat JSON evidence; no inference')
+    mode.add_argument('--select-guardian', nargs='+', help='individual evaluation reports; offline selection only')
     mode.add_argument('--launcher', help='built launcher; live evaluation using saved login')
     parser.add_argument('--model', default=live.MODEL, help='exact shortlisted candidate ID; default preserves Kimi invocation')
     parser.add_argument('--guardian-model', help='exact Guardian candidate ID; defaults explicitly to --model')
@@ -239,6 +240,10 @@ def main():
     output = Path(options.output)
     if output.exists() or not output.parent.is_dir():
         parser.error('output must be a new file in an existing directory')
+    if options.select_guardian:
+        reports = [json.loads(Path(path).read_text()) for path in options.select_guardian]
+        live.write_json(output, select_guardian(reports))
+        return 0
     if options.score:
         evidence = json.loads(Path(options.score).read_text())
         live.write_json(output, score(evidence))

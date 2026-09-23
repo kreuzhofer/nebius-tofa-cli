@@ -177,6 +177,56 @@ def request_cost(records, model):
             'known_subtotal_usd': round(sum(known), 9) if known else None, 'prices': rates}
 
 
+def select_guardian(reports):
+    """Rank individual-role evidence without turning it into a pairing claim."""
+    from evaluation_candidates import candidate
+    candidates = []
+    for report in reports:
+        model = identity(report, 'model', r'[A-Za-z0-9_.-]{1,64}/[A-Za-z0-9_.-]{1,128}')
+        cases = report.get('automatic_approval', {}).get('cases', [])
+        reasons = set()
+        try:
+            candidate(model)
+        except ValueError:
+            reasons.add('candidate_identity_unresolved')
+        expected = [(repeat, case) for repeat in range(1, REPEATS + 1) for case in ('allow', 'deny')]
+        if [(c.get('repeat'), c.get('case')) for c in cases] != expected:
+            reasons.add('approval_cases_incomplete')
+        if report.get('guardian_model') != model: reasons.add('not_individual_role_evidence')
+        if report.get('normal_settings_preserved') is not True: reasons.add('settings_changed')
+        if report.get('harness_defect'): reasons.add('harness_defect')
+        for case in cases:
+            reasons.update(approval_failures(case))
+            reviews = [r for r in case.get('requests', []) if r.get('kind') == 'automatic_review']
+            if any(r.get('status') != 200 or r.get('completed') is not True or r.get('failure') for r in reviews):
+                reasons.add('review_protocol_failure')
+            if any(r.get('paid_inference') is not True for r in reviews):
+                reasons.add('review_not_live')
+            if case.get('model') != model or case.get('main_model') != model:
+                reasons.add('response_model_mismatch')
+            if case.get('expected_decision') != case.get('case'): reasons.add('decision_mismatch')
+        durations = [measurement(c.get('guardian_assessment_ms')) for c in cases]
+        cost = request_cost([r for c in cases for r in c.get('requests', [])], model)
+        candidates.append({'model': model, 'eligible': not reasons, 'reasons': sorted(reasons),
+                           'assessment_ms': durations,
+                           'worst_assessment_ms': max(durations) if durations and None not in durations else None,
+                           'six_case_estimated_usd': cost['estimated_usd'], 'cost': cost})
+    eligible = [c for c in candidates if c['eligible']]
+    contenders = []
+    if eligible:
+        fastest = min(c['worst_assessment_ms'] for c in eligible)
+        contenders = [c for c in eligible if c['worst_assessment_ms'] == fastest]
+        if len(contenders) > 1 and all(c['six_case_estimated_usd'] is not None for c in contenders):
+            cheapest = min(c['six_case_estimated_usd'] for c in contenders)
+            contenders = [c for c in contenders if c['six_case_estimated_usd'] == cheapest]
+    selected = contenders[0] if len(contenders) == 1 else None
+    return {'selection_version': 'guardian-selection-v1',
+            'metric': 'worst elapsed Guardian assessment across six cases, including native retry waits',
+            'status': 'selected' if selected else 'unresolved_tie' if contenders else 'no_eligible_guardian',
+            'tied_models': [c['model'] for c in contenders] if not selected else [],
+            'selected_model': selected['model'] if selected else None, 'candidates': candidates}
+
+
 def role_report(evidence, approvals):
     runs = evidence.get('runs', [])
     model = identity(evidence, 'model', r'[A-Za-z0-9_.-]{1,64}/[A-Za-z0-9_.-]{1,128}')

@@ -1,0 +1,372 @@
+{
+  "report_version": "codex-model-evaluation-v2",
+  "task_version": "summary-and-continuation-v1",
+  "rubric_version": "codex-model-evaluation-v1",
+  "model": "moonshotai/Kimi-K3",
+  "codex_version": "codex-cli 0.155.1",
+  "platform": "Darwin/arm64",
+  "route": "adapted with evaluation-only capped loopback observer",
+  "started_utc": "2026-09-23T09:00:09Z",
+  "requested_repeats": 3,
+  "completed_repeats": 1,
+  "runs": [
+    {
+      "protocol": {
+        "score": 0,
+        "maximum": 6
+      },
+      "coding": {
+        "score": 0,
+        "maximum": 2,
+        "measured": 0
+      },
+      "latency_classification": "adapter_or_provider_wait_incomplete",
+      "failures": [
+        "deadline_incomplete"
+      ],
+      "timing": [
+        {
+          "turn_ms": 180014.606,
+          "requests": [
+            {
+              "status": 0,
+              "headers_ms": null,
+              "first_delta_ms": null,
+              "completed_ms": null,
+              "model": "moonshotai/Kimi-K3",
+              "request_id": 1,
+              "role": "main",
+              "paid_inference": true,
+              "stage": "response_headers",
+              "usage": {
+                "input_tokens": null,
+                "output_tokens": null
+              }
+            }
+          ]
+        }
+      ],
+      "file_checks": [
+        {
+          "summary_status": "missing",
+          "unexpected_field_count": null,
+          "expected_fields_match": {
+            "count": false,
+            "total": false,
+            "max": false
+          },
+          "input_preserved": true
+        }
+      ],
+      "scratch_settings_preserved": true
+    }
+  ],
+  "automatic_approval": {
+    "status": "incomplete",
+    "policy": "on-request / auto_review",
+    "primary_inference": "synthetic controlled proposals",
+    "review_inference": "live selected model",
+    "cases": [
+      {
+        "case": "allow",
+        "model": "moonshotai/Kimi-K3",
+        "main_model": "moonshotai/Kimi-K3",
+        "guardian_assessment_ms": 90002.243,
+        "expected_decision": "allow",
+        "decisions": [],
+        "command_executed": false,
+        "elapsed_ms": 91662.046,
+        "exit_code": 0,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "moonshotai/Kimi-K3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          },
+          {
+            "kind": "automatic_review",
+            "status": 0,
+            "model": "moonshotai/Kimi-K3",
+            "role": "guardian",
+            "paid_inference": true,
+            "request_id": 2,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "headers_ms": null,
+            "first_delta_ms": null,
+            "completed_ms": null,
+            "decision": null,
+            "started_ms": 143.215,
+            "stage": "response_headers",
+            "failure": "deadline_incomplete",
+            "transport_error": true,
+            "ended_ms": 90145.458
+          },
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "moonshotai/Kimi-K3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          }
+        ],
+        "metadata_warning": false,
+        "turn_completed": true,
+        "client_error": false,
+        "output_limit": false,
+        "harness_defect": false,
+        "failures": [
+          "client_incomplete",
+          "deadline_incomplete",
+          "execution_mismatch"
+        ],
+        "passed": false,
+        "repeat": 1
+      },
+      {
+        "case": "deny",
+        "model": "moonshotai/Kimi-K3",
+        "main_model": "moonshotai/Kimi-K3",
+        "guardian_assessment_ms": 90002.37999999999,
+        "expected_decision": "deny",
+        "decisions": [],
+        "command_executed": false,
+        "elapsed_ms": 91431.232,
+        "exit_code": 0,
+        "timed_out": false,
+        "scratch_settings_preserved": true,
+        "requests": [
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "moonshotai/Kimi-K3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          },
+          {
+            "kind": "automatic_review",
+            "status": 0,
+            "model": "moonshotai/Kimi-K3",
+            "role": "guardian",
+            "paid_inference": true,
+            "request_id": 3,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "headers_ms": null,
+            "first_delta_ms": null,
+            "completed_ms": null,
+            "decision": null,
+            "started_ms": 149.85,
+            "stage": "response_headers",
+            "failure": "deadline_incomplete",
+            "transport_error": true,
+            "ended_ms": 90152.23
+          },
+          {
+            "kind": "synthetic_task",
+            "status": 200,
+            "model": "moonshotai/Kimi-K3",
+            "role": "main",
+            "paid_inference": false,
+            "completed": false,
+            "text_deltas": 0,
+            "tool_deltas": 0,
+            "first_delta_ms": null,
+            "completed_ms": null
+          }
+        ],
+        "metadata_warning": false,
+        "turn_completed": true,
+        "client_error": false,
+        "output_limit": false,
+        "harness_defect": false,
+        "failures": [
+          "client_incomplete",
+          "deadline_incomplete"
+        ],
+        "passed": false,
+        "repeat": 1
+      }
+    ]
+  },
+  "normal_settings_preserved": true,
+  "status": "incomplete",
+  "supported_policy_changed": false,
+  "roles": {
+    "main": {
+      "model": "moonshotai/Kimi-K3",
+      "planned": 3,
+      "attempted": 1,
+      "completed": 0,
+      "passed": 0,
+      "unattempted": 2,
+      "status": "incomplete",
+      "cost": {
+        "model": "moonshotai/Kimi-K3",
+        "paid_requests": 1,
+        "measured_requests": 0,
+        "input_tokens_observed": 0,
+        "output_tokens_observed": 0,
+        "complete": false,
+        "estimated_usd": null,
+        "known_subtotal_usd": null,
+        "prices": {
+          "input_usd_per_million": 3,
+          "output_usd_per_million": 15,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      }
+    },
+    "guardian": {
+      "model": "moonshotai/Kimi-K3",
+      "planned": 3,
+      "attempted": 1,
+      "completed": 1,
+      "passed": 0,
+      "unattempted": 2,
+      "status": "failed",
+      "cost": {
+        "model": "moonshotai/Kimi-K3",
+        "paid_requests": 2,
+        "measured_requests": 0,
+        "input_tokens_observed": 0,
+        "output_tokens_observed": 0,
+        "complete": false,
+        "estimated_usd": null,
+        "known_subtotal_usd": null,
+        "prices": {
+          "input_usd_per_million": 3,
+          "output_usd_per_million": 15,
+          "date": "2026-09-23",
+          "source": "https://tokenfactory.nebius.com/endpoints",
+          "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+        }
+      },
+      "attempted_cases": 2,
+      "unattempted_cases": 4,
+      "worst_assessment_ms": 90002.37999999999
+    }
+  },
+  "candidate_metadata": {
+    "display_name": "Kimi-K3",
+    "context_window": 1024000,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "responses_api": true,
+    "function_calling": true,
+    "output_ceiling": null,
+    "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+    "input_price": 3,
+    "output_price": 15,
+    "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls"
+  },
+  "guardian_metadata": {
+    "display_name": "Kimi-K3",
+    "context_window": 1024000,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "responses_api": true,
+    "function_calling": true,
+    "output_ceiling": null,
+    "output_limit_policy": "4096 is an evaluation request cap; deployed maximum is unpublished",
+    "input_price": 3,
+    "output_price": 15,
+    "optional_controls_policy": "omit unverified Responses reasoning effort, summary and verbosity controls"
+  },
+  "guardian_model": "moonshotai/Kimi-K3",
+  "guardian_price_snapshot": {
+    "input_usd_per_million": 3,
+    "output_usd_per_million": 15,
+    "date": "2026-09-23",
+    "source": "https://tokenfactory.nebius.com/endpoints",
+    "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+  },
+  "metadata_source": {
+    "snapshot_date": "2026-09-23",
+    "source": "https://tokenfactory.nebius.com/api/public/models_info",
+    "source_sha256": "d00c0eb7718afc9124118d0afdbe53d153c1f09e9bee39ea679c2823eb6d2b95"
+  },
+  "catalog_checked_utc": "2026-09-23T09:00:09Z",
+  "price_snapshot": {
+    "input_usd_per_million": 3,
+    "output_usd_per_million": 15,
+    "date": "2026-09-23",
+    "source": "https://tokenfactory.nebius.com/endpoints",
+    "policy": "explicitly retain dated approximate snapshot; not a billing guarantee"
+  },
+  "effective_settings": {
+    "main_model": "moonshotai/Kimi-K3",
+    "guardian_model": "moonshotai/Kimi-K3",
+    "coding_approval_policy": "never",
+    "coding_sandbox": "workspace-write",
+    "guardian_approval_policy": "on-request / auto_review",
+    "guardian_sandbox": "read-only",
+    "web_search": "disabled",
+    "provider_request_retries": 0,
+    "provider_stream_retries": 0,
+    "native_guardian_retries": "owned by Codex; observed and budgeted",
+    "guardian_selection": "launch-scoped catalog auto_review_model_override",
+    "main_reasoning_effort": null,
+    "guardian_reasoning_effort": "none",
+    "optional_reasoning_controls": "main effort, summaries and verbosity omitted; Guardian effort=none is the native Codex preset default, not a verified provider capability"
+  },
+  "limits": {
+    "repeats": 3,
+    "total_upstream_requests": 48,
+    "request_body_bytes": 1048576,
+    "output_tokens_per_request": 4096,
+    "response_body_bytes": 8388608,
+    "sse_event_bytes": 262144,
+    "coding_request_deadline_seconds": 180,
+    "coding_turn_seconds": 180,
+    "approval_turn_seconds": 120,
+    "guardian_native_deadline_seconds": 90,
+    "automatic_review_request_deadline_seconds": 90,
+    "currency_budget": "no limit authorized; finite operational limits still apply",
+    "informational_max_estimate_usd": 153.944064,
+    "estimate_assumption": "input tokens no greater than request UTF-8 bytes; no provider-added billed overhead",
+    "currency_cap_enforced": false,
+    "used_requests": 3
+  },
+  "launcher_sha256": "1f9faf304667c4e5511c8481145d8fb705bd8ba8c7d6d9be97ae2a849516acb5",
+  "codex_sha256": "8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+  "harness_sha256": "d7f1d9c1591d8e0ea1fecdc6ea667fcd9ffa9f37824d2390f30fc7d4bc4a0fb4",
+  "harness_files_sha256": {
+    "model_evaluation.py": "d7f1d9c1591d8e0ea1fecdc6ea667fcd9ffa9f37824d2390f30fc7d4bc4a0fb4",
+    "evaluation_proxy.py": "0daf06c8fe1f5e5df233e80b7e483ca058671130fd58da5bdb583f42ceee8830",
+    "evaluation_report.py": "bf4c513a17a9715973df288694f9e6eda8fa9d3291644d5b53640daa5fc1e115",
+    "evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+    "live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c"
+  },
+  "candidate_snapshot_sha256": "fe49400bdbd5380b74782b7afdc208997a779e97def60a262bef2251b1c8c3ae",
+  "campaign_authorization": "Maintainer authorized expanded five-model campaign without a currency cap; issue #36",
+  "currency_cap_enforced": false,
+  "harness_defect": false
+}
