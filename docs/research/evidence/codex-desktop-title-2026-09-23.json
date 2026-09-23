@@ -1,0 +1,315 @@
+{
+  "issue": 33,
+  "date": "2026-09-23",
+  "platform": "macOS 26.6.2 arm64",
+  "desktop": "26.915.31945 (9922)",
+  "engine": "0.155.0-alpha.9.2",
+  "source_base": "a79f2dbf6db3a311355791dc68b2af9b02846f48",
+  "binary_sha256": "a2c4b624ba75ef16a82e811fa9942d9fb9d71dcf6154f35c7363ee9195922d76",
+  "route": "#29 diagnostic bridge -> launcher Responses adapter -> Token Factory",
+  "bounds": {
+    "maximum_requests": 6,
+    "maximum_request_bytes": 131072,
+    "maximum_output_tokens_per_request": 1024,
+    "owned_instance_deadline_seconds": 600
+  },
+  "synthetic_prompt": "Run printf tofa-title-33-ok and explain how a tiny Python calculator adds two numbers.",
+  "continuation": "What marker did the command print?",
+  "requests": [
+    {
+      "phase": "request",
+      "number": 1,
+      "source": "thread_title",
+      "schema": {
+        "type": "json_schema",
+        "strict": true,
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "title",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        "name": "codex_output_schema"
+      },
+      "tools": 11,
+      "model": "moonshotai/Kimi-K3",
+      "bytes": 42424,
+      "total_bytes": 42424,
+      "stream": true,
+      "tool_results": 0,
+      "assistant_history": 0,
+      "max_output_tokens": 1024
+    },
+    {
+      "phase": "request",
+      "number": 2,
+      "source": "user",
+      "schema": null,
+      "tools": 15,
+      "model": "moonshotai/Kimi-K3",
+      "bytes": 94516,
+      "total_bytes": 136940,
+      "stream": true,
+      "tool_results": 0,
+      "assistant_history": 0,
+      "max_output_tokens": 1024
+    },
+    {
+      "phase": "headers",
+      "number": 1,
+      "status": 200,
+      "request_id": "03caf4cd5a33861db522b590c3c81eda"
+    },
+    {
+      "phase": "headers",
+      "number": 2,
+      "status": 200,
+      "request_id": "441e039de7f44deef9ecb6930a51a73d"
+    },
+    {
+      "phase": "title_result",
+      "number": 1,
+      "output": [
+        {
+          "type": "message",
+          "role": "assistant",
+          "status": "completed",
+          "content": [
+            {
+              "annotations": [],
+              "text": "{\"title\":\"Explain Python calculator addition\",\"description\":\"Run printf tofa-title-33-ok and explain how a tiny Python calculator adds two numbers\"}",
+              "type": "output_text",
+              "logprobs": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "phase": "response",
+      "number": 1,
+      "events": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.reasoning_text.delta": 3,
+        "response.reasoning_text.done": 1,
+        "response.output_item.done": 2,
+        "response.content_part.added": 1,
+        "response.output_text.delta": 8,
+        "response.output_text.done": 1,
+        "response.content_part.done": 1,
+        "response.completed": 1
+      },
+      "usage": {
+        "input_tokens": 8140,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 46,
+        "output_tokens_details": {
+          "reasoning_tokens": 6
+        },
+        "total_tokens": 8186
+      }
+    },
+    {
+      "phase": "response",
+      "number": 2,
+      "events": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 1,
+        "response.output_text.delta": 5,
+        "response.output_text.done": 1,
+        "response.content_part.done": 1,
+        "response.output_item.done": 2,
+        "response.function_call_arguments.delta": 1,
+        "response.function_call_arguments.done": 1,
+        "response.completed": 1
+      },
+      "usage": {
+        "input_tokens": 10416,
+        "input_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 58,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 10474
+      }
+    },
+    {
+      "phase": "request",
+      "number": 3,
+      "source": "user",
+      "schema": null,
+      "tools": 15,
+      "model": "moonshotai/Kimi-K3",
+      "bytes": 95113,
+      "total_bytes": 232053,
+      "stream": true,
+      "tool_results": 1,
+      "assistant_history": 1,
+      "max_output_tokens": 1024
+    },
+    {
+      "phase": "headers",
+      "number": 3,
+      "status": 200,
+      "request_id": "fd66b7957073de1f257f3cbe91046e4e"
+    },
+    {
+      "phase": "response",
+      "number": 3,
+      "events": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 1,
+        "response.content_part.added": 1,
+        "response.output_text.delta": 69,
+        "response.output_text.done": 1,
+        "response.content_part.done": 1,
+        "response.output_item.done": 1,
+        "response.completed": 1
+      },
+      "usage": {
+        "input_tokens": 10550,
+        "input_tokens_details": {
+          "cached_tokens": 10368,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 281,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 10831
+      }
+    },
+    {
+      "phase": "request",
+      "number": 4,
+      "source": "user",
+      "schema": null,
+      "tools": 15,
+      "model": "moonshotai/Kimi-K3",
+      "bytes": 96483,
+      "total_bytes": 328536,
+      "stream": true,
+      "tool_results": 1,
+      "assistant_history": 2,
+      "max_output_tokens": 1024
+    },
+    {
+      "phase": "headers",
+      "number": 4,
+      "status": 200,
+      "request_id": "1c51e32e584c3054f84089f41d6cdf32"
+    },
+    {
+      "phase": "response",
+      "number": 4,
+      "events": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 1,
+        "response.content_part.added": 1,
+        "response.output_text.delta": 4,
+        "response.output_text.done": 1,
+        "response.content_part.done": 1,
+        "response.output_item.done": 1,
+        "response.completed": 1
+      },
+      "usage": {
+        "input_tokens": 10859,
+        "input_tokens_details": {
+          "cached_tokens": 10496,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 21,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 10880
+      }
+    }
+  ],
+  "desktop_result": {
+    "persisted_thread_name": "Explain Python calculator addition",
+    "schema_valid": true,
+    "title_length": 34,
+    "tool": "exec_command",
+    "command": "printf 'tofa-title-33-ok'",
+    "tool_output": "tofa-title-33-ok",
+    "completed_user_turns": 2,
+    "user_reported_continuation": "tofa-title-33-ok",
+    "displayed_title_human_confirmation": "not separately provided; persisted generated thread name verified in isolated desktop state"
+  },
+  "cleanup": {
+    "owned_process_group_empty": true,
+    "diagnostic_listener_closed": true,
+    "launcher_exited": true,
+    "diagnostic_exit_error": "PermissionError during process-group cleanup after SIGTERM; independent process listing confirmed no owned group processes remained",
+    "ordinary_credentials": "not read or rewritten",
+    "ordinary_configuration": "not written; no before/after digest audit in this run",
+    "owned_state": "retained for evidence; no user workspace or conversations deleted"
+  },
+  "limitations": [
+    "One successful synthetic title; no broad title-quality qualification",
+    "Live Guardian review not triggered; actual Guardian execution gates covered by installed-client offline regression",
+    "Read-only app title lookups with a different tool inventory remain unsupported"
+  ],
+  "additional_user_activity": {
+    "note": "The user started another conversation before cleanup. Its content is excluded from the synthetic qualification; categorical request accounting is retained.",
+    "requests": [
+      {
+        "phase": "request",
+        "number": 5,
+        "source": "thread_title"
+      },
+      {
+        "phase": "request",
+        "number": 6,
+        "source": "user"
+      },
+      {
+        "phase": "headers",
+        "number": 5,
+        "status": 200,
+        "request_id": "bc59c1c1e33f793c2aa5ceb124750cb1"
+      },
+      {
+        "phase": "transport_error",
+        "number": 5
+      },
+      {
+        "phase": "headers",
+        "number": 6,
+        "status": 200,
+        "request_id": "19fe8e4ae8205298be0489f2c2e7ae19"
+      },
+      {
+        "phase": "transport_error",
+        "number": 6
+      }
+    ]
+  }
+}

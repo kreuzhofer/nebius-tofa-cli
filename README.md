@@ -21,8 +21,9 @@ no GitHub account is needed to install.
 See [rc.2 evidence and qualification status](docs/releases/v0.1.0-rc.2.md),
 [conversation validation](docs/prototype/VALIDATION.md#request-adapter-validation)
 and [the adapter investigation](docs/research/codex-kimi-followup.md).
-Claude, desktop integrations, broader protocol translation and browser OAuth
-remain outside the current scope.
+Source builds also include an [experimental macOS Codex desktop target](docs/codex-desktop.md).
+It is not part of rc.2. Claude, other desktop modes, broader protocol translation
+and browser OAuth remain outside the current scope.
 
 ## Installation
 
@@ -204,6 +205,16 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 ./tofa launch codex --model '<id>' --allow-unverified --direct
 ./tofa auth logout
 ```
+
+For the tested macOS desktop application, source builds offer:
+
+```sh
+./tofa launch codex-desktop --model moonshotai/Kimi-K3 --allow-unverified
+```
+
+This opens an isolated ChatGPT desktop **Codex** window. Keep the terminal open;
+Ctrl-C stops that instance. Automatic titles can fail, and ordinary desktop history
+is not yet shared. See [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
 
 The default route is announced before launch. Each launch binds its own
 `127.0.0.1` port and gives Codex a random local bearer token through `TOFA_API_KEY`.

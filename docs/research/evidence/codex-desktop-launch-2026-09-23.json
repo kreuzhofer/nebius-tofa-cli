@@ -1,0 +1,107 @@
+{
+  "issue": 32,
+  "date": "2026-09-23",
+  "launcher_baseline": "78b4722800c5d14407c49a615ec69c4d2266f474",
+  "launcher_sha256": "9c82378591c1aa5e6e56b9b9f1ee722e60bf0e76c0d54f0e1c3c4517d8f95d1d",
+  "app": {
+    "name": "ChatGPT",
+    "mode": "Codex",
+    "bundle_id": "com.openai.codex",
+    "version": "26.915.31945",
+    "build": "9922",
+    "engine": "0.155.0-alpha.9.2"
+  },
+  "platform": {
+    "os": "macOS",
+    "version": "26.6.2",
+    "arch": "arm64"
+  },
+  "model": "moonshotai/Kimi-K3",
+  "sessions": [
+    {
+      "event_counts": {
+        "session_meta:None": 1,
+        "event_msg:task_started": 4,
+        "response_item:message": 10,
+        "world_state:None": 1,
+        "turn_context:None": 4,
+        "event_msg:item_completed": 9,
+        "response_item:function_call": 1,
+        "token_usage_record:None": 4,
+        "response_item:function_call_output": 1,
+        "event_msg:token_count": 4,
+        "event_msg:task_complete": 3,
+        "event_msg:thread_settings_applied": 3
+      },
+      "tool_calls": [
+        {
+          "name": "exec_command",
+          "marker_command_present": true
+        }
+      ],
+      "tool_outputs": [
+        {
+          "marker_present": true
+        }
+      ],
+      "assistant_answers": [
+        {
+          "marker_present": false
+        },
+        {
+          "marker_present": true
+        },
+        {
+          "marker_present": true
+        }
+      ],
+      "latest_total_usage": {
+        "input_tokens": 41558,
+        "cached_input_tokens": 30976,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 342,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 41900
+      },
+      "assistant_message_lengths": [
+        26,
+        175,
+        79,
+        1075
+      ]
+    }
+  ],
+  "isolated_auth_file_created": false,
+  "restoration": {
+    "ordinary_config_unchanged": true,
+    "ordinary_auth_stat_unchanged": true,
+    "ordinary_auth_contents_read": false,
+    "ordinary_app_engine_pids_alive": true,
+    "owned_process_count": 12,
+    "owned_processes_exited": true,
+    "adapter_port_closed": true,
+    "temporary_config_removed": true,
+    "temporary_catalog_removed": true,
+    "conversation_files_retained": true,
+    "workspace_retained": true
+  },
+  "human_observations": [
+    "First tool result: tofa-desktop-32-ok",
+    "Same-conversation recall: The exact marker printed was tofa-desktop-32-ok (with no trailing newline)",
+    "Streaming unclear for short replies; a subsequent 1000-letter prose request appeared to stream."
+  ],
+  "streaming_evidence": "User visual observation of longer third reply; no live wire-event counts recorded. Offline HTTP fixture separately verifies SSE forwarding.",
+  "auxiliary_title_failure": "Kimi-K3 tools with json_schema are unsupported except the recognized non-strict Codex approval review; request was not sent upstream",
+  "startup_regression": "Initial live launch failed to recognize engine when -c flags preceded app-server. Executable regression reproduced it; parser corrected; final live launch remained running through three completed turns.",
+  "post_live_change": "Final race suite exposed unsynchronized startup/HTTP notice output. Added a per-launch output mutex; routing and process lifecycle unchanged. The binary digest above identifies the live-tested build before this output-only correction.",
+  "validation": {
+    "go_test_race_all": "passed, with TOFA_TEST_DESKTOP_ENGINE set to installed bundled engine",
+    "go_vet_all": "passed",
+    "windows_amd64_cross_build": "passed",
+    "linux_amd64_cross_build": "passed",
+    "terminal_smoke_tests": "2 passed with synthetic credentials",
+    "standards_review": "0 findings after output-lock review",
+    "spec_review": "0 findings, including final live-evidence review",
+    "diff_and_local_documentation_links": "passed"
+  }
+}
