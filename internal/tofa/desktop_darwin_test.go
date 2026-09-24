@@ -72,6 +72,11 @@ if sys.argv[1:] in [['debug', 'models'], ['debug', 'models', '--bundled'], ['log
             (home / 'auth.json').write_text(json.dumps(spec['auth']))
             if 'cache' in spec: (home / 'models_cache.json').write_text(json.dumps(spec['cache']))
             (home / 'config.toml').write_text('cli_auth_credentials_store="file"\nopenai_base_url='+json.dumps(spec['endpoint'])+'\n')
+            if 'catalog' in spec:
+                catalog = home / 'static-models.json'
+                catalog.write_text(json.dumps(spec['catalog']))
+                with (home / 'config.toml').open('a') as config:
+                    config.write('model_catalog_json='+json.dumps(str(catalog))+'\n')
         sys.exit(subprocess.run([spec['engine'], *sys.argv[1:]], cwd=home).returncode)
 if sys.argv[1:] == ['login', 'status']:
     print('Not logged in', file=sys.stderr)

@@ -185,6 +185,12 @@ account-cache evidence. Such a profile remains outside the accepted launch
 contract; refreshing models alone cannot qualify a static catalog. Review that
 ordinary configuration explicitly before retrying, or use `launch codex`.
 The launcher does not remove user catalog settings to make its checks pass.
+The [follow-up diagnosis](research/desktop-native-catalog-diagnosis.md) reproduced
+this refusal with the current engine: a static `model_catalog_json` override
+bypasses native discovery. The freshness error now points to that setting.
+To restore native discovery, explicitly review whether the ordinary override is
+still wanted; removing it is a user configuration decision. Deleting the cache
+alone does not resolve the static override.
 
 ### Durable engine bridge
 

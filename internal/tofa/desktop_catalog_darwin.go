@@ -91,7 +91,7 @@ func checkDesktopCatalogFreshness(ctx context.Context, engine, home, electron, w
 	if err != nil || message != "Logged in using ChatGPT" {
 		return errors.New("could not establish native catalog authentication; check native engine login status, then relaunch")
 	}
-	unavailable := errors.New("native account catalog freshness could not be established; refresh native models in the ordinary client and relaunch")
+	unavailable := errors.New("native account catalog freshness could not be established; check ordinary model_catalog_json overrides (static catalogs bypass native discovery), refresh native models and relaunch; use launch codex if needed")
 	file, err := os.Open(filepath.Join(home, "models_cache.json"))
 	if err != nil {
 		return unavailable
