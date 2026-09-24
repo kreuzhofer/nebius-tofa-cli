@@ -1,0 +1,27 @@
+{
+  "source_commit": "b7720045227b3ee0f5c577fac6efbc2a1314eead",
+  "version": "v0.0.0-qualification.50.b772004",
+  "build": "clean git archive; scripts/build.sh; Go 1.27.1; CGO_ENABLED=0; -trimpath; version ldflag",
+  "sha256": {
+    "LICENSE": "796a0cd7abc80802b9d2692b7b5a606f14babdd4fed054903af045b56d7997f6",
+    "LICENSE-CODEX.txt": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+    "LICENSE-GO.txt": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "NOTICE-CODEX.txt": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+    "PATENTS-GO.txt": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+    "README.md": "b1e9588b24c7e2b59ac3346fcbf7c1b06fa6308cd6c34bde239dcfd55cbfdede",
+    "THIRD_PARTY_NOTICES.txt": "d7363be8553d50fa823aabba6fa4c990d24f58f13ee429db9b9262200ff71a98",
+    "install.ps1": "2dd81c6358b1d84e7d80f1d20cad1aa63c87a021372591f3d2549cec8051e9a9",
+    "install.sh": "72fbe5ceafef4a361fa56bccaed3472691e3c2a47804ede4cde070256ae693d2",
+    "tofa_v0.0.0-qualification.50.b772004_darwin_amd64": "6cb04d2212df39f4000737ddcb7c5b48d8421eed1d6871a0f32733824e02caba",
+    "tofa_v0.0.0-qualification.50.b772004_darwin_arm64": "713bb2444ea985ad8cd0215c6904332b055c228b2a8384deaa0cb01e1fd4a1d1",
+    "tofa_v0.0.0-qualification.50.b772004_linux_amd64": "4c628e37d0229119c44fc235c6c2b60b6026fe8d3e979abe8d989eec99c70808",
+    "tofa_v0.0.0-qualification.50.b772004_linux_arm64": "a5d8fe7b4fca7ff3e724186c5d05bbb8f3dd4ed348e20e3a5519da94c1bc4be6",
+    "tofa_v0.0.0-qualification.50.b772004_windows_amd64.exe": "d9a4752b8c9b3d3be74255ebaf66c1707e30b6044f35cc1a78c14a3b0dc1aeb2",
+    "tofa_v0.0.0-qualification.50.b772004_windows_arm64.exe": "894130c542408638d26742af0bbe77c5427d8aa9b4cea595be6175064f438735",
+    "uninstall.ps1": "0b0a63484262720ecd8f38e748c9fac9913c8cf2d39ac945729e9c66c846a82b",
+    "uninstall.sh": "692fd1469d5d03d9fb1bbefbb829cb0b4c3bb2437be67feb87d2ec4745d00089"
+  },
+  "manifest_sha256": "7765bca9b9db244f4e904ad8229a3c9b9962b893124433806fc1439fbd45036b",
+  "macos_arm64_matches_live_candidate": true,
+  "cross_build_is_not_native_runtime_qualification": true
+}

@@ -79,7 +79,9 @@ installed CLI opt-ins, `TestInstalledCodexToolAndContinuationThroughAdapter` and
 Standards and Spec reviews found no actionable issues in the final correction.
 
 This corrects a demonstrated lifecycle defect consistent with the captured
-Cmd-Q failure. A fresh candidate still needs the live shutdown check following
-inference, plus the four remaining ordinary-mode preservation observations.
-The earlier evidence remains pinned to its original binary; this report does
-not claim that the live failure has already been resolved.
+Cmd-Q failure. The subsequent
+[final qualification run](../releases/desktop-shared-history-final-2026-09-24.md)
+confirmed live Kimi/native continuation followed by launcher exit 0 and all four
+ordinary-mode preservation observations on candidate `b772004`. Earlier evidence
+and failures remain pinned to their original binaries; no historical result was
+rewritten.

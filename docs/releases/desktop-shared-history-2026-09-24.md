@@ -1,6 +1,8 @@
 # Shared desktop history qualification — 2026-09-24
 
 **Outcome: incomplete; this combination is not qualified end to end.**
+This is the historical initial attempt. The later corrected candidate's
+[reviewed result](desktop-shared-history-final-2026-09-24.md) is recorded separately.
 This record describes the initial candidate below. Subsequent
 [native-catalog recovery](../research/desktop-native-catalog-diagnosis.md#authorized-ordinary-profile-recovery--1322-utc)
 passed; the first human-run launch then exposed a

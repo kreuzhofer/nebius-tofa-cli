@@ -216,9 +216,9 @@ Quit Codex first. This launches ChatGPT desktop **Codex** with ordinary history
 and profile state. Keep the terminal open; Ctrl-C stops that instance. Token Factory
 history stays readable in ordinary mode; relaunch through tofa to continue it.
 Automatic titles can fail. See [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
-The [combined shared-history qualification](docs/releases/desktop-shared-history-2026-09-24.md)
-records fresh offline results and outstanding live-account/UI checks; this remains
-experimental and is not yet qualified end to end.
+The [shared-history qualification](docs/releases/desktop-shared-history-final-2026-09-24.md)
+records passing live workflow, shutdown and preservation checks for the pinned
+combination. This remains experimental; automatic title generation was not observed.
 
 The default route is announced before launch. Each launch binds its own
 `127.0.0.1` port and gives Codex a random local bearer token through `TOFA_API_KEY`.

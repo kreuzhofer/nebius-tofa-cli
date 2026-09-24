@@ -2,8 +2,8 @@
 
 These runners qualify the **Codex CLI** release lifecycle. They do not qualify the
 shared desktop UI or ordinary desktop account continuity. The separate
-[#50 shared-history qualification](desktop-shared-history-2026-09-24.md) records
-the source candidate, desktop-specific checks and remaining live prerequisites
+[#50 shared-history qualification](desktop-shared-history-final-2026-09-24.md) records
+the source candidate, passing desktop workflow checks and retained limitations
 for [desktop prerelease tracking #35](https://github.com/kreuzhofer/nebius-tofa-cli/issues/35).
 
 The macOS and Windows runners qualify the downloaded candidate in your **normal account**.

@@ -1,9 +1,10 @@
 # Shared-history live attempt — 2026-09-24
 
-**Outcome: partial live success; end-to-end qualification remains incomplete.**
+**Historical outcome: partial live success on candidate `fd22182`.**
 Across the first attempt and its continuation, 29 human checks passed. The
-captured shutdown failure and four final preservation checks remain open; the
-sections below retain each attempt's original results and candidate identity.
+captured shutdown failure and four final preservation checks were addressed in
+the corrected candidate's [separate final run and reviewed qualification](desktop-shared-history-final-2026-09-24.md).
+The sections below retain each attempt's original results and candidate identity.
 
 The human walkthrough reached the first return to ordinary mode, then stopped
 because the launcher exited with status 1. Sixteen human observations passed;

@@ -4,12 +4,11 @@ Source-build feature for [#32](https://github.com/kreuzhofer/nebius-tofa-cli/iss
 not included in v0.1.0-rc.2.
 
 The production implementation uses **one ordinary desktop profile and history**.
-End-to-end qualification is still incomplete: see the
-[qualification record and remaining live checks](releases/desktop-shared-history-2026-09-24.md).
-The [human walkthrough and continuation](releases/desktop-live-attempt-2026-09-24.md)
-passed streaming, tools, shared history, ordinary send refusal and relaunch
-recovery. A [shutdown correction](research/desktop-shutdown-diagnosis.md) still
-needs live confirmation; final ordinary-mode preservation checks remain open.
+The [reviewed qualification](releases/desktop-shared-history-final-2026-09-24.md)
+records passing live streaming/tools, shared history, ordinary send refusal,
+relaunch recovery, corrected shutdown and final ordinary-mode preservation for
+the pinned combination. Automatic title generation was not observed; the feature
+and auxiliary-operation limits below remain experimental.
 Earlier isolated/prototype observations below are provenance, not qualification
 of the combined workflow.
 
@@ -177,12 +176,11 @@ Catalog visibility does not expand supported Token Factory models.
 The [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) catalog behavior
 is integrated with the ordinary profile by
 [#47](https://github.com/kreuzhofer/nebius-tofa-cli/issues/47).
-[#50](https://github.com/kreuzhofer/nebius-tofa-cli/issues/50) must qualify the
-combined production workflow with authorized live-account access: compare native
-picker choices and full descriptors with ordinary mode, observe entitlement and
-catalog refresh on relaunch, continue a real native conversation during a tofa
-launch, and verify onboarding/account continuity and same-thread picker recovery
-in the UI. Synthetic account/cache/HTTP checks are not live-account evidence.
+The [#50 qualification](releases/desktop-shared-history-final-2026-09-24.md)
+records authorized live-account checks of native picker/full-descriptor parity,
+fresh catalog resolution on relaunch, native continuation, account/onboarding
+continuity and same-conversation recovery. No live entitlement change was induced;
+synthetic account/cache/HTTP variations remain distinct from that evidence.
 The [initial qualification attempt](releases/desktop-shared-history-2026-09-24.md)
 found a signed-in ordinary profile with a static custom catalog and no matching
 account-cache evidence. Such a profile remains outside the accepted launch
@@ -322,8 +320,9 @@ are not automatically imported.
 
 The [#34 contract check](research/desktop-shared-history.md) established the
 accepted limitation: Token Factory access lasts only while the launcher runs.
-Shared-history engine and launcher tests pass; real-account UI acceptance of the
-combined production path remains tracked in #50. Abrupt-launch recovery and
+Shared-history engine and launcher tests pass, with
+[scoped real-account UI qualification](releases/desktop-shared-history-final-2026-09-24.md)
+recorded for #50. Abrupt-launch recovery and
 installed lifecycle behavior are described below and above, respectively.
 
 ## Limitations and verification
