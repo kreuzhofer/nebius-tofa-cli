@@ -1,0 +1,176 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "engine_version": "codex-cli 0.155.0-alpha.16.3",
+  "real_user_profile_used": false,
+  "inactive_provider_metadata": true,
+  "durable_bridge": true,
+  "phases": [
+    {
+      "phase": 1,
+      "mode": "ordinary",
+      "sessions_before_ui": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 1,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 1,
+          "workspace_matches": true
+        }
+      ],
+      "ui_verified": false
+    },
+    {
+      "phase": 2,
+      "mode": "tofa",
+      "sessions_before_ui": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 1,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 2,
+          "workspace_matches": true
+        }
+      ],
+      "ui_verified": false
+    },
+    {
+      "phase": 3,
+      "mode": "ordinary",
+      "sessions_before_ui": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 1,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 3,
+          "workspace_matches": true
+        }
+      ],
+      "ui_verified": false
+    },
+    {
+      "phase": 4,
+      "mode": "tofa",
+      "sessions_before_ui": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 1,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 4,
+          "workspace_matches": true
+        }
+      ],
+      "ui_verified": false
+    }
+  ],
+  "requests": [
+    {
+      "lane": "native",
+      "model": "gpt-6-astra",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "Token Factory",
+      "model": "moonshotai/Kimi-K3",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "Token Factory",
+      "model": "moonshotai/Kimi-K3",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "Token Factory",
+      "model": "moonshotai/Kimi-K3",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    }
+  ],
+  "human_observations": [
+    {
+      "phase": 1,
+      "mode": "ordinary",
+      "user_report": "Missing environment variable: `TOFA_OFFLINE_PROBE_MISSING_KEY`. Model picker offers Astra; switching not yet tested.",
+      "missing_provider_resume_errors": 0,
+      "history_readability_explicitly_confirmed": false
+    },
+    {
+      "phase": 2,
+      "mode": "tofa",
+      "user_report": "PROTOTYPE reply from Token Factory. Shared history remains the same conversation.",
+      "same_profile": true,
+      "inactive_provider_overridden_for_live_launch": true
+    },
+    {
+      "phase": 3,
+      "mode": "ordinary",
+      "user_confirmed_prior_messages_and_latest_reply_visible": true,
+      "user_confirmed_no_logo_loop": true,
+      "missing_provider_resume_error_count": 0,
+      "astra_model_selection": {
+        "user_selected": "Astra",
+        "user_report": "Missing environment variable: `TOFA_OFFLINE_PROBE_MISSING_KEY`.",
+        "conclusion": "Changing the model picker did not switch the stored Token Factory provider to native OpenAI.",
+        "native_inference_demonstrated": false
+      }
+    },
+    {
+      "phase": 4,
+      "mode": "tofa",
+      "kimi_reselected_after_astra_experiment": true,
+      "user_report": "PROTOTYPE reply from Token Factory. Shared history remains the same conversation.",
+      "same_conversation_continued": true
+    }
+  ],
+  "result": "PASS for human-checked history visibility and tofa relaunch recovery; Astra selection does not switch provider",
+  "owned_desktop_closed": true,
+  "fixture_listeners_closed": true,
+  "temporary_launch_files_removed": true,
+  "durable_bridge_retained": true,
+  "auth_unchanged_across_phases": true,
+  "limitations": [
+    "synthetic inference and scratch account only",
+    "production installation, upgrade, uninstall, concurrency and unexpected process death unqualified",
+    "model picker is not a provider migration mechanism",
+    "automated phase snapshots precede each human interaction; human findings are recorded separately"
+  ]
+}

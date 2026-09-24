@@ -1,205 +1,139 @@
 # Throwaway prototype: shared desktop history (#34)
 
-Question: can one desktop profile retain ordinary and Token Factory conversations,
-while a launch-owned executable injects temporary routing without changing shared
-account or routing settings?
+**Verdict: the combined prototype passes the human history/relaunch walkthrough.**
+Ordinary mode displays tofa conversation history without the logo loop. Sending
+there fails explicitly because no tofa launch credential exists. Relaunching
+through tofa continues the same conversation using fresh routing. Native sessions
+also continued during the earlier tofa-launch walkthrough.
 
-**Verdict: shared engine history and the durable bridge pass the four-phase
-scratch-profile experiment. Production qualification remains incomplete.** The
-original temporary-wrapper candidate failed because the actual desktop writes the temporary
-`CODEX_CLI_PATH` into `mcp_servers.node_repl.env.CODEX_CLI_PATH` in shared
-`config.toml`. Removing the launch directory leaves that tool setting pointing at
-a missing executable. This was reproduced in a synthetic profile during the first
-ordinary-mode desktop phase, before trying tofa mode. The accepted limitation
-(relaunch through tofa to continue a tofa conversation) is not the problem.
+The prototype combines three validated decisions:
 
-The subsequent human walkthrough confirmed ordinary-session continuation during a
-tofa launch, tofa-session continuation, and recovery of that same tofa session
-after ordinary → tofa relaunch. It also found that ordinary mode cannot display
-the tofa conversation's messages: selecting its list item loops on the logo while
-resume repeatedly reports the missing provider. Stored history survives; readable
-history in ordinary mode was **not** demonstrated.
+1. Supply provider overrides at the `app-server` argument boundary. Its own config
+   arguments otherwise displace root CLI overrides and cause a missing-provider
+   resume loop even during an active tofa launch.
+2. Give the executable referenced by desktop tool settings a durable lifetime.
+   The bridge reads launch-owned routing only while the launch environment points
+   to its private temporary manifest. Outside a launch it delegates to the bundled
+   engine; an expired manifest fails explicitly instead of falling back.
+3. Keep non-secret, inactive provider metadata in the shared scratch config. This
+   permits ordinary-mode history loading without a running adapter or credential.
+   The inactive definition uses loopback port zero and a deliberately absent
+   credential variable. Active tofa launch overrides replace it with live routing.
 
-## Open or run
+This is **prototype evidence, not production completion of #34**. No ordinary user
+profile was used, and no production launcher code changed. Keep this directory on
+`prototype/34-shared-desktop-profile`, out of main.
 
-Double-click [index.html](index.html) for an in-memory walkthrough. It has free-play
-actions and three guided scenarios. Its lifecycle behavior is a proposal, not a
-claim that the installed desktop implements it. No server or dependencies needed.
+## Try it
 
-From the repository root on the qualified Mac:
+Double-click [index.html](index.html) for the in-memory logic walkthrough. It makes
+no network requests or desktop changes. The page models intended behavior; the
+runnable probes and recorded observations are the implementation evidence.
 
-```sh
-python3 internal/tofa/prototype_shared_history/run.py
-```
-
-That invokes the installed engine and exercises ordinary → tofa → ordinary →
-tofa against one marked scratch profile. All inference responses are synthetic
-and served on loopback. It uses no real credentials and does not access the
-ordinary profile. It retains scratch files for inspection and closes its routes.
-
-Reproduce the desktop result:
+For the human desktop trial, run from the repository root:
 
 ```sh
-python3 internal/tofa/prototype_shared_history/run.py --desktop-smoke --report internal/tofa/prototype_shared_history/desktop-evidence.json
+python3 internal/tofa/prototype_shared_history/live_history.py
 ```
 
-This opens a separate desktop with shared **scratch** Electron/engine state,
-observes its engine handshake, and stops only its owned process group. It exits
-nonzero when shared config changes, after writing sanitized failure evidence.
-The failure is the captured answer, not a passing desktop qualification.
-`--desktop` instead pauses for human inspection at each phase; pressing Enter
-does not certify visual checks. Do not sign in or enter real credentials in it.
+It creates a marked scratch profile and seeds ordinary and tofa conversations with
+successful synthetic replies. It opens the same profile in ordinary → tofa →
+ordinary → tofa modes. Each window stays open until Enter in the runner terminal.
+Ctrl-C closes only the trial's owned desktop and routes. No sign-in is needed.
+Do not enter real credentials. Scratch files are retained for inspection.
 
-Requires `/Applications/ChatGPT.app`, bundled engine
-`codex-cli 0.155.0-alpha.9.2`, and Python 3.9+. Tested with desktop
-26.915.31945 (9922), macOS 26.6.2 arm64. An engine version gate stops unqualified
-versions. Scratch directories use short `/private/tmp/PROTOTYPE-tofa34-*` names:
-the original longer default temp path caused an IPC socket `EINVAL`.
+In ordinary mode, open **PROTOTYPE tofa history** and check that its messages are
+readable. A send attempt should report the absent launch credential. In tofa mode,
+keep Kimi selected and send a continuation; expect a synthetic Token Factory reply.
+The ordinary conversation uses the native synthetic fixture.
 
-The installed engine updated to `0.155.0-alpha.16.3` before the subsequent human
-walkthrough. Keep the initial evidence above scoped to its recorded version.
-`run.py` deliberately retains its original version gate. The current-version
-resume probe creates its own fresh synthetic profile:
+For the automated durable-reference experiment:
 
 ```sh
-python3 internal/tofa/prototype_shared_history/resume_probe.py
+python3 internal/tofa/prototype_shared_history/durable_route_probe.py
 ```
 
-`continue_desktop.py /private/tmp/PROTOTYPE-tofa34-...` continues a previously
-created, marked scratch profile. It preserves its synthetic native endpoint and
-credentials and pauses for human observation. It records known config mutation
-without claiming config preservation. It can restart phase 2 using the existing
-sessions rather than duplicating them. Pressing Enter only advances the runner;
-user observations are captured separately in the evidence below.
+This exercises four real desktop startups and public engine APIs, normal cleanup,
+fresh routing, credential absence from shared engine files, and explicit rejection
+of expired launch manifests. It does not inspect desktop rendering. Add
+`--temporary` to reproduce the original dangling executable (expected failure).
 
-## Evidence and limits
-
-| Observation | Result |
-| --- | --- |
-| Bundled engine `thread/list`, `thread/read`, `thread/resume` | Both known IDs listed once; titles and workspace retained; completed turn counts survive mode changes |
-| Native continuation while tofa active | Original native provider/model; request reached native fixture |
-| Tofa continuation in ordinary mode | Explicit missing-provider error; history retained |
-| Tofa relaunch | Same session/model/provider continued through fresh endpoint and bearer |
-| Native model catalog | Merged catalog retained all shipped native descriptors |
-| Engine-only shared config/auth | Byte-identical; local bearer absent from shared engine files |
-| Actual desktop startup | Selected temporary executable and completed engine handshake |
-| Actual desktop shared config | Changed: desktop/plugin defaults plus persisted temporary executable path |
-| Actual desktop auth and native model/provider | Unchanged in failing scratch run |
-| Ordinary session through tofa launch (human follow-up) | Opened and continued through native fixture |
-| Tofa session through tofa launch (human follow-up) | Opened and continued after correcting argument placement |
-| Tofa session selected in ordinary mode (human follow-up) | List item selectable, but history view loops on missing-provider resume |
-| Same tofa session after relaunch (human follow-up) | Opened and continued through a fresh Token Factory fixture |
-
-[evidence.json](evidence.json) captures the successful engine-only run.
-[desktop-evidence.json](desktop-evidence.json) captures the desktop failure.
-[logo-loop-evidence.json](logo-loop-evidence.json) captures the later human
-observations and the argument-placement reproduction/fix on engine alpha.16.3.
-Reports omit bearer values, local ports, session IDs and personal paths. The runner
-prints its marked scratch directory; retained scratch files contain only synthetic
-credentials. Desktop startup may contact vendor services for its normal metadata
-and plugin behavior; this is not an offline network-isolation experiment.
-
-The runner reuses the existing public-RPC driver in
-`scripts/desktop_history_test.py`; it adds no tests. Python/inline JavaScript syntax
-checks passed. Browser automation refused the local HTML URL under its security
-policy, so the walkthrough has not received a visual interaction check.
-
-Not qualified: existing account/onboarding, normal packaged-Mac instance behavior,
-concurrent launches, enforced policy, upgrades, crash recovery, native live account
-catalog refresh, uninstall, and actual Token Factory inference. A merged catalog
-also leaves a source-identified question: desktop title helpers request a native
-model under the active provider. The fixture rejects mismatched models rather than
-silently remapping them; no title-helper request was observed in this run.
-
-## Logo-loop diagnosis during the human walkthrough
-
-The initial tofa launch's desktop process received provider overrides before
-`app-server`, plus the desktop's plugin override after it. App-server overrides
-displaced those root CLI settings, producing `Model provider nebius-tofa not
-found` even with the launcher active. The renderer retried resume indefinitely.
-
-`resume_probe.py` reproduced that exact RPC failure in under a second without the
-renderer. Removing the app-server override passed; replacing the plugin setting
-with an unrelated `web_search` setting still failed. Moving launch overrides to
-the app-server arguments made the original probe pass. The human then confirmed
-the same tofa session opened and continued in the actual desktop. The wrapper
-keeps its original argument placement for other commands such as catalog export.
-
-This fixes the **prototype's active-tofa launch**. The ordinary-mode loop remains:
-there the provider is intentionally absent. The separate stale executable setting
-also remains unresolved. No production launcher code was changed and no automated
-test suite was added; the throwaway reproduction and human checks are the evidence.
-
-## Decision to carry into #34
-
-Keep one history owner and retain recorded provider/model routing. Use a merged
-native-plus-tofa catalog when qualifying a shared engine; a Kimi-only override
-cannot preserve native metadata. Do not transplant this temporary-executable
-wrapper into the ordinary desktop profile yet.
-
-Next bounded experiment: find a source-supported way to keep the executable
-reference durable or prevent launch-specific environment propagation into shared
-tool settings, without rewriting user credentials/settings on exit. Preserve the
-validated app-server argument placement. Treat ordinary-mode readable history as
-an unmet part of the current issue wording, distinct from the accepted requirement
-to relaunch through tofa for continuation; do not call the observed logo loop an
-explicit user-facing unavailable-provider error.
-Only after that should #34 move into production launcher implementation and its
-already-approved executable/HTTP and engine-RPC test boundaries.
-
-This directory belongs on `prototype/34-shared-desktop-profile`, out of main.
-Production launcher code is unchanged. The validated decisions and this evidence
-are recorded on #34; the simulation's reducer is not a verified desktop contract
-and should not be copied into production.
-
-
-## Durable bridge and inactive-provider follow-up (2026-09-24)
-
-The durable bridge candidate is in `durable_route_probe.py`. Run with
-`--temporary` to reproduce the dangling saved executable; run without that flag
-for the proposed four-launch desktop check. The baseline failed as expected on
-alpha.16.3 (`temporary-reference-evidence.json`). The candidate's non-desktop
-checks passed (`durable-executable-evidence.json`): native delegation without
-launch settings, valid launch-file handling, explicit rejection of expired files,
-unchanged bridge bytes and no embedded credential.
-
-The four-launch durable-bridge candidate check **passed on 2026-09-24**, after
-earlier execution-review timeouts were resolved on retry. See
-[durable-reference-evidence.json](durable-reference-evidence.json). Ordinary →
-tofa → ordinary → tofa launches each selected the durable bridge and completed the
-actual desktop engine handshake. The saved executable remained callable after
-every cleanup, its bytes stayed unchanged, and expired launch-file references
-failed explicitly with exit 78. Native sessions continued through the native
-fixture; tofa recovered with a fresh endpoint and bearer. Tofa listeners closed,
-credentials were absent from shared engine files, and synthetic account auth
-stayed unchanged. No desktop UI interaction is claimed by this smoke experiment.
-
-The desktop still maintains its own shared tool settings; byte-identical config
-is not claimed. The fix is to give its saved executable reference a durable
-lifetime while keeping route files and credentials launch-owned. The bridge does
-not restore or rewrite shared settings on shutdown. This is a validated prototype
-decision, not a production implementation: installation, upgrade, uninstall,
-concurrent ownership and unexpected process death remain unqualified. The
-ordinary-mode history loop is a separate pending desktop check.
-
-There is a separate candidate for the ordinary-mode logo loop:
+For the isolated ordinary-mode history reproduction:
 
 ```sh
 python3 internal/tofa/prototype_shared_history/offline_provider_probe.py
 ```
 
-Without a provider definition, the saved synthetic thread fails resume with the
-same missing-provider error observed in the desktop. Adding inactive provider
-metadata to the scratch config allows ordinary engine startup to resume and read
-that history without any launch overrides, running adapter or credential. Sending
-a turn still fails explicitly on the absent credential. The inactive definition
-uses loopback port zero; it cannot direct a request to a real inference service.
-It preserves the recorded provider rather than silently changing to OpenAI.
+Without inactive metadata, resume fails with the missing-provider error. With it,
+resume/read succeed and inference still fails explicitly without a credential.
+No inference service or desktop is started by this probe.
 
-`offline-provider-probe-evidence.json` records this reproducible engine-boundary
-result. A prior probe also successfully resumed the saved human-trial conversation
-using only command-line inactive metadata (`offline-provider-evidence.json`).
-Neither result proves that the desktop renderer stops looping. Desktop verification
-and compatibility with active launch overrides remain outstanding. This proposes
-persisting non-secret, inactive provider metadata; it does not persist a live
-adapter endpoint or bearer. No ordinary user profile was changed.
+## Recorded observations
+
+| Boundary or human action | Observed result |
+| --- | --- |
+| Both known session IDs across launch modes | Each appears once through the public engine list API; names, turns and workspace retained |
+| Ordinary session during tofa launch | Human opened it and received native fixture continuation |
+| Tofa session in ordinary mode with inactive definition | Human confirmed earlier messages and latest reply visible, with no logo loop |
+| Send in ordinary mode | Explicit `Missing environment variable: TOFA_OFFLINE_PROBE_MISSING_KEY` error |
+| Select Astra in that tofa session, then send | Same missing-key error; model selection did not switch the provider to OpenAI |
+| Relaunch through tofa, select Kimi again, send | Same conversation returned a Token Factory synthetic reply |
+| Saved desktop tool executable after cleanup | Durable bridge still callable, with unchanged bytes |
+| Expired launch manifest | Explicit exit 78; no native fallback |
+| Fresh tofa relaunch | New endpoint and bearer; old listeners closed |
+| Account credentials | Synthetic auth file stayed unchanged |
+| Cleanup after final human confirmation | Owned desktop and fixture listeners closed; temporary launch files removed; durable bridge retained |
+
+The model picker is not a provider migration mechanism. This agrees with the
+accepted limitation: relaunch through tofa to continue tofa conversations. Switching
+the model to Astra is not sufficient; reselect Kimi before continuing through tofa.
+
+## Evidence and scope
+
+- [live-history-evidence.json](live-history-evidence.json): completed human combined
+  walkthrough, including readable ordinary history, the Astra experiment and final
+  tofa recovery. Automated snapshots precede each interaction; human observations
+  are recorded separately. The generic runner's `ui_verified: false` fields are
+  not human observations.
+- [durable-reference-evidence.json](durable-reference-evidence.json): successful
+  four-launch durable bridge experiment on engine `0.155.0-alpha.16.3`.
+- [offline-provider-probe-evidence.json](offline-provider-probe-evidence.json) and
+  [offline-provider-evidence.json](offline-provider-evidence.json): engine-only
+  inactive-provider checks, followed by the human UI verification above.
+- [logo-loop-evidence.json](logo-loop-evidence.json): earlier failure reproduction,
+  corrected argument placement, and original ordinary-mode loop before the inactive
+  definition was added.
+- [temporary-reference-evidence.json](temporary-reference-evidence.json) and
+  [desktop-evidence.json](desktop-evidence.json): original temporary executable
+  failures. [durable-executable-evidence.json](durable-executable-evidence.json)
+  records the initial non-desktop bridge checks while execution approval review
+  was timing out; the later desktop run supersedes that pending status.
+- [evidence.json](evidence.json): initial engine-only history experiment on
+  `0.155.0-alpha.9.2`. `run.py` retains that version gate; later experiments target
+  alpha.16.3. The installed engine updated between these trials.
+
+All inference responses were local synthetic fixtures. Desktop startup can contact
+vendor services for its normal metadata/plugin behavior; this is not a network
+isolation experiment. Reports omit credential values, local ports, session IDs and
+personal paths. Scratch files contain only synthetic credentials. The desktop
+maintains its own shared tool settings; byte-identical config is not claimed.
+The bridge does not restore or rewrite those settings at shutdown.
+
+No new automated test suite was added, per the prototype skill. The executable
+probes, human checks, syntax and diff checks are the validation. The HTML file's
+browser automation was blocked by URL policy; it has not received a visual check.
+
+## Next implementation work
+
+Implement the validated shared-history, durable-executable and inactive-provider
+behavior at the already-approved launcher executable/HTTP and engine-RPC test
+boundaries. Qualify installation, upgrade, uninstall, concurrent ownership,
+unexpected process death, enforced policy and existing-account onboarding.
+Preserve native live-account model metadata; this prototype merges a shipped
+catalog snapshot. Desktop auxiliary native-model requests under the tofa provider
+also need qualification. No real Token Factory inference was performed here.
+
+The interactive trial can be repeated with `live_history.py`. Earlier
+`continue_desktop.py` and `resume_probe.py` remain as the source of the original
+argument-placement diagnosis; their incomplete historical checks should not be
+mistaken for the final combined walkthrough.
