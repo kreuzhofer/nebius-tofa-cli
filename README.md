@@ -412,6 +412,12 @@ uninstall retains its ownership marker so a later install can reuse that directo
 Explicit purge removes that marker as well. To reinstall after purge, select an
 empty install directory or move the unrelated files out of the old one first.
 
+For the experimental macOS desktop integration, quit the desktop and any launcher
+before upgrading or removing tofa. Uninstall and purge retain verified, detached
+engine bridges and inactive provider metadata so saved references and shared history
+remain readable. They retain no live launch access. See the [desktop lifecycle and
+recovery contract](docs/codex-desktop.md#installed-lifecycle-and-retained-history).
+
 ### Using the CLI
 
 For an installed copy:

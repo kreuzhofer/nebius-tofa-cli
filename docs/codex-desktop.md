@@ -189,17 +189,66 @@ an explicit conflict, never permission to overwrite another executable. A setup
 write failure removes only the directory created by that attempt. A fully
 installed bridge remains usable even if subsequent desktop setup fails.
 
-The later installed-lifecycle ticket owns upgrade and uninstall integration.
 Version 2 adds the startup ownership acknowledgement and installs alongside
-version 1. Existing version-1 directories and saved references are left intact;
-new launches use version 2. A verified version-2 bridge is reused rather than
-replaced on each source launch. That ticket must preserve saved executable paths and
-the matching ownership record, define atomic upgrade/recovery (including an
-interrupted initial installation), and detach saved references before removal.
-Do not delete this directory as ordinary session cleanup. Moving/removing the
-bundled application causes an explicit execution error; a launch from a new
-bundle path gets a distinct owned bridge. No ordinary profile migration or
-installer/uninstaller changes are included in this slice.
+version 1. New launches use version 2. Installation, supported upgrades and source
+launches refresh verified helpers without changing their saved paths. Installed
+upgrades also preserve version-1 references. Moving/removing the bundled application
+causes an explicit execution error; a launch from a new bundle path gets a distinct
+owned bridge. Do not delete bridge directories as ordinary session cleanup.
+
+### Installed lifecycle and retained history
+
+The macOS installer uses its checksum-verified candidate to coordinate existing
+desktop integration. It checks every bridge and the qualified client version before
+changing helpers, and installs the main executable only after helpers are usable.
+Install, uninstall and purge hold the ordinary-profile launcher lease and refuse a
+native desktop owner, an incumbent desktop process, a competing launcher, or an
+unresolved runtime owner. Quit the owning desktop/launcher and retry; these operations
+never signal another owner's process or change its singleton files.
+
+Records with `LifecycleVersion: 1` identify helpers that can coordinate standalone
+removal. The script verifies their recorded digest before executing them, including
+when the main installed binary is broken. Legacy helpers can be upgraded by a
+compatible installed launcher; if neither exists, reinstall a compatible release.
+
+Bridge replacement uses a write-ahead `PendingSHA256` in `owner.json`, followed by
+an atomic executable rename and a final ownership-record write. Either executable
+is verifiable after an interrupted replacement. Retrying completes the transition;
+a failed upgrade can leave an updated helper beside the previous main executable,
+with ordinary delegation intact. Missing, edited, symlinked or unknown-version
+artifacts stop the operation. Restore the matching executable/record from a trusted
+copy, or inspect and move conflicting artifacts aside before reinstalling. An
+interrupted first bridge installation has not published a saved reference yet;
+its incomplete directory is likewise an explicit conflict, never automatically
+claimed or deleted. Incompatible clients require restoring the qualified application
+or uninstalling to detach integration before proceeding.
+
+Normal uninstall and `--purge` **detach** verified bridges rather than deleting
+paths that the desktop may have saved. The retained executable and ownership record
+are self-contained: they do not depend on the removed main launcher. `Detached`
+disables all launch-context routing, including stale or forged context, with
+reinstallation guidance. Ordinary calls still delegate to the recorded bundled
+engine, scrub both launcher credential environment variables, and preserve ordinary
+arguments, settings and exit status. A retained bridge can coordinate repeated
+standalone uninstall/purge after the main executable has gone. Reinstallation or a
+qualified source launch refreshes and reattaches it. No live adapter, endpoint or
+launch bearer is retained. Known abandoned launch directories are cleaned only after
+their owners are proven dead; unknown artifacts stop removal for inspection.
+
+Removal does not edit the ordinary engine configuration or desktop tool settings.
+The retained non-secret `model_providers.nebius-tofa` definition supplies the provider
+identity/name and `responses` wire protocol needed to hydrate existing history. Its
+unusable `http://127.0.0.1:0` URL and missing `TOFA_DESKTOP_INACTIVE` credential prevent
+inference; the explicit recovery instruction, disabled OpenAI auth/websockets and
+zero retry limits keep unavailable inference bounded and observable. No former
+adapter address, launch key, or ordinary account credential is in that definition.
+User-edited provider settings remain user-owned and are retained unchanged.
+
+Both removal modes preserve conversations, account credentials, onboarding, workspace
+files and unrelated settings. Normal uninstall retains saved launcher preferences and
+Token Factory credentials under the existing CLI contract; `--purge` removes those
+saved launcher credentials, not ordinary account state. Retained bridge metadata and
+inactive provider information are non-secret and survive purge for history access.
 
 The real Token Factory key stays inside the launcher. The owned client gets only
 a random per-launch bearer token for an authenticated IPv4 loopback adapter.
@@ -224,8 +273,8 @@ are not automatically imported.
 The [#34 contract check](research/desktop-shared-history.md) established the
 accepted limitation: Token Factory access lasts only while the launcher runs.
 Shared-history engine and launcher tests pass; real-account UI acceptance of the
-combined production path remains tracked in #50. Abrupt launcher death and
-installer/uninstaller integration remain separate #48/#49 work.
+combined production path remains tracked in #50. Abrupt-launch recovery and
+installed lifecycle behavior are described below and above, respectively.
 
 ## Limitations and verification
 
@@ -440,3 +489,47 @@ lifecycle/terminal tests against a binary built from this change. The skipped Go
 tests were the two opt-in installed Codex CLI tool/approval-review checks and
 `TestDesktopInstalledAppShellIsolation`. Native Linux/Windows execution, installed
 Electron UI, live-account and paid-inference qualification were not run.
+
+### Installed lifecycle qualification (#49)
+
+The local-release regression installs an actual compiled launcher into a temporary
+home, upgrades saved version-1 and version-2 references, invokes CLI uninstall,
+reinstalls, and runs standalone uninstall/purge repeatedly, including with a broken
+main executable. It verifies ordinary argument/exit-status delegation, retained
+reference usability, ordinary account and onboarding bytes, shared configuration,
+tool settings and workspace preservation, plus removal of saved launcher credentials
+on purge. It refuses native/launcher owners, another profile's runtime owner,
+incompatible clients, missing/edited/unknown-version ownership, partial initial
+installation, symlinked integration and user-edited recovery executables.
+
+A real file-size-limited child reproduces executable replacement failure after the
+ownership journal has been written. Saved references remain callable both then and
+in the persisted state immediately after rename; retry completes removal. The public
+bundled-engine history driver also verifies list/read/resume and unavailable sends
+after normal uninstall and purge, preserving thread identities, ordered messages
+and tool results, titles and workspaces. These checks use synthetic account and
+inference fixtures only.
+
+The standards and specification reviews found an unsupported lifecycle-version
+acceptance bug. An executable-boundary regression reproduced it, and strict version
+validation fixed it; both reviews then reported zero remaining findings.
+
+An initial full race run hit the existing three-second installed-Electron ownership
+handshake timeout while other build/check work was running. The same test then passed
+four consecutive isolated runs, with the last three completing in approximately
+1.7 seconds each. The cause of that timing-sensitive failure was not established;
+the startup deadline was not changed. Native startup checks do not establish the
+real-account/UI acceptance or paid-inference qualification tracked separately in #50.
+
+Final validation passed on macOS 26.6.2 arm64 / Go 1.27.1 with ChatGPT
+26.917.71314 (10954), bundled engine `0.155.0-alpha.16.4`:
+
+- Full `go test -race ./... -count=1` with both `TOFA_TEST_DESKTOP_ENGINE` and
+  `TOFA_TEST_DESKTOP_APP` set to that installed application, rerun without concurrent
+  builds (232 seconds for the launcher package).
+- `go vet ./...`, shell syntax validation and diff whitespace checks.
+- Both offline installer tests and all four native local-release lifecycle checks.
+- Linux amd64 and Windows amd64 cross-builds.
+
+The two separate installed Codex CLI inference/tool-review opt-ins were not enabled.
+Cross-builds do not establish native Linux/Windows runtime qualification.

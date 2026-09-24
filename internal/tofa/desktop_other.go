@@ -14,3 +14,7 @@ func (a *App) launchDesktop(context.Context, Store, []string) error {
 func runDesktopBridge([]string) error {
 	return errors.New("desktop engine bridge requires macOS")
 }
+
+func (a *App) desktopLifecycle(context.Context, []string) error {
+	return errors.New("desktop installed lifecycle requires macOS")
+}

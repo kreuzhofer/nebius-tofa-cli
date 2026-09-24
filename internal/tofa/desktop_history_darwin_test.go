@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -16,6 +17,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
 )
 
 func TestDesktopHistoryRoundTripRequiresFreshLaunch(t *testing.T) {
@@ -26,6 +29,10 @@ func TestDesktopHistoryRecoversFailures(t *testing.T) {
 	for _, failure := range []string{"normal exit", "engine loss", "adapter failure", "startup failure", "abrupt death"} {
 		t.Run(failure, func(t *testing.T) { desktopHistoryRoundTrip(t, failure) })
 	}
+}
+
+func TestDesktopHistorySurvivesInstalledRemoval(t *testing.T) {
+	desktopHistoryRoundTrip(t, "uninstall")
 }
 
 func desktopHistoryRoundTrip(t *testing.T, failure string) {
@@ -99,6 +106,14 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 		}
 		respond(w, map[string]any{"id": "function_fixture", "type": "function_call", "call_id": "history_call", "name": "exec_command", "arguments": `{"cmd":"printf history-tool-result","max_output_tokens":100}`, "status": "completed"})
 	}, nil)
+	if failure == "uninstall" {
+		t.Setenv("XDG_CONFIG_HOME", filepath.Join(os.Getenv("HOME"), ".config"))
+		t.Setenv("TOFA_INSTALL_DIR", filepath.Join(os.Getenv("HOME"), "removed-install"))
+		app.Dir, _ = tofa.ConfigDir()
+		if err := (tofa.Store{Dir: app.Dir, Vault: app.Vault}).Login("fixture-project", "fixture-secret", "file"); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	listening := make(chan net.Listener, 10)
 	app.Listen = func(network, address string) (net.Listener, error) {
@@ -336,5 +351,23 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 	e.close()
 	if nativeCalls.Load() != 2 || tofaCalls.Load() != 4 {
 		t.Fatalf("unexpected routing counts: native=%d tofa=%d", nativeCalls.Load(), tofaCalls.Load())
+	}
+	if failure == "uninstall" {
+		for _, args := range [][]string{{"--tofa-installed-lifecycle", "uninstall"}, {"--tofa-installed-lifecycle", "uninstall", "--purge"}} {
+			command := exec.Command(child.Env["CODEX_CLI_PATH"], args...)
+			if output, err := command.CombinedOutput(); err != nil {
+				t.Fatalf("installed bridge removal: %v %s", err, output)
+			}
+			e = openDesktopEngine(t, ordinary)
+			check(e)
+			e.call("thread/resume", map[string]any{"threadId": tofaID, "model": nil, "modelProvider": nil})
+			e.turnText(tofaID, "failed", "Unavailable after uninstall")
+			want = append(want, "user:Unavailable after uninstall")
+			check(e)
+			e.close()
+			if nativeCalls.Load() != 2 || tofaCalls.Load() != 4 {
+				t.Fatal("removed integration retained inference access")
+			}
+		}
 	}
 }

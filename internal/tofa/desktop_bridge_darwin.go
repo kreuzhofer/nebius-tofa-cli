@@ -1,6 +1,7 @@
 package tofa
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -25,6 +26,11 @@ type desktopBridgeOwner struct {
 	Version int
 	Engine  string
 	SHA256  string
+	// A write-ahead digest makes either side of an interrupted executable
+	// replacement verifiable. Old bridges still recognize SHA256 before rename.
+	PendingSHA256    string `json:",omitempty"`
+	Detached         bool   `json:",omitempty"`
+	LifecycleVersion int    `json:",omitempty"`
 }
 
 func desktopBridgePath(dir, engine string) string {
@@ -35,17 +41,18 @@ func desktopBridgePath(dir, engine string) string {
 func readDesktopBridge(path string) (desktopBridgeOwner, error) {
 	var owner desktopBridgeOwner
 	data, err := readPrivate(filepath.Join(filepath.Dir(path), "owner.json"))
-	if err != nil || json.Unmarshal(data, &owner) != nil || owner.Version != 2 || !filepath.IsAbs(owner.Engine) {
-		return owner, errors.New("desktop bridge ownership is missing or invalid; refusing to replace an unmanaged executable")
+	if err != nil || json.Unmarshal(data, &owner) != nil || (owner.Version != 1 && owner.Version != 2) || (owner.LifecycleVersion != 0 && owner.LifecycleVersion != 1) || !filepath.IsAbs(owner.Engine) {
+		return owner, errors.New("desktop bridge ownership is missing or incompatible; restore its matching owner.json and executable or move the conflicting directory aside, then reinstall tofa; refusing to replace an unmanaged executable")
 	}
 	binary, err := readPrivate(path)
 	if err != nil {
 		return owner, err
 	}
 	digest := sha256.Sum256(binary)
-	if hex.EncodeToString(digest[:]) != owner.SHA256 {
+	if hex.EncodeToString(digest[:]) != owner.SHA256 && hex.EncodeToString(digest[:]) != owner.PendingSHA256 {
 		return owner, errors.New("desktop bridge executable differs from its ownership record; refusing to replace it")
 	}
+	owner.SHA256 = hex.EncodeToString(digest[:])
 	return owner, nil
 }
 
@@ -70,6 +77,9 @@ func installDesktopBridge(dir, engine string) (path string, result error) {
 		}
 		if owner.Engine != engine {
 			return "", errors.New("desktop bridge belongs to a different bundled engine")
+		}
+		if err := replaceDesktopBridge(path, owner, false); err != nil {
+			return "", err
 		}
 		return path, nil
 	} else if err != nil {
@@ -99,7 +109,7 @@ func installDesktopBridge(dir, engine string) (path string, result error) {
 	if err := errors.Join(copyErr, target.Close()); err != nil {
 		return "", err
 	}
-	owner, err := json.Marshal(desktopBridgeOwner{Version: 2, Engine: engine, SHA256: hex.EncodeToString(digest.Sum(nil))})
+	owner, err := json.Marshal(desktopBridgeOwner{Version: 2, Engine: engine, SHA256: hex.EncodeToString(digest.Sum(nil)), LifecycleVersion: 1})
 	if err != nil {
 		return "", err
 	}
@@ -118,8 +128,17 @@ func runDesktopBridge(args []string) error {
 	if err != nil {
 		return err
 	}
+	// A retained, verified bridge also supplies the standalone uninstaller's
+	// recovery coordinator after the main launcher executable has been removed.
+	if len(args) > 0 && args[0] == "--tofa-installed-lifecycle" {
+		app := App{Dir: filepath.Dir(filepath.Dir(filepath.Dir(path))), Out: os.Stdout}
+		return app.desktopLifecycle(context.Background(), args[1:])
+	}
 	env := os.Environ()
 	if endpoint, present := os.LookupEnv("TOFA_DESKTOP_CONTEXT"); present {
+		if owner.Detached {
+			return errors.New("tofa is uninstalled; this saved engine reference supports ordinary history only. Reinstall tofa and relaunch to continue Token Factory conversations")
+		}
 		route, err := fetchDesktopRoute(endpoint, os.Getenv("TOFA_API_KEY"))
 		if err != nil {
 			return err
