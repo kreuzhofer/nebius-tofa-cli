@@ -1,0 +1,13 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "engine_version": "codex-cli 0.155.0-alpha.16.3",
+  "existing_scratch_tofa_thread_resumed_with_inactive_definition": true,
+  "config_and_auth_unchanged_during_resume_probe": true,
+  "fresh_scratch_turn_without_credential": "explicit failure",
+  "error": "synthetic turn failed: {\"message\": \"Missing environment variable: `TOFA_OFFLINE_PROBE_MISSING_KEY`.\", \"codexErrorInfo\": \"other\", \"additionalDetails\": null, \"misalignment\": null}",
+  "live_adapter": false,
+  "credential_supplied": false,
+  "desktop_ui_verified": false,
+  "interpretation": "Candidate for ordinary-mode history hydration; actual desktop behavior remains unverified."
+}

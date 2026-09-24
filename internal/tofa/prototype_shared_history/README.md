@@ -150,3 +150,43 @@ This directory belongs on `prototype/34-shared-desktop-profile`, out of main.
 Production launcher code is unchanged. The validated decisions and this evidence
 are recorded on #34; the simulation's reducer is not a verified desktop contract
 and should not be copied into production.
+
+
+## Durable bridge and inactive-provider follow-up (2026-09-24)
+
+The durable bridge candidate is in `durable_route_probe.py`. Run with
+`--temporary` to reproduce the dangling saved executable; run without that flag
+for the proposed four-launch desktop check. The baseline failed as expected on
+alpha.16.3 (`temporary-reference-evidence.json`). The candidate's non-desktop
+checks passed (`durable-executable-evidence.json`): native delegation without
+launch settings, valid launch-file handling, explicit rejection of expired files,
+unchanged bridge bytes and no embedded credential.
+
+The four-launch candidate check has **not run**. Automatic approval review timed
+out before execution, including the attempts after the maintainer explicitly
+approved it. That is a tooling blockage, not a desktop result or a safety finding.
+Production code remains unchanged. Durable bridge installation, upgrade,
+uninstall, concurrent ownership and unexpected process death remain unqualified.
+The bridge leaves the desktop's shared settings alone on shutdown.
+
+There is a separate candidate for the ordinary-mode logo loop:
+
+```sh
+python3 internal/tofa/prototype_shared_history/offline_provider_probe.py
+```
+
+Without a provider definition, the saved synthetic thread fails resume with the
+same missing-provider error observed in the desktop. Adding inactive provider
+metadata to the scratch config allows ordinary engine startup to resume and read
+that history without any launch overrides, running adapter or credential. Sending
+a turn still fails explicitly on the absent credential. The inactive definition
+uses loopback port zero; it cannot direct a request to a real inference service.
+It preserves the recorded provider rather than silently changing to OpenAI.
+
+`offline-provider-probe-evidence.json` records this reproducible engine-boundary
+result. A prior probe also successfully resumed the saved human-trial conversation
+using only command-line inactive metadata (`offline-provider-evidence.json`).
+Neither result proves that the desktop renderer stops looping. Desktop verification
+and compatibility with active launch overrides remain outstanding. This proposes
+persisting non-secret, inactive provider metadata; it does not persist a live
+adapter endpoint or bearer. No ordinary user profile was changed.

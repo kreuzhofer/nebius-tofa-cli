@@ -1,0 +1,13 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "engine_version": "codex-cli 0.155.0-alpha.16.3",
+  "mode": "temporary",
+  "real_user_profile_used": false,
+  "phases": [],
+  "requests": [],
+  "persisted_executable_exists_after_cleanup": false,
+  "result": "FAIL",
+  "failure": "FAIL: desktop persisted executable was deleted by launch cleanup",
+  "auth_unchanged": true
+}

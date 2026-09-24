@@ -1,0 +1,12 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "engine_version": "codex-cli 0.155.0-alpha.16.3",
+  "ordinary_delegation": "PASS",
+  "valid_launch_manifest": "PASS",
+  "expired_launch_manifest": "explicit error, exit 78",
+  "durable_bridge_unchanged": true,
+  "credential_absent_from_bridge": true,
+  "desktop_experiment": "not run: automatic approval review timed out twice",
+  "result": "PASS for non-desktop executable checks only"
+}

@@ -192,10 +192,11 @@ def read_state(engine, threads):
     return result
 
 
-def desktop(root, wrapper, mode, phase, smoke):
+def desktop(root, wrapper, mode, phase, smoke, launch_env=None):
     env = scratch_env(root)
     env.update(CODEX_CLI_PATH=str(wrapper), CODEX_ELECTRON_USER_DATA_PATH=str(root / "electron"),
                ZDOTDIR=str(root / "shell"))
+    env.update(launch_env or {})
     # Reproduce the pinned launcher's exact environment-query guard, using only
     # empty scratch shell startup for this experiment.
     (root / "shell/.zshenv").write_text(

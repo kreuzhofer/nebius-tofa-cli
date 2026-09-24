@@ -1,0 +1,19 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "engine_version": "codex-cli 0.155.0-alpha.16.3",
+  "result": "PASS at engine boundary only",
+  "baseline_without_provider": "missing-provider resume error",
+  "ordinary_resume_with_inactive_provider": "success; original provider preserved",
+  "stored_history_readable_via_rpc": true,
+  "inference_without_credential": "explicit missing-credential error",
+  "real_user_profile_used": false,
+  "live_adapter": false,
+  "credential_supplied": false,
+  "desktop_ui_verified": false,
+  "limitations": [
+    "synthetic failed-turn history; prior separate probe also resumed the successful human-trial history",
+    "inactive metadata is persistent in scratch config",
+    "desktop rendering and interaction with live launch overrides remain unverified"
+  ]
+}
