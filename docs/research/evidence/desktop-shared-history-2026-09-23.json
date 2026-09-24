@@ -1,0 +1,65 @@
+{
+  "issue": 34,
+  "date": "2026-09-23",
+  "status": "accepted_provider_lifetime_limitation",
+  "production_shared_history_implemented": false,
+  "app": {
+    "version": "26.915.31945",
+    "build": "9922",
+    "archive_sha256": "1f7939c1c781887c167043c4d1d307af3400d324685cfc315dfe2f80e634f483"
+  },
+  "engine": {
+    "version": "0.155.0-alpha.9.2",
+    "sha256": "9280c0754e8f1f6b72f495d30c8c82a006dbc4995bf0492916fa0901f6bfd1f9",
+    "source_commit": "4607249e430dac1c961df4dc615beae88e33cec8"
+  },
+  "test": {
+    "path": "scripts/desktop_history_test.py",
+    "command": "TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex python3 scripts/desktop_history_test.py -v",
+    "result": "passed",
+    "tests": 1,
+    "engine_launches": 4,
+    "synthetic_inference_requests": 4,
+    "external_inference_requests": 0
+  },
+  "observed": {
+    "ordinary_to_tofa_list_and_resume_preserved_native_provider_and_model": true,
+    "ordinary_mode_listed_both_synthetic_threads_once": true,
+    "thread_read_preserved_ids_names_working_directory_and_turns": true,
+    "ordinary_resume_with_null_model_and_provider": "failed to load configuration: Model provider `nebius-tofa` not found",
+    "missing_provider_resume_sent_no_inference": true,
+    "explicit_resume_provider_and_model_override_continued_same_thread": true,
+    "explicit_choice_persisted_after_relaunch_with_tofa_defaults": true,
+    "persisted_title_verified_with_thread_read": true,
+    "fixture_request_models": [
+      "fixture-native",
+      "fixture-native",
+      "moonshotai/Kimi-K3",
+      "fixture-native"
+    ]
+  },
+  "boundaries": {
+    "desktop_ui_launched": false,
+    "ordinary_profile_used": false,
+    "ordinary_credentials_read_or_modified": false,
+    "ordinary_app_interrupted": false,
+    "database_copied_or_modified_directly": false,
+    "temporary_state_removed": true
+  },
+  "not_qualified": [
+    "desktop UI session-list parity and bidirectional resumption",
+    "normal account onboarding and authentication reuse",
+    "shared-profile concurrent launch and restart consent",
+    "adapter endpoint and credential refresh or stale-route cleanup",
+    "shared-profile crash recovery and upgrade",
+    "shared-history uninstall preservation"
+  ],
+  "interpretation": "Original engine observations retained. The maintainer subsequently accepted unavailable Token Factory inference outside an active launcher; this is no longer a blocker. Shared-profile implementation and desktop acceptance remain outstanding.",
+  "acceptance_revision": {
+    "date": "2026-09-23",
+    "maintainer_confirmed": true,
+    "ordinary_mode_visibility_required": true,
+    "relaunch_through_tofa_to_continue_acceptable": true,
+    "switch_to_gpt_guaranteed": false
+  }
+}

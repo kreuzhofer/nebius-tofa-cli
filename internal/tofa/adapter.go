@@ -16,7 +16,9 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"reflect"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,6 +31,7 @@ type requestAdapter struct {
 	cancel   context.CancelFunc
 	context  context.Context
 	done     chan error
+	desktop  atomic.Pointer[desktopRoute]
 }
 
 func (a *App) startAdapter(ctx context.Context, project, key, selectedModel string) (*requestAdapter, error) {
@@ -112,6 +115,27 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 				http.Error(writer, "request adapter: unauthorized", http.StatusUnauthorized)
 				return
 			}
+			if route := adapter.desktop.Load(); route != nil && request.Method == http.MethodGet && request.URL.Path == "/desktop-launch" && request.URL.RawPath == "" && request.URL.RawQuery == "" {
+				if route.ready != nil {
+					pid, _ := strconv.Atoi(request.Header.Get("X-Tofa-Parent-Pid"))
+					select {
+					case route.claim <- pid:
+					default:
+					}
+					select {
+					case <-route.ready:
+					case <-request.Context().Done():
+						return
+					case <-ctx.Done():
+						http.Error(writer, "desktop launch cancelled", http.StatusServiceUnavailable)
+						return
+					}
+				}
+				writer.Header().Set("Content-Type", "application/json")
+				writer.Header().Set("Cache-Control", "no-store")
+				json.NewEncoder(writer).Encode(route)
+				return
+			}
 			if request.URL.Path != "/responses" || request.URL.RawPath != "" || request.URL.RawQuery != "" {
 				notice("unsupported route (including auxiliary/compaction endpoints)")
 				http.Error(writer, "request adapter: unsupported route", http.StatusNotFound)
@@ -121,6 +145,14 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 				writer.Header().Set("Allow", http.MethodPost)
 				http.Error(writer, "request adapter: POST required", http.StatusMethodNotAllowed)
 				return
+			}
+			if route := adapter.desktop.Load(); route != nil && route.ready != nil {
+				select {
+				case <-route.ready:
+				default:
+					http.Error(writer, "desktop ownership and routing are not yet qualified", http.StatusServiceUnavailable)
+					return
+				}
 			}
 			if request.Header.Get("Content-Encoding") != "" && request.Header.Get("Content-Encoding") != "identity" {
 				http.Error(writer, "request adapter: encoded requests are unsupported", http.StatusUnsupportedMediaType)

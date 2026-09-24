@@ -62,11 +62,11 @@ func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
 	plist := filepath.Join(path, "Contents/Info.plist")
 	for _, field := range []struct{ key, want string }{
 		{"CFBundleIdentifier", "com.openai.codex"}, {"CFBundleName", "ChatGPT"},
-		{"CFBundleShortVersionString", "26.915.31945"}, {"CFBundleVersion", "9922"}, {"CFBundleExecutable", "ChatGPT"},
+		{"CFBundleShortVersionString", "26.917.71314"}, {"CFBundleVersion", "10954"}, {"CFBundleExecutable", "ChatGPT"},
 	} {
 		value, err := exec.CommandContext(ctx, "/usr/libexec/PlistBuddy", "-c", "Print :"+field.key, plist).Output()
 		if err != nil || strings.TrimSpace(string(value)) != field.want {
-			return bundle, fmt.Errorf("incompatible desktop bundle: expected %s=%s; tested ChatGPT 26.915.31945 (9922), Codex mode; use --app-bundle PATH or launch codex", field.key, field.want)
+			return bundle, fmt.Errorf("incompatible desktop bundle: expected %s=%s; tested ChatGPT 26.917.71314 (10954), Codex mode; use --app-bundle PATH or launch codex", field.key, field.want)
 		}
 	}
 	bundle = desktopBundle{filepath.Join(path, "Contents/MacOS/ChatGPT"), filepath.Join(path, "Contents/Resources/codex")}
@@ -86,8 +86,8 @@ func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
 	command := exec.CommandContext(probe, bundle.engine, "--version")
 	command.Env = desktopEnv(probeHome, probeHome, "")
 	output, err := command.Output()
-	if err != nil || strings.TrimSpace(string(output)) != "codex-cli 0.155.0-alpha.9.2" {
-		return bundle, errors.New("incompatible bundled engine: expected codex-cli 0.155.0-alpha.9.2; use the tested app or launch codex")
+	if err != nil || strings.TrimSpace(string(output)) != "codex-cli 0.155.0-alpha.16.4" {
+		return bundle, errors.New("incompatible bundled engine: expected codex-cli 0.155.0-alpha.16.4; use the tested app or launch codex")
 	}
 	return bundle, nil
 }
@@ -136,6 +136,25 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if err != nil {
 		return err
 	}
+	profile, err := ordinaryDesktopProfile()
+	if err != nil {
+		return err
+	}
+	if err := refuseDesktopOwner(profile); err != nil {
+		return err
+	}
+	if err := refuseDesktopProcesses(ctx, profile); err != nil {
+		return err
+	}
+	lease, err := acquireDesktopLease(profile)
+	if err != nil {
+		return err
+	}
+	defer lease.Close()
+	bridge, err := installDesktopBridge(a.Dir, bundle.engine)
+	if err != nil {
+		return err
+	}
 	c, key, err := s.Credentials()
 	if err != nil {
 		return err
@@ -159,29 +178,31 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if !found {
 		return errors.New("selected model is not available in this project's catalog")
 	}
-	catalog, err := prepareModelCatalog(*model, "")
+	home, err := desktopHome(ctx)
 	if err != nil {
 		return err
 	}
-	if catalog == "" {
-		return errors.New("desktop launch requires verified bundled model metadata")
+	if err := os.MkdirAll(home, 0700); err != nil {
+		return err
 	}
-	defer func() { result = errors.Join(result, os.Remove(catalog)) }()
-	parent := filepath.Join(a.Dir, "desktop-sessions")
+	workspace, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	parent := filepath.Join(a.Dir, "desktop-launches")
 	if err := privateDir(parent); err != nil {
 		return err
 	}
-	root, err := os.MkdirTemp(parent, "session-")
+	root, err := os.MkdirTemp(parent, "launch-")
 	if err != nil {
 		return err
 	}
-	home, electron, workspace := filepath.Join(root, "codex"), filepath.Join(root, "electron"), filepath.Join(root, "workspace")
-	for _, dir := range []string{home, electron, workspace} {
-		if err := os.Mkdir(dir, 0700); err != nil {
-			return err
-		}
+	// Only preflight/control state lives here. History, profile and workspace
+	// remain at the client's ordinary locations and are never cleanup targets.
+	defer func() { result = errors.Join(result, os.RemoveAll(root)) }()
+	if err := integrateDesktopProvider(ctx, bundle.engine, home, profile, workspace, root, 0); err != nil {
+		return err
 	}
-	fmt.Fprintf(a.Out, "Launching ChatGPT desktop, Codex mode, with %s (unverified).\nConversations and workspace retained at: %s\nExperimental limitations: automatic title generation can fail; auxiliary models and compaction are unsupported. Shared ordinary-desktop history requires #34.\n", *model, root)
 	adapter, err := a.startAdapter(ctx, c.ProjectID, key, *model)
 	if err != nil {
 		return err
@@ -192,36 +213,66 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 			result = errors.Join(result, errors.New("request adapter stopped unexpectedly; desktop launch cancelled"))
 		}
 	}()
-	configPath := filepath.Join(home, "config.toml")
-	config := "model = " + strconv.Quote(*model) + "\nmodel_provider = \"nebius-tofa\"\nmodel_catalog_json = " + strconv.Quote(catalog) + "\nsqlite_home = " + strconv.Quote(home) + "\nlog_dir = " + strconv.Quote(filepath.Join(home, "logs")) + "\ncli_auth_credentials_store = \"file\"\nweb_search = \"disabled\"\n\n[model_providers.nebius-tofa]\nname = \"Nebius Token Factory\"\nbase_url = " + strconv.Quote(adapter.endpoint) + "\nenv_key = \"TOFA_API_KEY\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nsupports_websockets = false\nrequest_max_retries = 0\nstream_max_retries = 0\n"
-	if err := os.WriteFile(configPath, []byte(config), 0600); err != nil {
-		return err
-	}
-	defer func() { result = errors.Join(result, os.Remove(configPath)) }()
+	route := &desktopRoute{Bridge: bridge, Engine: bundle.engine, Home: home, ready: make(chan struct{}), claim: make(chan int, 1)}
+	adapter.desktop.Store(route)
 	shellDir, err := prepareDesktopShell(ctx, root)
 	if err != nil {
 		return err
 	}
+	env := append(desktopEnv(home, profile, adapter.token), "ZDOTDIR="+shellDir, "CODEX_CLI_PATH="+bridge, "TOFA_DESKTOP_CONTEXT="+adapter.endpoint)
+	var catalog string
 	defer func() {
-		result = errors.Join(result, os.Remove(filepath.Join(shellDir, ".zshenv")), os.Remove(shellDir))
+		if catalog != "" {
+			result = errors.Join(result, os.Remove(catalog))
+		}
 	}()
-	env := append(desktopEnv(home, electron, adapter.token), "ZDOTDIR="+shellDir)
-	if err := checkDesktopRouting(adapter.context, bundle.engine, workspace, env, *model, adapter.endpoint, catalog); err != nil {
-		return err
+	owned := func(ownerContext context.Context, pid int) error {
+		var err error
+		catalog, err = prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, *model)
+		if err != nil {
+			return err
+		}
+		route.Overrides = []string{
+			"model=" + strconv.Quote(*model), `model_provider="nebius-tofa"`, "model_catalog_json=" + strconv.Quote(catalog), `web_search="disabled"`,
+			`model_providers.nebius-tofa.name="Nebius Token Factory"`, "model_providers.nebius-tofa.base_url=" + strconv.Quote(adapter.endpoint),
+			`model_providers.nebius-tofa.env_key="TOFA_API_KEY"`, `model_providers.nebius-tofa.wire_api="responses"`,
+			`model_providers.nebius-tofa.requires_openai_auth=false`, `model_providers.nebius-tofa.supports_websockets=false`,
+			`model_providers.nebius-tofa.request_max_retries=0`, `model_providers.nebius-tofa.stream_max_retries=0`,
+		}
+		// Resolve live overrides through the actual engine before publishing them
+		// to the blocked desktop bridge or editing ordinary integration entries.
+		checkEnv := desktopEnv(home, profile, adapter.token)
+		if err := checkDesktopRoutingOverrides(ownerContext, bundle.engine, workspace, checkEnv, *model, adapter.endpoint, catalog, route.Overrides); err != nil {
+			return err
+		}
+		if !desktopOwnsNativeProfile(profile, pid) {
+			return errors.New("desktop native profile ownership lost before integration; owned launch cancelled")
+		}
+		if err := integrateDesktopProvider(ownerContext, bundle.engine, home, profile, workspace, root, pid); err != nil {
+			return err
+		}
+		close(route.ready)
+		fmt.Fprintln(a.Out, "Native model catalog resolved and merged for this launch. Relaunch after account or catalog changes; native auxiliary models remain unsupported through Token Factory.")
+		fmt.Fprintf(a.Out, "Launching Codex desktop with %s (unverified), using ordinary history and profile.\nToken Factory history remains readable after exit; relaunch through tofa with --model moonshotai/Kimi-K3 to continue. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; auxiliary models and compaction remain unsupported. Keep this terminal open.\n", *model)
+		fmt.Fprintln(a.Out, "Desktop environment probe isolated; coding commands retain normal shell startup.")
+		return nil
 	}
-	fmt.Fprintln(a.Out, "Bundled engine effective routing checked; verified provider metadata loaded. Keep this terminal open; Ctrl-C stops the owned desktop instance.")
-	fmt.Fprintln(a.Out, "Desktop environment probe isolated: using launch-time variables; coding commands retain normal shell startup.")
-	command := exec.Command(bundle.executable, "--user-data-dir="+electron, "codex://threads/new?mode=codex")
+	// No deep link or model-selection argument is forwarded to a possible
+	// incumbent. The bridge waits for ownership and configuration qualification.
+	command := exec.Command(bundle.executable, "--user-data-dir="+profile)
 	command.Env, command.Dir = env, workspace
-	return runDesktopProcess(adapter.context, command, bundle.engine)
+	return runDesktopProcess(adapter.context, command, bundle.engine, profile, route.claim, owned)
 }
 
-// Ask the bundled engine to resolve config/policy in the exact isolated home and
-// workspace. Never print its response: inherited policy can contain private data.
-func checkDesktopRouting(ctx context.Context, engine, workspace string, env []string, model, endpoint, catalog string) error {
+// Resolve live routing against ordinary settings without printing private policy.
+func checkDesktopRoutingOverrides(ctx context.Context, engine, workspace string, env []string, model, endpoint, catalog string, overrides []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	command := exec.CommandContext(ctx, engine, "app-server")
+	args := []string{"app-server"}
+	for _, override := range overrides {
+		args = append(args, "-c", override)
+	}
+	command := exec.CommandContext(ctx, engine, args...)
 	command.Env, command.Dir = env, workspace
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stdin, err := command.StdinPipe()
@@ -252,8 +303,8 @@ func checkDesktopRouting(ctx context.Context, engine, workspace string, env []st
 			ID     *int            `json:"id"`
 			Error  json.RawMessage `json:"error"`
 			Result struct {
-				Config       map[string]any             `json:"config"`
-				Requirements map[string]json.RawMessage `json:"requirements"`
+				Config       map[string]any `json:"config"`
+				Requirements map[string]any `json:"requirements"`
 			} `json:"result"`
 		}
 		for {
@@ -274,17 +325,13 @@ func checkDesktopRouting(ctx context.Context, engine, workspace string, env []st
 			continue
 		}
 		if request.method == "configRequirements/read" {
-			// Dynamic loopback routing and isolated state cannot safely satisfy
-			// managed routing/state overrides. Fail closed; never edit that policy.
-			for _, key := range []string{"modelProvider", "modelProviders", "modelCatalogJson", "models", "sqliteHome", "logDir", "cliAuthCredentialsStore", "allowedLoginMethods", "enforceResidency"} {
-				if value := response.Result.Requirements[key]; len(value) != 0 && string(value) != "null" {
-					return fmt.Errorf("managed %s requirement is not qualified for isolated desktop routing; contact your administrator or use an approved client", key)
-				}
+			if err := checkDesktopRequirements(response.Result.Requirements); err != nil {
+				return err
 			}
 			continue
 		}
 		config := response.Result.Config
-		for key, value := range map[string]string{"model": model, "model_provider": "nebius-tofa", "model_catalog_json": catalog, "web_search": "disabled", "cli_auth_credentials_store": "file", "sqlite_home": filepath.Dir(workspace) + "/codex", "log_dir": filepath.Dir(workspace) + "/codex/logs"} {
+		for key, value := range map[string]string{"model": model, "model_provider": "nebius-tofa", "model_catalog_json": catalog, "web_search": "disabled"} {
 			if config[key] != value {
 				return fmt.Errorf("desktop effective routing conflict for %s; inspect policy and use launch codex if necessary", key)
 			}
@@ -299,7 +346,7 @@ func checkDesktopRouting(ctx context.Context, engine, workspace string, env []st
 				continue
 			}
 			switch key {
-			case "name", "base_url", "env_key", "wire_api", "requires_openai_auth", "supports_websockets", "request_max_retries", "stream_max_retries":
+			case "name", "base_url", "env_key", "env_key_instructions", "wire_api", "requires_openai_auth", "supports_websockets", "request_max_retries", "stream_max_retries":
 			default:
 				return fmt.Errorf("desktop effective provider has unexpected %s setting; launch cancelled", key)
 			}
@@ -313,15 +360,27 @@ func checkDesktopRouting(ctx context.Context, engine, workspace string, env []st
 	return nil
 }
 
-func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine string) error {
+func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile string, claim <-chan int, owned func(context.Context, int) error) error {
+	if err := refuseDesktopOwner(profile); err != nil {
+		return err
+	}
+	if err := refuseDesktopProcesses(ctx, profile); err != nil {
+		return err
+	}
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := command.Start(); err != nil {
 		return errors.New("could not start owned desktop application")
 	}
 	// Never signal the ordinary app. Every signal targets this child's new group.
 	defer syscall.Kill(-command.Process.Pid, syscall.SIGKILL)
+	ownerContext, ownerExited := context.WithCancel(ctx)
+	defer ownerExited()
 	done := make(chan error, 1)
-	go func() { done <- command.Wait() }()
+	go func() {
+		err := command.Wait()
+		ownerExited()
+		done <- err
+	}()
 	stop := func(cause error) error {
 		syscall.Kill(-command.Process.Pid, syscall.SIGTERM)
 		select {
@@ -331,6 +390,31 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine string) er
 			<-done
 		}
 		return cause
+	}
+	// Abort an unclaimed contender promptly. Native singleton collision handling
+	// must never be allowed to time out and take over an unresponsive incumbent.
+	claimDeadline := time.NewTimer(3 * time.Second)
+	defer claimDeadline.Stop()
+	select {
+	case <-ctx.Done():
+		return stop(ctx.Err())
+	case err := <-done:
+		if err != nil {
+			return err
+		}
+		return errors.New("another desktop won profile ownership; Quit it manually and relaunch through tofa; no process was adopted")
+	case <-claimDeadline.C:
+		return stop(errors.New("desktop ownership handshake timed out; no existing process was adopted"))
+	case pid := <-claim:
+		if pid != command.Process.Pid || !desktopOwnsNativeProfile(profile, pid) {
+			return stop(errors.New("competing desktop launch or missing native profile ownership; Quit Codex desktop and relaunch"))
+		}
+	}
+	if err := owned(ownerContext, command.Process.Pid); err != nil {
+		return stop(err)
+	}
+	if !desktopOwnsNativeProfile(profile, command.Process.Pid) {
+		return stop(errors.New("desktop native profile ownership changed; owned launch cancelled"))
 	}
 	tick := time.NewTicker(100 * time.Millisecond)
 	defer tick.Stop()
@@ -351,6 +435,14 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine string) er
 				return stop(errors.New("desktop did not start its owned bundled app-server within 15 seconds"))
 			}
 		case <-tick.C:
+			if !desktopOwnsNativeProfile(profile, command.Process.Pid) {
+				select {
+				case err := <-done:
+					return err
+				case <-time.After(100 * time.Millisecond):
+					return stop(errors.New("desktop native profile ownership lost; owned launch cancelled"))
+				}
+			}
 			probe, cancel := context.WithTimeout(ctx, time.Second)
 			output, err := exec.CommandContext(probe, "/bin/ps", "-axo", "pid=,pgid=,stat=,args=").Output()
 			cancel()

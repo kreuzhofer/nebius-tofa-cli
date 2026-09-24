@@ -64,6 +64,9 @@ func (a *App) RunContext(ctx context.Context, args []string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if executable, err := os.Executable(); err == nil && filepath.Base(executable) == "tofa-desktop-engine" {
+		return runDesktopBridge(args)
+	}
 	if a.Out == nil {
 		a.Out = os.Stdout
 	}
