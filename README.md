@@ -212,9 +212,10 @@ For the tested macOS desktop application, source builds offer:
 ./tofa launch codex-desktop --model moonshotai/Kimi-K3 --allow-unverified
 ```
 
-This opens an isolated ChatGPT desktop **Codex** window. Keep the terminal open;
-Ctrl-C stops that instance. Automatic titles can fail, and ordinary desktop history
-is not yet shared. See [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
+Quit Codex first. This launches ChatGPT desktop **Codex** with ordinary history
+and profile state. Keep the terminal open; Ctrl-C stops that instance. Token Factory
+history stays readable in ordinary mode; relaunch through tofa to continue it.
+Automatic titles can fail. See [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
 
 The default route is announced before launch. Each launch binds its own
 `127.0.0.1` port and gives Codex a random local bearer token through `TOFA_API_KEY`.

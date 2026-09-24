@@ -7,4 +7,6 @@ type desktopRoute struct {
 	Engine    string
 	Home      string
 	Overrides []string
+	ready     chan struct{}
+	claim     chan int
 }

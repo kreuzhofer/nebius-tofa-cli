@@ -29,13 +29,13 @@ type desktopBridgeOwner struct {
 
 func desktopBridgePath(dir, engine string) string {
 	id := sha256.Sum256([]byte(engine))
-	return filepath.Join(dir, "desktop-bridge-v1", hex.EncodeToString(id[:]), desktopBridgeName)
+	return filepath.Join(dir, "desktop-bridge-v2", hex.EncodeToString(id[:]), desktopBridgeName)
 }
 
 func readDesktopBridge(path string) (desktopBridgeOwner, error) {
 	var owner desktopBridgeOwner
 	data, err := readPrivate(filepath.Join(filepath.Dir(path), "owner.json"))
-	if err != nil || json.Unmarshal(data, &owner) != nil || owner.Version != 1 || !filepath.IsAbs(owner.Engine) {
+	if err != nil || json.Unmarshal(data, &owner) != nil || owner.Version != 2 || !filepath.IsAbs(owner.Engine) {
 		return owner, errors.New("desktop bridge ownership is missing or invalid; refusing to replace an unmanaged executable")
 	}
 	binary, err := readPrivate(path)
@@ -99,7 +99,7 @@ func installDesktopBridge(dir, engine string) (path string, result error) {
 	if err := errors.Join(copyErr, target.Close()); err != nil {
 		return "", err
 	}
-	owner, err := json.Marshal(desktopBridgeOwner{Version: 1, Engine: engine, SHA256: hex.EncodeToString(digest.Sum(nil))})
+	owner, err := json.Marshal(desktopBridgeOwner{Version: 2, Engine: engine, SHA256: hex.EncodeToString(digest.Sum(nil))})
 	if err != nil {
 		return "", err
 	}
@@ -143,7 +143,9 @@ func runDesktopBridge(args []string) error {
 	} else {
 		// An ordinary invocation must not revive inactive Token Factory metadata
 		// using a bearer inherited from an earlier launch.
-		env = slices.DeleteFunc(env, func(entry string) bool { return strings.HasPrefix(entry, "TOFA_API_KEY=") })
+		env = slices.DeleteFunc(env, func(entry string) bool {
+			return strings.HasPrefix(entry, "TOFA_API_KEY=") || strings.HasPrefix(entry, "TOFA_DESKTOP_INACTIVE=")
+		})
 	}
 	if err := syscall.Exec(owner.Engine, append([]string{owner.Engine}, args...), env); err != nil {
 		return fmt.Errorf("desktop bridge could not execute the installed bundled engine: %w", err)
@@ -192,9 +194,10 @@ func fetchDesktopRoute(endpoint, token string) (desktopRoute, error) {
 		return route, invalid
 	}
 	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("X-Tofa-Parent-Pid", strconv.Itoa(os.Getppid()))
 	transport := &http.Transport{Proxy: nil}
 	defer transport.CloseIdleConnections()
-	client := &http.Client{Transport: transport, Timeout: 3 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	client := &http.Client{Transport: transport, Timeout: 45 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	response, err := client.Do(request)
 	if err != nil {
 		return route, invalid

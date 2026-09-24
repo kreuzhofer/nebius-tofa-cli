@@ -122,7 +122,9 @@ class DesktopHistoryContract(unittest.TestCase):
         version = subprocess.check_output([self.engine, "--version"], cwd=self.root,
                                           env={"HOME": str(self.root), "CODEX_HOME": str(self.root / "codex")},
                                           text=True, timeout=5).strip()
-        self.assertEqual(version, "codex-cli 0.155.0-alpha.9.2", "requalify the history contract for a changed engine")
+        self.assertIn(version, ("codex-cli 0.155.0-alpha.9.2", "codex-cli 0.155.0-alpha.16.3",
+                                    "codex-cli 0.155.0-alpha.16.4"),
+                      "requalify the history contract for a changed engine")
         # Synthetic API-key login in the owned temporary home only.
         (self.root / "codex" / "auth.json").write_text(json.dumps({"OPENAI_API_KEY": "synthetic"}))
         self.requests = []
@@ -189,13 +191,14 @@ class DesktopHistoryContract(unittest.TestCase):
         engine.call("thread/name/set", {"threadId": thread_id, "name": name})
         return thread_id
 
-    def read_history(self, engine, thread_id, user_messages):
+    def read_history(self, engine, thread_id, user_messages, assistant_messages=None):
         thread = engine.call("thread/read", {"threadId": thread_id, "includeTurns": True})["thread"]
         self.assertEqual(len(thread["turns"]), len(user_messages))
         items = [item for turn in thread["turns"] for item in turn["items"]]
         self.assertEqual([part["text"] for item in items if item["type"] == "userMessage"
                           for part in item["content"] if part["type"] == "text"], user_messages)
         self.assertEqual([item["text"] for item in items if item["type"] == "agentMessage"],
+                         assistant_messages if assistant_messages is not None else
                          ["Synthetic history answer."] * len(user_messages))
         return thread
 
@@ -269,6 +272,80 @@ class DesktopHistoryContract(unittest.TestCase):
             self.assertEqual((thread["name"], thread["modelProvider"], thread["cwd"]),
                              ("Relaunch fixture conversation", "nebius-tofa", str(self.root / "workspace")))
         self.assertEqual([request["model"] for request in self.requests], ["moonshotai/Kimi-K3"] * 2)
+
+    def test_ordinary_history_hydrates_without_live_inference(self):
+        with self.launch() as engine:
+            ordinary = self.create(engine, "Ordinary round-trip conversation")
+        with self.launch(tofa=True) as engine:
+            resumed = engine.call("thread/resume", {"threadId": ordinary, "model": None, "modelProvider": None})
+            self.assertEqual((resumed["modelProvider"], resumed["model"]), ("openai", "fixture-native"))
+            engine.turn(ordinary, "Native continuation during tofa")
+            adapted = self.create(engine, "Readable Token Factory conversation")
+        with self.launch() as engine:
+            failed = engine.response("thread/resume", {"threadId": adapted, "model": None, "modelProvider": None})
+            self.assertIn("Model provider `nebius-tofa` not found", failed["error"]["message"])
+
+        # Qualification fixture only: production must install this entry through
+        # conflict-aware integration after establishing ordinary-profile ownership.
+        inactive = ('[model_providers.nebius-tofa]\nname="Nebius Token Factory"\n'
+                    'base_url="http://127.0.0.1:0"\nwire_api="responses"\n'
+                    'requires_openai_auth=false\nsupports_websockets=false\n'
+                    'request_max_retries=0\nstream_max_retries=0\n'
+                    'env_key_instructions="Relaunch through tofa with --model moonshotai/Kimi-K3"\n')
+        messages = ["Readable Token Factory conversation"]
+        answers = ["Synthetic history answer."]
+        for key in ("TOFA_MISSING_LAUNCH_CREDENTIAL", "TOFA_HISTORY_FIXTURE_KEY"):
+            with self.subTest(credential=key):
+                # The second key is deliberately present in Engine's environment.
+                (self.root / "codex" / "config.toml").write_text(inactive + 'env_key=' + json.dumps(key) + '\n')
+                before = len(self.requests)
+                with self.launch() as engine:
+                    listed = engine.call("thread/list", {"modelProviders": [], "useStateDbOnly": True})["data"]
+                    self.assertCountEqual([row["id"] for row in listed], [ordinary, adapted])
+                    thread = self.read_history(engine, ordinary, ["Ordinary round-trip conversation",
+                                                                "Native continuation during tofa"])
+                    self.assertEqual((thread["name"], thread["modelProvider"], thread["cwd"]),
+                                     ("Ordinary round-trip conversation", "openai", str(self.root / "workspace")))
+                    thread = self.read_history(engine, adapted, messages, answers)
+                    self.assertEqual((thread["name"], thread["modelProvider"], thread["cwd"]),
+                                     (messages[0], "nebius-tofa", str(self.root / "workspace")))
+                    resumed = engine.call("thread/resume", {"threadId": adapted, "model": None, "modelProvider": None})
+                    self.assertEqual((resumed["thread"]["id"], resumed["modelProvider"], resumed["model"]),
+                                     (adapted, "nebius-tofa", "moonshotai/Kimi-K3"))
+                    if key == "TOFA_MISSING_LAUNCH_CREDENTIAL":
+                        with self.assertRaisesRegex(RuntimeError, "synthetic turn failed") as unavailable:
+                            engine.turn(adapted, "Attempt while inactive")
+                        self.assertIn("Relaunch through tofa", str(unavailable.exception))
+                    else:
+                        # alpha.16.3 treats connection refusal as network loss
+                        # kept retrying for 120 seconds despite retry limits 0.
+                        # Record that limitation; do not call it an explicit
+                        # terminal failure or let qualification wait forever.
+                        turn = engine.call("turn/start", {"threadId": adapted, "input": [
+                            {"type": "text", "text": "Attempt while inactive"}]})["turn"]
+                        deadline = time.monotonic() + 15
+                        while True:
+                            message = engine.receive(deadline)
+                            if message.get("method") == "error":
+                                self.assertEqual(message["params"]["threadId"], adapted)
+                                self.assertIn("Connection failed", message["params"]["error"]["additionalDetails"])
+                                break
+                        engine.call("turn/interrupt", {"threadId": adapted, "turnId": turn["id"]})
+                    self.assertEqual(len(self.requests), before, "inactive history reached inference")
+                # A failed send is still a recorded user message in the same thread.
+                messages.append("Attempt while inactive")
+                with self.launch(tofa=True) as engine:
+                    resumed = engine.call("thread/resume", {"threadId": adapted, "model": None, "modelProvider": None})
+                    self.assertEqual((resumed["thread"]["id"], resumed["modelProvider"], resumed["model"]),
+                                     (adapted, "nebius-tofa", "moonshotai/Kimi-K3"))
+                    engine.turn(adapted, "Continue after fresh launch")
+                messages.append("Continue after fresh launch")
+                answers.append("Synthetic history answer.")
+                self.assertEqual(len(self.requests), before + 1)
+        with self.launch() as engine:
+            self.read_history(engine, adapted, messages, answers)
+            listed = engine.call("thread/list", {"modelProviders": [], "useStateDbOnly": True})["data"]
+            self.assertCountEqual([row["id"] for row in listed], [ordinary, adapted])
 
 
 if __name__ == "__main__":

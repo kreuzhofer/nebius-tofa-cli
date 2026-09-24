@@ -160,6 +160,13 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 					if err := os.WriteFile(filepath.Join(bundle, "Contents/Resources/native-discovery.json"), spec, 0600); err != nil {
 						t.Fatal(err)
 					}
+					cacheData, err := json.Marshal(cache)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(filepath.Join(child.Env["CODEX_HOME"], "models_cache.json"), cacheData, 0600); err != nil {
+						t.Fatal(err)
+					}
 					previous := requests.Load()
 					if err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
 						t.Fatal(err)
@@ -249,8 +256,12 @@ func (e *desktopEngine) call(method string, params any) map[string]any {
 }
 
 func (e *desktopEngine) turn(id, status string) {
+	e.turnText(id, status, "Synthetic coexistence check")
+}
+
+func (e *desktopEngine) turnText(id, status, text string) {
 	e.t.Helper()
-	e.call("turn/start", map[string]any{"threadId": id, "input": []any{map[string]string{"type": "text", "text": "Synthetic coexistence check"}}})
+	e.call("turn/start", map[string]any{"threadId": id, "input": []any{map[string]string{"type": "text", "text": text}}})
 	for {
 		message := e.read()
 		if message["method"] != "turn/completed" {

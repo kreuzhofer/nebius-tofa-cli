@@ -1,0 +1,176 @@
+{
+  "date": "2026-09-24",
+  "issue": 47,
+  "status": "shared-profile implementation qualified at executable/HTTP, actual engine history and installed desktop startup boundaries; real-account/UI acceptance remains #50",
+  "app": "ChatGPT 26.917.71314 (10954)",
+  "engine": "codex-cli 0.155.0-alpha.16.4",
+  "platform": "macOS 26.6.2 arm64",
+  "asar_sha256": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+  "engine_sha256": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+  "native_framework_sha256": "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2",
+  "frozen_bundle": "/tmp/tofa47-qualified/ChatGPT.app",
+  "initial_client": {
+    "app": "ChatGPT 26.917.62051 (10789)",
+    "engine": "codex-cli 0.155.0-alpha.16.3",
+    "asar_sha256": "c41157d36d701d3228c82e56852f49da2381941a7e5ccfac2d58b7e10e31aefd",
+    "native_framework_sha256": "dff8143b1c2a1788bb59e27d294cd6ee12843af2faaf97b0545fc06e799979f1",
+    "scope": "initial source/manual probe provenance; earlier scripted reruns were not individually version-pinned",
+    "installed_bundle_changed_during_investigation": true,
+    "cause_of_update_established": false,
+    "bootstrap_main_shared_source_members_unchanged_in_frozen_snapshot": true
+  },
+  "ordinary_mode_probe": {
+    "initial_manual_probe_client": "ChatGPT 26.917.62051 (10789), engine alpha.16.3",
+    "invocation": "direct installed executable; --use-mock-keychain; no deep link",
+    "environment": "allowlisted PATH, TMPDIR, synthetic HOME, CFFIXED_USER_HOME, ZDOTDIR and CODEX_HOME; OTEL_SDK_DISABLED=true",
+    "explicit_electron_profile_override": false,
+    "authentication": "synthetic API key and file-backed credential store in disposable home",
+    "inference_endpoint": "http://127.0.0.1:0",
+    "foundation_application_support_path_verified_in_synthetic_home": true,
+    "ordinary_electron_profile_created_in_synthetic_home": true,
+    "first_desktop_started_bundled_engine": true,
+    "second_desktop_started_bundled_engine": false,
+    "second_desktop_exit_code": 0,
+    "second_desktop_message": "Opening in existing browser session.",
+    "native_artifacts_observed": [
+      "SingletonLock",
+      "SingletonSocket",
+      "SingletonCookie"
+    ],
+    "native_lock_owner": "first owned desktop PID",
+    "native_late_profile_selection_diagnostic": "Ignoring late userData path change after native startup",
+    "owned_process_groups_stopped": true,
+    "operator_profile_used": false,
+    "paid_inference": false,
+    "reproducible_diagnostics": {
+      "script": "scripts/desktop_ownership_test.py",
+      "command": "TOFA_TEST_DESKTOP_APP=/tmp/tofa47-qualified/ChatGPT.app python3 scripts/desktop_ownership_test.py -v",
+      "client": "ChatGPT 26.917.71314 (10954), engine alpha.16.4",
+      "exact_metadata_and_bundle_hashes_checked_before_and_after": true,
+      "process_only_updater_suppression": "CODEX_SPARKLE_ENABLED=false",
+      "all_owner_logs_confirm_updater_and_sparkle_disabled": true,
+      "tests_run": 5,
+      "tests_passed": 5,
+      "engine_observer": "CODEX_CLI_PATH observer records app-server PID/PPID and execs actual bundled engine; process executable verified",
+      "sequential_cases": [
+        "ordinary owner then ordinary contender",
+        "explicit SAME ordinary profile owner then ordinary contender",
+        "ordinary owner then explicit SAME ordinary profile contender"
+      ],
+      "all_sequential_contenders_exit_zero_without_engine": true,
+      "native_owner_hostname_and_pid_verified": true,
+      "engine_parent_pid_matches_owned_desktop": true,
+      "simultaneous_diagnostic": "at most one engine starts; record native owner evidence and require launcher refusal when it is absent",
+      "simultaneous_outcomes_observed": [
+        {
+          "provenance": "earlier unpinned installed-app run; historical race outcome",
+          "contender_exit_code": 0,
+          "contender_started_engine": false,
+          "winner_engine_started": true,
+          "native_owner_matches_winner": true,
+          "launcher_ownership_evidence_available": true
+        },
+        {
+          "provenance": "reproduced on pinned frozen alpha.16.4 snapshot",
+          "contender_exit_code": 21,
+          "contender_started_engine": false,
+          "winner_engine_started": true,
+          "native_singleton_creation_error": true,
+          "native_lock_present": false,
+          "native_socket_and_cookie_present": true,
+          "launcher_must_refuse_ownership": true
+        }
+      ],
+      "collision_deadline_seconds": 5,
+      "hung_owner_takeover_exercised": false,
+      "native_artifacts_after_sigterm": [
+        "SingletonLock",
+        "SingletonSocket",
+        "SingletonCookie"
+      ],
+      "graceful_quit": {
+        "mechanism": "NSRunningApplication.terminate targeting verified test-owned native owner PID",
+        "accepted": true,
+        "desktop_exit_code": 0,
+        "remaining_native_artifacts": [
+          "SingletonLock",
+          "SingletonSocket",
+          "SingletonCookie"
+        ],
+        "remaining_lock_identifies_exited_owned_pid": true,
+        "native_relaunch_reclaims_artifacts_and_starts_new_owned_engine": true,
+        "termination_request_is_not_completion": true,
+        "one_concurrent_run_accepted_request_but_exceeded_8s_exit_deadline": true,
+        "concurrent_timeout_cause_established": false,
+        "standalone_graceful_runs_before_readiness_change_passed": 9,
+        "readiness_precondition": "primary window ready-to-show log; bounded 10 seconds",
+        "shutdown_deadline_seconds": 8,
+        "updated_graceful_test_passed": true,
+        "final_updated_full_ownership_suite_passed": true
+      },
+      "launcher_unlinks_native_artifacts": false,
+      "cleanup": "SIGTERM then SIGKILL only for test-created process groups; disposable synthetic directory removed afterward"
+    }
+  },
+  "engine_history_probe": {
+    "boundary": "public thread/start, turn/start, thread/name/set, thread/list, thread/read, thread/resume and turn/interrupt APIs",
+    "missing_provider_reproduced_before_inactive_fixture": true,
+    "failure": "thread/resume: failed to load configuration: Model provider `nebius-tofa` not found",
+    "inactive_provider_allows_hydration": true,
+    "absent_credential_fails_with_relaunch_guidance": true,
+    "present_credential_at_port_zero": "network retry notifications; still waiting after 120 seconds; no inference fixture request",
+    "repeated_relaunch_preserves_thread_ids_messages_titles_workspace": true,
+    "synthetic_native_and_token_factory_requests_only": true,
+    "tool_result_round_trip_verified": true,
+    "client": "codex-cli 0.155.0-alpha.16.4",
+    "tool_result_boundary": "Production launcher + actual bundled engine; paginated history; ordered commandExecution for printf history-tool-result with successful output",
+    "production_test": "TestDesktopHistoryRoundTripRequiresFreshLaunch",
+    "diagnostic_script_tests_passed": 3
+  },
+  "unresolved": [
+    "Real-account onboarding and installed UI history walkthrough (#50)",
+    "Paid Token Factory inference on combined production path (#50)",
+    "Abrupt launcher death and recovery (#48)",
+    "Installed upgrade/uninstall lifecycle (#49)",
+    "Native hung-owner behavior is bounded rather than exercised; no universal filesystem-exclusivity claim"
+  ],
+  "launcher_checks": {
+    "installed_startup_test": "TestDesktopInstalledAppShellIsolation",
+    "installed_startup_passed": true,
+    "ordinary_engine_home_from_login_shell": true,
+    "ordinary_native_profile": true,
+    "credentials_copied": false,
+    "config_edit": "engine config/batchWrite expectedVersion; minimal inactive provider only",
+    "shared_config_snapshot_restore": false,
+    "ready_gate": "native owner PID plus authenticated bridge acknowledgement; live inference withheld until routing validated",
+    "refusal_cases": [
+      "existing native owner",
+      "running desktop without native lock",
+      "competing launcher lease",
+      "managed requirements",
+      "user-owned provider conflict",
+      "competing config version",
+      "native ownership lost before edit",
+      "desktop exits during catalog checks while native lock remains"
+    ],
+    "native_stale_recovery": "only when same-host recorded PID is absent; native artifacts untouched",
+    "owned_process_signals_only": true
+  },
+  "validation": {
+    "go_version": "go1.27.1 darwin/arm64",
+    "full_suite": "go test -race ./...",
+    "full_suite_passed": true,
+    "installed_engine_opt_in": true,
+    "installed_desktop_opt_in": true,
+    "go_vet_passed": true,
+    "linux_amd64_build_passed": true,
+    "windows_amd64_build_passed": true,
+    "python_history_tests_passed": 3,
+    "python_ownership_tests_passed": 5,
+    "ownership_final_suite_seconds": 7.817,
+    "python_no_opt_in_checks_skip": true,
+    "standards_review_remaining_findings": 0,
+    "spec_review_remaining_confirmed_findings": 0,
+    "test_scheduling": "Final Go and native ownership suites run sequentially; an earlier concurrent run triggered expected incumbent refusal in launcher fixtures."
+  }
+}
