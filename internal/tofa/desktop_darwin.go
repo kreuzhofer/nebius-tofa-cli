@@ -410,6 +410,13 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 	startup := time.NewTimer(15 * time.Second)
 	defer startup.Stop()
 	engineSeen := false
+	var engineExit <-chan time.Time
+	var shutdown *time.Timer
+	defer func() {
+		if shutdown != nil {
+			shutdown.Stop()
+		}
+	}()
 	for {
 		select {
 		case err := <-done:
@@ -419,6 +426,8 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 			return err
 		case <-ctx.Done():
 			return stop(ctx.Err())
+		case <-engineExit:
+			return stop(errors.New("owned desktop app-server exited; launch cancelled"))
 		case <-startup.C:
 			if !engineSeen {
 				return stop(errors.New("desktop did not start its owned bundled app-server within 15 seconds"))
@@ -431,6 +440,9 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 				case <-time.After(100 * time.Millisecond):
 					return stop(errors.New("desktop native profile ownership lost; owned launch cancelled"))
 				}
+			}
+			if engineExit != nil {
+				continue
 			}
 			probe, cancel := context.WithTimeout(ctx, time.Second)
 			output, err := exec.CommandContext(probe, "/bin/ps", "-axo", "pid=,pgid=,stat=,args=").Output()
@@ -453,13 +465,11 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 				}
 			}
 			if engineSeen && !found {
-				// During normal shutdown the engine can exit just before Electron.
-				select {
-				case err := <-done:
-					return err
-				case <-time.After(200 * time.Millisecond):
-					return stop(errors.New("owned desktop app-server exited; launch cancelled"))
-				}
+				// Electron can take longer than a polling interval to finish
+				// after its engine exits. Keep ownership/cancellation checks
+				// active during this bounded wait; never adopt a replacement.
+				shutdown = time.NewTimer(2 * time.Second)
+				engineExit = shutdown.C
 			}
 			engineSeen = engineSeen || found
 		}

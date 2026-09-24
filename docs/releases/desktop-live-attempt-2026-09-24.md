@@ -1,6 +1,10 @@
 # Shared-history live attempt — 2026-09-24
 
 **Outcome: partial live success; end-to-end qualification remains incomplete.**
+Across the first attempt and its continuation, 29 human checks passed. The
+captured shutdown failure and four final preservation checks remain open; the
+sections below retain each attempt's original results and candidate identity.
+
 The human walkthrough reached the first return to ordinary mode, then stopped
 because the launcher exited with status 1. Sixteen human observations passed;
 automatic title generation was not observed. The remaining seventeen human
@@ -104,3 +108,39 @@ Those remain pending, with the two existing conversations retained for stages
 5–8. A continuation is separate evidence and must record this intervening
 launch/quit session; it must not rewrite the original partial attempt as a
 successful uninterrupted walkthrough.
+
+## Continuation — 14:33–14:37 UTC
+
+The [unchanged continuation report](evidence/desktop-continuation-2026-09-24.json)
+has SHA-256 `2e4483fe2ea50fc95d744cad84138a664b4a626526d911841e8ea7a5c73e7360`.
+It pins the earlier two reports and the same `fd22182` production candidate.
+Thirteen further human observations passed:
+
+- Ordinary account continuity, list/title/workspace parity and complete messages
+  and tool output; both saved-engine and provider-history logo loops were absent.
+- Ordinary-mode inference failed explicitly while history remained readable.
+- Tofa relaunch became usable with the same account; the existing Kimi
+  conversation recovered its earlier marker and retained its history.
+- The original native conversation continued successfully and native picker
+  choices remained available.
+
+Fresh native discovery and launch-owned catalog checks again passed with nine
+native descriptors preserved and exactly one Kimi entry added. Startup was
+recorded at 14:36:05 UTC. At final cleanup the operator used Cmd-Q, confirmed
+separately in the conversation. The launcher again exited with status 1, this
+time recording `engine_exited_before_app` at 14:37:42 UTC. That category maps
+exactly to `owned desktop app-server exited; launch cancelled`. The launcher PID
+was absent and its runtime directory removed at the subsequent check; no broader
+process-cleanup claim is made.
+
+Across the first attempt and continuation, 29 human observations passed and
+automatic title generation remains `not_observed`. Four final ordinary-mode
+observations—account, history, workspace and settings preservation—were not
+collected because the cleanup gate stopped the continuation. Final identity
+checks were also not reached. The unchanged reports remain incomplete.
+
+The [shutdown diagnosis](../research/desktop-shutdown-diagnosis.md) reproduces
+the captured error with an engine-first clean shutdown and records the scoped
+correction. It requires live confirmation before this combination can be claimed
+qualified. Earlier successful checks are retained as evidence for their exact
+candidate rather than rewritten as observations of a new binary.

@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "issue": 50,
+  "updated_utc": "2026-09-24T14:37:44.860753+00:00",
+  "scope": "remaining_stages_5_through_8_only",
+  "prior_evidence": {
+    "first_live_attempt_sha256": "803a06d760ada17ce95d3d49d5324cdea153de8d2892b07f5349d464e7648408",
+    "intervening_launch_quit_sha256": "f145ce6063757f49e826c75eff14594f6f19080e911baef5f56f784f7c66d21b",
+    "earlier_exit_failure_resolved": false
+  },
+  "candidate": {
+    "source_commit": "fd221828e61dcc231973b6e3846f7dc1513c8395",
+    "candidate_version": "v0.0.0-qualification.50.fd22182",
+    "candidate_sha256": "46362c39507f0c9e23c2aef9718f6fd192d5a53d3c72aeae9c1c41f10b07f676",
+    "app_version": "26.917.71314",
+    "app_build": "10954",
+    "bundle_id": "com.openai.codex",
+    "engine_version": "codex-cli 0.155.0-alpha.16.4",
+    "platform": {
+      "os": "macOS",
+      "version": "26.6.2",
+      "build": "25G83",
+      "arch": "arm64"
+    },
+    "app_sha256": {
+      "Contents/Resources/app.asar": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+      "Contents/Resources/codex": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+      "Contents/MacOS/ChatGPT": "381cff21b027c5dd76391eae427125117b8ccf9ef565f66d1470a3bbcf755af7",
+      "Contents/Frameworks/Codex Framework.framework/Versions/153.0.8010.53/Codex Framework": "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2"
+    }
+  },
+  "model": "moonshotai/Kimi-K3",
+  "allow_unverified": true,
+  "connection": "launch-owned authenticated loopback Responses adapter",
+  "observer": "human operator",
+  "human_observations": {
+    "UI_ORDINARY2_ACCOUNT": "pass",
+    "UI_ORDINARY2_LIST": "pass",
+    "UI_ORDINARY2_MESSAGES": "pass",
+    "UI_NO_SAVED_ENGINE_LOGO_LOOP": "pass",
+    "UI_NO_PROVIDER_HISTORY_LOGO_LOOP": "pass",
+    "UI_ORDINARY_SEND_REFUSAL": "pass",
+    "UI_ORDINARY_FAILURE_READABLE": "pass",
+    "UI_TOFA2_READY": "pass",
+    "UI_TOFA2_ACCOUNT": "pass",
+    "UI_TOFA2_RECOVERY": "pass",
+    "UI_TOFA2_HISTORY": "pass",
+    "UI_TOFA2_NATIVE": "pass",
+    "UI_TOFA2_PICKER": "pass"
+  },
+  "automated_evidence": {
+    "closed_2_failure": {
+      "passed": false,
+      "failure_kind": "RuntimeError",
+      "checked_utc": "2026-09-24T14:37:44.786262+00:00"
+    },
+    "identity_initial": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-24T14:33:53.376909+00:00"
+    },
+    "identity_launch2": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-24T14:36:02.501020+00:00"
+    },
+    "launch2_catalog": {
+      "native_descriptors_preserved": true,
+      "exactly_one_kimi_added": true,
+      "passed": true,
+      "native_descriptor_count": 9,
+      "native_catalog_changed_since_baseline": false,
+      "boundary": "launch-owned catalog file compared with ordinary public export; not picker/UI evidence",
+      "checked_utc": "2026-09-24T14:36:15.914381+00:00"
+    },
+    "launch2_cleanup": {
+      "launcher_exit_zero": false,
+      "launcher_pid_absent": true,
+      "launch_runtime_removed": true,
+      "passed": false,
+      "boundary": "launcher exit and owned runtime removal; UI preservation is human-observed",
+      "checked_utc": "2026-09-24T14:37:44.785557+00:00"
+    },
+    "launch2_error": {
+      "passed": false,
+      "category": "engine_exited_before_app",
+      "checked_utc": "2026-09-24T14:37:42.760663+00:00"
+    },
+    "launch2_exit": {
+      "passed": false,
+      "exit_code": 1,
+      "boundary": "owned launcher process exit",
+      "checked_utc": "2026-09-24T14:37:42.762684+00:00"
+    },
+    "launch2_startup": {
+      "passed": true,
+      "boundary": "production startup announcement after ownership/routing handshake; not UI readiness",
+      "checked_utc": "2026-09-24T14:36:05.961683+00:00"
+    },
+    "native_baseline": {
+      "chatgpt_login": true,
+      "export_success_without_diagnostics": true,
+      "bundled_success_without_diagnostics": true,
+      "cache_fresh": true,
+      "cache_has_identity": true,
+      "cache_version_matches": true,
+      "export_matches_cache": true,
+      "export_differs_from_bundled": true,
+      "nonempty_catalog": true,
+      "passed": true,
+      "descriptor_count": 9,
+      "boundary": "authorized ordinary-account engine API; not UI or inference",
+      "checked_utc": "2026-09-24T14:33:54.566341+00:00"
+    },
+    "native_launch2": {
+      "chatgpt_login": true,
+      "export_success_without_diagnostics": true,
+      "bundled_success_without_diagnostics": true,
+      "cache_fresh": true,
+      "cache_has_identity": true,
+      "cache_version_matches": true,
+      "export_matches_cache": true,
+      "export_differs_from_bundled": true,
+      "nonempty_catalog": true,
+      "passed": true,
+      "descriptor_count": 9,
+      "boundary": "authorized ordinary-account engine API; not UI or inference",
+      "checked_utc": "2026-09-24T14:36:02.656353+00:00"
+    },
+    "token_factory_catalog": {
+      "catalog_exit_zero": true,
+      "kimi_available": true,
+      "no_diagnostics": true,
+      "passed": true,
+      "boundary": "Token Factory model availability; not inference",
+      "checked_utc": "2026-09-24T14:33:56.334978+00:00"
+    }
+  },
+  "walkthrough_completed": false,
+  "missing_observations": [
+    "UI_FINAL_ACCOUNT",
+    "UI_FINAL_HISTORY",
+    "UI_FINAL_SETTINGS",
+    "UI_FINAL_WORKSPACE"
+  ],
+  "missing_automated_checks": [
+    "identity_after_launch2",
+    "identity_final"
+  ],
+  "outcome": "incomplete",
+  "end_to_end_qualification_claimed": false,
+  "limitations": [
+    "Human-observed streaming; no live wire-event counts",
+    "No account/entitlement changes are induced",
+    "Real installed upgrade/uninstall and broader prerelease acceptance remain #35",
+    "Automatic titles/review, auxiliary operations and compaction retain documented limits",
+    "Earlier first-launch exit failure remains unresolved; intervening launch/quit passed",
+    "Continuation is separate evidence, not an uninterrupted rerun of all eight stages"
+  ]
+}

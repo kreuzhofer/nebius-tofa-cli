@@ -6,9 +6,10 @@ not included in v0.1.0-rc.2.
 The production implementation uses **one ordinary desktop profile and history**.
 End-to-end qualification is still incomplete: see the
 [qualification record and remaining live checks](releases/desktop-shared-history-2026-09-24.md).
-The [latest human walkthrough](releases/desktop-live-attempt-2026-09-24.md) passed
-first-launch streaming, tools and continuation, but stopped on a nonzero launcher
-exit before the ordinary-mode history and relaunch checks.
+The [human walkthrough and continuation](releases/desktop-live-attempt-2026-09-24.md)
+passed streaming, tools, shared history, ordinary send refusal and relaunch
+recovery. A [shutdown correction](research/desktop-shutdown-diagnosis.md) still
+needs live confirmation; final ordinary-mode preservation checks remain open.
 Earlier isolated/prototype observations below are provenance, not qualification
 of the combined workflow.
 

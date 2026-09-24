@@ -99,8 +99,10 @@ if '--ordinary-probe' in sys.argv:
     print(json.dumps({'args':sys.argv[1:], 'home':os.environ.get('CODEX_HOME'), 'native_key':os.environ.get('OPENAI_API_KEY'), 'tofa_key':os.environ.get('TOFA_API_KEY')}))
     sys.exit(23)
 if '--owned-worker' in sys.argv:
+    pathlib.Path(CAPTURE+'.worker-ready').touch()
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     if MODE == 'engine-exit': time.sleep(0.7); sys.exit(19)
+    if MODE in ['graceful-engine-first', 'engine-first-failure']: time.sleep(0.7); sys.exit(0)
     while True: time.sleep(1)
 home = pathlib.Path(os.environ['CODEX_HOME'])
 home.mkdir(parents=True, exist_ok=True)
@@ -208,8 +210,21 @@ if MODE != 'exit':
     engine = pathlib.Path(os.environ.get('CODEX_CLI_PATH') or pathlib.Path(__file__).parent.parent / 'Resources' / 'codex')
     bundled_engine = pathlib.Path(__file__).parent.parent / 'Resources' / 'codex'
     worker_args = [str(engine), '-c', 'features.code_mode_host=true', 'app-server'] + ([] if bundled_engine.is_symlink() else ['--owned-worker'])
+    worker_ready = pathlib.Path(CAPTURE+'.worker-ready')
+    worker_ready.unlink(missing_ok=True)
     worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if not bundled_engine.is_symlink():
+        deadline = time.monotonic() + 5
+        while not worker_ready.exists():
+            if worker.poll() is not None: raise RuntimeError('fixture worker exited before readiness')
+            if time.monotonic() >= deadline: raise RuntimeError('fixture worker readiness timed out')
+            time.sleep(0.01)
     pathlib.Path(CAPTURE+'.pid').write_text(str(worker.pid))
+    if MODE in ['graceful-engine-first', 'engine-first-failure']:
+        worker.wait()
+        time.sleep(0.8)
+        pathlib.Path(CAPTURE+'.graceful-exit').touch()
+        sys.exit(23 if MODE == 'engine-first-failure' else 0)
     if MODE not in ['ignore', 'engine-exit', 'controlled']: time.sleep(0.4); sys.exit(0)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     while True:
@@ -1256,6 +1271,35 @@ func TestDesktopEngineExitStopsOwnedApp(t *testing.T) {
 	err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 	if err == nil || !strings.Contains(err.Error(), "app-server exited") {
 		t.Fatalf("engine loss not detected: %v", err)
+	}
+	assertDesktopWorkerStopped(t, capture)
+}
+
+func TestDesktopAllowsEngineFirstGracefulShutdown(t *testing.T) {
+	bundle, capture := desktopFixture(t, "graceful-engine-first")
+	app, _ := adapterFixture(t, nil, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+	if err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
+		t.Fatalf("graceful desktop shutdown was interrupted: %v", err)
+	}
+	if _, err := os.Stat(capture + ".graceful-exit"); err != nil {
+		t.Fatalf("desktop did not finish its own shutdown: %v", err)
+	}
+	assertDesktopWorkerStopped(t, capture)
+}
+
+func TestDesktopPreservesEngineFirstShutdownFailure(t *testing.T) {
+	bundle, capture := desktopFixture(t, "engine-first-failure")
+	app, _ := adapterFixture(t, nil, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+	err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+	if err == nil || !strings.Contains(err.Error(), "exit status 23") {
+		t.Fatalf("desktop shutdown failure was not preserved: %v", err)
+	}
+	if _, err := os.Stat(capture + ".graceful-exit"); err != nil {
+		t.Fatalf("desktop did not finish its own shutdown: %v", err)
 	}
 	assertDesktopWorkerStopped(t, capture)
 }
