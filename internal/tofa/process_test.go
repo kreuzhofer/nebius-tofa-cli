@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -15,9 +16,27 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
 )
 
 func TestMain(tests *testing.M) {
+	if len(os.Args) > 2 && os.Args[1] == "--test-desktop-launch" {
+		app := &tofa.App{Dir: os.Args[2]}
+		if err := app.Run(os.Args[3:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+	if executable, err := os.Executable(); err == nil && filepath.Base(executable) == "tofa-desktop-engine" {
+		app := &tofa.App{}
+		if err := app.Run(os.Args[1:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 	if mode := os.Getenv("TOFA_TEST_CLIENT_MODE"); mode != "" {
 		if mode == "ignore" {
 			signal.Ignore(os.Interrupt, syscall.SIGTERM)

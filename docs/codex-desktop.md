@@ -30,6 +30,8 @@ separate `CODEX_HOME`, Electron user data, an empty workspace, and a verified
 one-model catalog. It does not use `open`, restart the ordinary app, copy account
 credentials, write ordinary configuration, or adopt an existing app-server.
 Conflicting inherited Codex/OpenAI/Electron routing variables are removed.
+An inherited, nonempty `CODEX_CLI_PATH` must already identify this launcher's
+verified bridge; a user-managed executable override is rejected before launch.
 
 The pinned desktop normally reloads an interactive login-shell environment after
 startup. A private, per-launch `ZDOTDIR/.zshenv` handles only that exact environment
@@ -50,6 +52,55 @@ they are never rewritten. Other enforced policy remains the engine's responsibil
 The original HOME is retained for native policy discovery. The preflight uses
 the engine's [`config/read` and `configRequirements/read` APIs](https://learn.chatgpt.com/docs/app-server);
 configuration and requirements are [separate layers](https://learn.chatgpt.com/docs/config-file/config-basic).
+
+### Durable engine bridge
+
+The desktop receives a stable `CODEX_CLI_PATH` under
+`<tofa-config>/desktop-bridge-v1/<SHA-256-of-absolute-bundled-engine-path>/tofa-desktop-engine`.
+The bridge is a private executable copy of the launcher, with a sibling
+`owner.json` recording contract version 1, the absolute bundled engine path, and
+the bridge executable's SHA-256. The record contains no credential or live route.
+The executable dispatches to bridge mode by its fixed filename; it does not
+depend on the original source-build executable remaining in place.
+
+Normal launch cleanup retains this directory. Saved tool references therefore
+remain executable. With no `TOFA_DESKTOP_CONTEXT`, the bridge executes the recorded
+bundled engine with the caller's ordinary settings, arguments, and exit status.
+It removes a stale `TOFA_API_KEY` from that ordinary invocation. Ordinary account
+credentials and `HOME` are preserved.
+
+During a launch, `TOFA_DESKTOP_CONTEXT` names the current loopback adapter and
+`TOFA_API_KEY` authenticates the bridge's `GET /desktop-launch` request. The route
+exists only in launcher memory, binds the bridge, engine, and isolated
+`CODEX_HOME`, and is served with `Cache-Control: no-store`. No on-disk capability
+manifest is needed. Empty, malformed, unauthenticated, mismatched, or expired
+context is an explicit error with relaunch guidance, even for `--version`;
+it never selects ordinary mode. The client permits only IPv4 loopback HTTP,
+disables proxy discovery and redirects, and bounds the request time and size.
+
+For `app-server`, the bridge appends live routing overrides at the subcommand's
+argument boundary, after desktop/plugin overrides and before any `--` separator.
+Other arguments retain their order and values. The preflight goes through this
+same bridge and asks the actual engine for effective routing and managed policy.
+The real Token Factory key stays in the launcher. Only the temporary local bearer
+reaches the owned desktop, and neither it nor the context is an argument or a
+durable bridge setting. Each launch creates a new adapter and bearer.
+
+Initial installation claims a new private directory. Existing records and
+executables must match before reuse; missing, edited, or symlinked ownership is
+an explicit conflict, never permission to overwrite another executable. A setup
+write failure removes only the directory created by that attempt. A fully
+installed bridge remains usable even if subsequent desktop setup fails.
+
+The later installed-lifecycle ticket owns upgrade and uninstall integration.
+Version 1 currently reuses a verified existing bridge rather than replacing it
+on every source launch. That ticket must preserve saved executable paths and
+the matching ownership record, define atomic upgrade/recovery (including an
+interrupted initial installation), and detach saved references before removal.
+Do not delete this directory as ordinary session cleanup. Moving/removing the
+bundled application causes an explicit execution error; a launch from a new
+bundle path gets a distinct owned bridge. No ordinary profile migration or
+installer/uninstaller changes are included in this slice.
 
 The real Token Factory key stays inside the launcher. The owned client gets only
 a random per-launch bearer token for an authenticated IPv4 loopback adapter.
@@ -108,7 +159,11 @@ TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex \
 ```
 
 This optional test starts the real engine but a fixture desktop executable; it does
-not perform paid inference. The earlier human-operated streaming/tool/continuation
+not perform paid inference. Its bridge regression completes a synthetic turn
+through the authenticated request adapter and checks the upstream model and
+credential, including conflicting app-server routing and unrelated plugin
+overrides. This proves fixture routing, beyond merely avoiding paid inference.
+The earlier human-operated streaming/tool/continuation
 proof and its limitations remain in the [feasibility evidence](research/codex-desktop-feasibility.md).
 
 An additional opt-in test starts the installed Electron app with dummy credentials,
@@ -154,3 +209,26 @@ terminal smoke tests. Independent standards and spec reviews reported no finding
 The race suite found an output-writer race after the live check; a per-launch mutex
 fixed it, and the full suite passed on rerun. The evidence pins the live binary
 before that output-only correction.
+
+### Bridge validation, 2026-09-24 (#45)
+
+Before the fix, the saved-reference regression failed because the desktop had no
+durable launcher-owned executable to save. The bundled-engine regression then
+reproduced displaced live routing when app-server overrides selected `openai`.
+After the fix, a saved bridge executes after cleanup; ordinary settings and exit
+status survive; expired/malformed/mismatched contexts fail; relaunch preserves the
+bridge while rotating credentials and endpoints. Ownership-conflict and actual
+file-size-limit write-failure tests cover safe setup. The fixture's retained tool
+settings, history, and bridge artifacts are checked for live capability leaks.
+
+The local app auto-updated to engine `0.155.0-alpha.16.3` during this work. Engine
+tests used a retained `0.155.0-alpha.9.2` executable from the earlier isolated
+prototype's plugin directory. The production version gate remains unchanged.
+This evidence qualifies the bridge at the executable/HTTP and bundled-engine
+boundaries; it does not qualify the updated Electron app or ordinary-profile
+history. All credentials and inference responses in these checks are synthetic.
+
+Final checks passed: the complete `go test -race ./...` suite with the qualified
+engine enabled, `go vet ./...`, and Linux/Windows amd64 builds. Separate standards
+and spec reviews have no remaining findings after correcting argument-value
+detection and removing duplicate test setup.

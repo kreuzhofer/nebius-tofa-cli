@@ -15,9 +15,12 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
 )
 
 // A real executable fixture exercises the bundle, app-server protocol, environment,
@@ -58,6 +61,9 @@ CAPTURE = %q
 if '--version' in sys.argv:
     print('codex-cli 0.155.0-alpha.9.2')
     sys.exit(0)
+if '--ordinary-probe' in sys.argv:
+    print(json.dumps({'args':sys.argv[1:], 'home':os.environ.get('CODEX_HOME'), 'native_key':os.environ.get('OPENAI_API_KEY'), 'tofa_key':os.environ.get('TOFA_API_KEY')}))
+    sys.exit(23)
 if '--owned-worker' in sys.argv:
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     if MODE == 'engine-exit': time.sleep(0.7); sys.exit(19)
@@ -90,6 +96,7 @@ if MODE == 'exit': sys.exit(23)
 (home / 'sessions' / 'conversation.jsonl').write_text('preserve conversation')
 pathlib.Path('user-work.txt').write_text('preserve workspace')
 pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'env': dict(os.environ)}))
+(pathlib.Path(os.environ['CODEX_ELECTRON_USER_DATA_PATH']) / 'tool-settings.json').write_text(json.dumps({'engine':os.environ.get('CODEX_CLI_PATH')}))
 if MODE == 'shell-commands':
     result = subprocess.run(['/bin/zsh', '-ilc', 'printf "%%s|%%s" "$STARTUP_ENV" "$STARTUP_RC"'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     pathlib.Path(CAPTURE+'.commands').write_bytes(result.stdout)
@@ -103,7 +110,8 @@ if MODE == 'http':
     pathlib.Path(CAPTURE+'.http').write_text(json.dumps(results))
 if MODE != 'exit':
     engine = pathlib.Path(os.environ.get('CODEX_CLI_PATH') or pathlib.Path(__file__).parent.parent / 'Resources' / 'codex')
-    worker_args = [str(engine), '-c', 'features.code_mode_host=true', 'app-server'] + ([] if engine.is_symlink() else ['--owned-worker'])
+    bundled_engine = pathlib.Path(__file__).parent.parent / 'Resources' / 'codex'
+    worker_args = [str(engine), '-c', 'features.code_mode_host=true', 'app-server'] + ([] if bundled_engine.is_symlink() else ['--owned-worker'])
     worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     pathlib.Path(CAPTURE+'.pid').write_text(str(worker.pid))
     if MODE not in ['ignore', 'engine-exit']: time.sleep(0.4); sys.exit(0)
@@ -191,7 +199,10 @@ func TestDesktopShellReloadPreservesEngineAndCodingStartup(t *testing.T) {
 			if err := json.Unmarshal(raw, &child); err != nil {
 				t.Fatal(err)
 			}
-			for _, key := range []string{"CODEX_CLI_PATH", "OPENAI_API_KEY", "CODEX_APP_SERVER_OPENAI_BASE_URL"} {
+			if path := child.Env["CODEX_CLI_PATH"]; !strings.HasPrefix(path, app.Dir+"/") || filepath.Base(path) != "tofa-desktop-engine" {
+				t.Fatal("shell replaced the launcher-owned engine bridge")
+			}
+			for _, key := range []string{"OPENAI_API_KEY", "CODEX_APP_SERVER_OPENAI_BASE_URL"} {
 				if child.Env[key] != "" {
 					t.Errorf("shell reintroduced %s into desktop environment", key)
 				}
@@ -430,6 +441,399 @@ func TestDesktopInstalledEngineOfflineRouting(t *testing.T) {
 	app, _ := adapterFixture(t, nil, nil)
 	if err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDesktopSavedEngineReferenceSurvivesCleanup(t *testing.T) {
+	bundle, capture := desktopFixture(t, "normal")
+	app, _ := adapterFixture(t, nil, nil)
+	if err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(capture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var child struct{ Env map[string]string }
+	if err := json.Unmarshal(raw, &child); err != nil {
+		t.Fatal(err)
+	}
+	bridge := child.Env["CODEX_CLI_PATH"]
+	if bridge == "" {
+		t.Fatal("desktop has no durable engine reference to save")
+	}
+	settings, err := os.ReadFile(filepath.Join(child.Env["CODEX_ELECTRON_USER_DATA_PATH"], "tool-settings.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved struct{ Engine string }
+	if json.Unmarshal(settings, &saved) != nil || saved.Engine != bridge {
+		t.Fatal("tool settings did not preserve the bridge reference")
+	}
+	for _, path := range []string{filepath.Dir(bridge), child.Env["CODEX_ELECTRON_USER_DATA_PATH"], filepath.Join(child.Env["CODEX_HOME"], "sessions")} {
+		if err := filepath.WalkDir(path, func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			for _, secret := range []string{child.Env["TOFA_API_KEY"], child.Env["TOFA_DESKTOP_CONTEXT"]} {
+				if secret != "" && strings.Contains(string(data), secret) {
+					return errors.New("live launch capability persisted after cleanup")
+				}
+			}
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	command := exec.Command(bridge, "--version")
+	command.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME")}
+	output, err := command.CombinedOutput()
+	if err != nil || strings.TrimSpace(string(output)) != "codex-cli 0.155.0-alpha.9.2" {
+		t.Fatalf("saved reference is not executable after launch cleanup: %v %s", err, output)
+	}
+	command = exec.Command(bridge, "--ordinary-probe", "argument with spaces")
+	command.Env = []string{"PATH=" + os.Getenv("PATH"), "CODEX_HOME=/ordinary/fixture", "OPENAI_API_KEY=synthetic-native", "TOFA_API_KEY=stale-bearer"}
+	output, err = command.CombinedOutput()
+	var exit *exec.ExitError
+	var ordinary struct {
+		Args      []string
+		Home      string
+		NativeKey string  `json:"native_key"`
+		TofaKey   *string `json:"tofa_key"`
+	}
+	if !errors.As(err, &exit) || exit.ExitCode() != 23 || json.Unmarshal(output, &ordinary) != nil || ordinary.Home != "/ordinary/fixture" || ordinary.NativeKey != "synthetic-native" || ordinary.TofaKey != nil || strings.Join(ordinary.Args, "|") != "--ordinary-probe|argument with spaces" {
+		t.Fatal("ordinary bridge invocation lost settings, arguments, exit status, or retained a stale bearer")
+	}
+	for _, context := range []string{child.Env["TOFA_DESKTOP_CONTEXT"], "", "malformed", "https://127.0.0.1:1", "http://example.com:80", "http://127.0.0.1:0"} {
+		command = exec.Command(bridge, "--version")
+		command.Env = []string{"PATH=" + os.Getenv("PATH"), "TOFA_DESKTOP_CONTEXT=" + context, "TOFA_API_KEY=" + child.Env["TOFA_API_KEY"]}
+		output, err = command.CombinedOutput()
+		if err == nil || !strings.Contains(string(output), "context is invalid or expired") {
+			t.Fatal("expired or malformed context fell back to the bundled engine")
+		}
+	}
+}
+
+func TestDesktopBundledEngineOverridesAtAppServerBoundary(t *testing.T) {
+	installed := os.Getenv("TOFA_TEST_DESKTOP_ENGINE")
+	if installed == "" {
+		t.Skip("set TOFA_TEST_DESKTOP_ENGINE")
+	}
+	bundle, capture := desktopFixture(t, "ignore")
+	engine := filepath.Join(bundle, "Contents/Resources/codex")
+	if err := os.Remove(engine); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(installed, engine); err != nil {
+		t.Fatal(err)
+	}
+	var requests atomic.Int32
+	app, _ := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
+		var request struct{ Model string }
+		if json.NewDecoder(r.Body).Decode(&request) != nil || request.Model != "moonshotai/Kimi-K3" {
+			t.Error("wrong model reached inference fixture")
+		}
+		requests.Add(1)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_fixture\",\"status\":\"in_progress\",\"output\":[]}}\n\nevent: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":1,\"output_tokens\":0,\"total_tokens\":1}}}\n\n")
+	}, nil)
+	child, _ := liveDesktopFixture(t, app, bundle, capture)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	engine = child.Env["CODEX_CLI_PATH"]
+	command := exec.CommandContext(ctx, engine, "-c", "features.code_mode_host=true", "app-server", "-c", `model_provider="openai"`, "-c", "developer_instructions=\"preserve unrelated override\"", "-c", "features.analytics=false", "-c", "features.shell_snapshot=false", "-c", `model_providers.nebius-tofa.base_url="http://127.0.0.1:1"`, "-c", "plugins.fixture.enabled=false")
+	command.Dir = child.Cwd
+	for key, value := range child.Env {
+		command.Env = append(command.Env, key+"="+value)
+	}
+	stdin, err := command.StdinPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { stdin.Close(); command.Process.Kill(); command.Wait() }()
+	encoder, decoder := json.NewEncoder(stdin), json.NewDecoder(stdout)
+	for id, method := range []string{"initialize", "config/read"} {
+		params := map[string]any{"clientInfo": map[string]string{"name": "tofa_fixture", "version": "1"}, "cwd": child.Cwd}
+		if err := encoder.Encode(map[string]any{"id": id, "method": method, "params": params}); err != nil {
+			t.Fatal(err)
+		}
+		var response struct {
+			ID     *int
+			Result struct{ Config map[string]any }
+			Error  json.RawMessage
+		}
+		for {
+			if err := decoder.Decode(&response); err != nil {
+				t.Fatal(err)
+			}
+			if response.ID != nil {
+				break
+			}
+		}
+		if len(response.Error) != 0 {
+			t.Fatalf("engine rejected request: %s", response.Error)
+		}
+		if method == "config/read" && (response.Result.Config["model_provider"] != "nebius-tofa" || response.Result.Config["developer_instructions"] != "preserve unrelated override") {
+			t.Fatal("app-server overrides displaced live routing or lost unrelated settings")
+		}
+	}
+	if err := encoder.Encode(map[string]any{"method": "initialized"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := encoder.Encode(map[string]any{"id": 2, "method": "thread/start", "params": map[string]any{"cwd": child.Cwd, "approvalPolicy": "never", "sandbox": "read-only"}}); err != nil {
+		t.Fatal(err)
+	}
+	var threadID string
+	for threadID == "" {
+		var response struct {
+			ID     *int
+			Result struct{ Thread struct{ ID string } }
+			Error  json.RawMessage
+		}
+		if err := decoder.Decode(&response); err != nil {
+			t.Fatal(err)
+		}
+		if response.ID != nil && *response.ID == 2 {
+			if len(response.Error) != 0 {
+				t.Fatalf("thread/start failed: %s", response.Error)
+			}
+			threadID = response.Result.Thread.ID
+		}
+	}
+	if err := encoder.Encode(map[string]any{"id": 3, "method": "turn/start", "params": map[string]any{"threadId": threadID, "input": []any{map[string]string{"type": "text", "text": "Synthetic routing check"}}}}); err != nil {
+		t.Fatal(err)
+	}
+	for {
+		var response struct {
+			Method string
+			Error  json.RawMessage
+			Params struct{ Turn struct{ Status string } }
+		}
+		if err := decoder.Decode(&response); err != nil {
+			t.Fatal(err)
+		}
+		if len(response.Error) != 0 {
+			t.Fatalf("turn/start failed: %s", response.Error)
+		}
+		if response.Method == "turn/completed" {
+			if response.Params.Turn.Status != "completed" || requests.Load() != 1 {
+				t.Fatal("bundled engine did not complete inference through the authenticated fixture route")
+			}
+			break
+		}
+	}
+	if err := filepath.WalkDir(filepath.Join(child.Env["CODEX_HOME"], "sessions"), func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(string(data), child.Env["TOFA_API_KEY"]) || strings.Contains(string(data), child.Env["TOFA_DESKTOP_CONTEXT"]) {
+			return errors.New("bundled engine persisted a live launch capability in history")
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+type capturedDesktop struct {
+	Env map[string]string
+	Cwd string
+}
+
+func liveDesktopFixture(t *testing.T, app *tofa.App, bundle, capture string) (capturedDesktop, func()) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	done := make(chan struct{})
+	var result error
+	go func() {
+		defer close(done)
+		result = app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+	}()
+	stop := func() { cancel(); <-done }
+	t.Cleanup(stop)
+	for {
+		if raw, err := os.ReadFile(capture); err == nil {
+			var child capturedDesktop
+			if json.Unmarshal(raw, &child) == nil {
+				return child, stop
+			}
+		}
+		select {
+		case <-done:
+			t.Fatalf("desktop failed before capture: %v", result)
+		case <-ctx.Done():
+			t.Fatal("desktop capture timed out")
+		case <-time.After(20 * time.Millisecond):
+		}
+	}
+}
+
+func TestDesktopBridgeRelaunchAndMismatchedContext(t *testing.T) {
+	bundle, capture := desktopFixture(t, "ignore")
+	app, _ := adapterFixture(t, nil, nil)
+	first, stop := liveDesktopFixture(t, app, bundle, capture)
+	bridge := first.Env["CODEX_CLI_PATH"]
+	invoke := func(env map[string]string, valid bool) {
+		t.Helper()
+		command := exec.Command(bridge, "--version")
+		for key, value := range env {
+			command.Env = append(command.Env, key+"="+value)
+		}
+		output, err := command.CombinedOutput()
+		if valid && (err != nil || !strings.Contains(string(output), "codex-cli")) {
+			t.Fatal("valid launch context rejected")
+		}
+		if !valid && (err == nil || !strings.Contains(string(output), "context")) {
+			t.Fatal("invalid launch context reached engine")
+		}
+	}
+	invoke(first.Env, true)
+	for _, args := range [][]string{
+		{"exec", "--", "app-server", "--ordinary-probe"},
+		{"--profile", "app-server", "--ordinary-probe"},
+		{"--", "app-server", "--ordinary-probe"},
+	} {
+		command := exec.Command(bridge, args...)
+		for key, value := range first.Env {
+			command.Env = append(command.Env, key+"="+value)
+		}
+		raw, err := command.Output()
+		var exit *exec.ExitError
+		var probe struct{ Args []string }
+		if !errors.As(err, &exit) || exit.ExitCode() != 23 || json.Unmarshal(raw, &probe) != nil || strings.Join(probe.Args, "|") != strings.Join(args, "|") {
+			t.Fatal("live bridge treated an argument value as an app-server subcommand")
+		}
+	}
+	originalHome := first.Env["CODEX_HOME"]
+	first.Env["CODEX_HOME"] = t.TempDir()
+	invoke(first.Env, false)
+	first.Env["CODEX_HOME"] = originalHome
+	stop()
+	invoke(first.Env, false)
+	if err := os.Remove(capture); err != nil {
+		t.Fatal(err)
+	}
+	second, stopSecond := liveDesktopFixture(t, app, bundle, capture)
+	defer stopSecond()
+	if second.Env["CODEX_CLI_PATH"] != bridge || second.Env["TOFA_API_KEY"] == first.Env["TOFA_API_KEY"] || second.Env["TOFA_DESKTOP_CONTEXT"] == first.Env["TOFA_DESKTOP_CONTEXT"] {
+		t.Fatal("relaunch did not preserve the bridge and rotate its live route")
+	}
+	invoke(second.Env, true)
+	invoke(first.Env, false)
+	second.Env["TOFA_API_KEY"] = first.Env["TOFA_API_KEY"]
+	invoke(second.Env, false)
+}
+
+func TestDesktopBridgeRefusesUserExecutableOverride(t *testing.T) {
+	bundle, capture := desktopFixture(t, "normal")
+	userEngine := filepath.Join(t.TempDir(), "my-engine")
+	content := []byte("#!/bin/sh\nexit 0\n")
+	if err := os.WriteFile(userEngine, content, 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("CODEX_CLI_PATH", userEngine)
+	app, _ := adapterFixture(t, nil, nil)
+	err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+	if err == nil || !strings.Contains(err.Error(), "user-managed executable override") {
+		t.Fatal("user executable override was silently displaced")
+	}
+	if _, err := os.Stat(capture); !os.IsNotExist(err) {
+		t.Fatal("conflicting desktop was started")
+	}
+	if raw, err := os.ReadFile(userEngine); err != nil || string(raw) != string(content) {
+		t.Fatal("user executable was modified")
+	}
+}
+
+func TestDesktopBridgeRejectsModifiedOwnership(t *testing.T) {
+	for _, kind := range []string{"executable", "record", "directory symlink"} {
+		t.Run(kind, func(t *testing.T) {
+			bundle, capture := desktopFixture(t, "normal")
+			app, _ := adapterFixture(t, nil, nil)
+			args := []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}
+			if err := app.Run(args); err != nil {
+				t.Fatal(err)
+			}
+			raw, err := os.ReadFile(capture)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var child capturedDesktop
+			if err := json.Unmarshal(raw, &child); err != nil {
+				t.Fatal(err)
+			}
+			bridge := child.Env["CODEX_CLI_PATH"]
+			path := bridge
+			if kind == "record" {
+				path = filepath.Join(filepath.Dir(bridge), "owner.json")
+			}
+			if kind == "directory symlink" {
+				root := filepath.Dir(bridge)
+				if err := os.Rename(root, root+"-saved"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(root+"-saved", root); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := os.WriteFile(path, []byte("user-managed content"), 0700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Remove(capture); err != nil {
+				t.Fatal(err)
+			}
+			if err := app.Run(args); err == nil {
+				t.Fatal("modified bridge ownership was accepted")
+			}
+			if _, err := os.Stat(capture); !os.IsNotExist(err) {
+				t.Fatal("app started with conflicting bridge ownership")
+			}
+			if kind != "directory symlink" {
+				if raw, err := os.ReadFile(path); err != nil || string(raw) != "user-managed content" {
+					t.Fatal("unowned content was replaced")
+				}
+			}
+		})
+	}
+}
+
+func TestDesktopBridgePartialInstallationCleansUp(t *testing.T) {
+	bundle, _ := desktopFixture(t, "normal")
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	// A real filesystem write failure while copying the bridge. The limit is
+	// scoped to this child process; neither the test runner nor user files change.
+	command := exec.Command("/bin/sh", "-c", `ulimit -f 1; trap '' XFSZ; exec "$@"`, "fixture", executable, "--test-desktop-launch", dir, "launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified")
+	output, err := command.CombinedOutput()
+	if err == nil || !strings.Contains(string(output), "file too large") {
+		t.Fatalf("copy failure was not exercised: %v %s", err, output)
+	}
+	entries, err := os.ReadDir(filepath.Join(dir, "desktop-bridge-v1"))
+	if err != nil || len(entries) != 0 {
+		t.Fatal("partial bridge installation survived a copy failure")
 	}
 }
 

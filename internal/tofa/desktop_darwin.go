@@ -136,6 +136,10 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if err != nil {
 		return err
 	}
+	bridge, err := installDesktopBridge(a.Dir, bundle.engine)
+	if err != nil {
+		return err
+	}
 	c, key, err := s.Credentials()
 	if err != nil {
 		return err
@@ -198,6 +202,20 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		return err
 	}
 	defer func() { result = errors.Join(result, os.Remove(configPath)) }()
+	// Use one source of routing settings for the isolated config and the bridge.
+	// This is launcher-generated TOML, never an external configuration parser.
+	var overrides []string
+	section := ""
+	for _, line := range strings.Split(config, "\n") {
+		if strings.HasPrefix(line, "[") {
+			section = strings.Trim(line, "[]") + "."
+			continue
+		}
+		if line != "" {
+			overrides = append(overrides, section+line)
+		}
+	}
+	adapter.desktop.Store(&desktopRoute{Bridge: bridge, Engine: bundle.engine, Home: home, Overrides: overrides})
 	shellDir, err := prepareDesktopShell(ctx, root)
 	if err != nil {
 		return err
@@ -205,8 +223,8 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	defer func() {
 		result = errors.Join(result, os.Remove(filepath.Join(shellDir, ".zshenv")), os.Remove(shellDir))
 	}()
-	env := append(desktopEnv(home, electron, adapter.token), "ZDOTDIR="+shellDir)
-	if err := checkDesktopRouting(adapter.context, bundle.engine, workspace, env, *model, adapter.endpoint, catalog); err != nil {
+	env := append(desktopEnv(home, electron, adapter.token), "ZDOTDIR="+shellDir, "CODEX_CLI_PATH="+bridge, "TOFA_DESKTOP_CONTEXT="+adapter.endpoint)
+	if err := checkDesktopRouting(adapter.context, bridge, workspace, env, *model, adapter.endpoint, catalog); err != nil {
 		return err
 	}
 	fmt.Fprintln(a.Out, "Bundled engine effective routing checked; verified provider metadata loaded. Keep this terminal open; Ctrl-C stops the owned desktop instance.")

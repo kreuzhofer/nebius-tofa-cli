@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,6 +30,7 @@ type requestAdapter struct {
 	cancel   context.CancelFunc
 	context  context.Context
 	done     chan error
+	desktop  atomic.Pointer[desktopRoute]
 }
 
 func (a *App) startAdapter(ctx context.Context, project, key, selectedModel string) (*requestAdapter, error) {
@@ -110,6 +112,12 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 		Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			if subtle.ConstantTimeCompare([]byte(request.Header.Get("Authorization")), []byte("Bearer "+adapter.token)) != 1 {
 				http.Error(writer, "request adapter: unauthorized", http.StatusUnauthorized)
+				return
+			}
+			if route := adapter.desktop.Load(); route != nil && request.Method == http.MethodGet && request.URL.Path == "/desktop-launch" && request.URL.RawPath == "" && request.URL.RawQuery == "" {
+				writer.Header().Set("Content-Type", "application/json")
+				writer.Header().Set("Cache-Control", "no-store")
+				json.NewEncoder(writer).Encode(route)
 				return
 			}
 			if request.URL.Path != "/responses" || request.URL.RawPath != "" || request.URL.RawQuery != "" {
