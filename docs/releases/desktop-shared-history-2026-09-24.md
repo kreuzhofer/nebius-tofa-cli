@@ -6,6 +6,9 @@ This record describes the initial candidate below. Subsequent
 passed; the first human-run launch then exposed a
 [login-policy validation bug](../research/desktop-login-policy-diagnosis.md)
 before the app started. Those later checks do not replace this candidate's evidence.
+The [corrected candidate's human walkthrough](desktop-live-attempt-2026-09-24.md)
+subsequently passed the first live inference/history checks, then stopped on a
+nonzero launcher exit before the ordinary-mode return checks.
 
 This is the production-path qualification record for
 [#50](https://github.com/kreuzhofer/nebius-tofa-cli/issues/50), under
