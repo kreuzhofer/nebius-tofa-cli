@@ -208,6 +208,9 @@ func desktopHome(ctx context.Context) (string, error) {
 	// Ordinary startup uses the account's interactive login shell. Resolve only
 	// its history path; never capture or print its hydrated credentials.
 	command := exec.CommandContext(ctx, "/bin/zsh", "-ilc", `builtin printf '\0tofa-desktop-home\0%s\0' "${CODEX_HOME:-$HOME/.codex}"`)
+	// Match the qualified desktop's shell query, including overrides of caller
+	// values, so desktop-specific startup rules select the ordinary history.
+	command.Env = append(os.Environ(), "CODEX_SHELL=1", "DISABLE_AUTO_UPDATE=true", "ZSH_TMUX_AUTOSTARTED=true", "ZSH_TMUX_AUTOSTART=false")
 	output, err := command.Output()
 	parts := strings.Split(string(output), "\x00tofa-desktop-home\x00")
 	if err != nil || len(parts) != 2 || !strings.HasSuffix(parts[1], "\x00") {

@@ -170,6 +170,14 @@ initialization/migrations occur before the proposed engine-wrapper handshake;
 that handshake gates launcher integration and engine work, not earlier desktop
 writes. [Installed main/shared source, hashes above.]
 
+The home resolver also matches the desktop's shell-query environment:
+`CODEX_SHELL=1`, `DISABLE_AUTO_UPDATE=true`, `ZSH_TMUX_AUTOSTARTED=true`, and
+`ZSH_TMUX_AUTOSTART=false`, overriding inherited values for that query. Startup
+rules conditional on these variables must select the same history directory in
+both modes. The executable-boundary regression first reproduced selection of
+the wrong default home, then verified the custom home is used without creating
+a second store. Only the resolved path is returned from the query.
+
 Account access in shared source follows `getAuthenticatedPrincipal` →
 `getAuthToken` → `requestAuthStatus` → app-server `getAuthStatus`;
 `getAccount` calls `account/read`. Bootstrap settings store `ED`/`OD` reads

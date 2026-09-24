@@ -27,7 +27,8 @@ error. Windows, Intel Macs, and other app/engine/OS versions require qualificati
 Quit Codex before launching through tofa. The launcher uses the ordinary desktop
 profile at `~/Library/Application Support/Codex` and the ordinary engine history
 location resolved through the account's interactive login shell (`CODEX_HOME`,
-or `~/.codex`). It keeps the existing credential store and account/onboarding
+or `~/.codex`), including startup rules conditional on the desktop's shell-query
+environment. It keeps the existing credential store and account/onboarding
 files in place. It does not copy credentials, import history, create another
 conversation store, or change the current workspace.
 

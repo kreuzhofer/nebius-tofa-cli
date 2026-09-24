@@ -637,6 +637,40 @@ func TestDesktopUsesOrdinaryLoginShellHistoryLocation(t *testing.T) {
 	}
 }
 
+func TestDesktopUsesHistorySelectedByDesktopShellEnvironment(t *testing.T) {
+	bundle, capture := desktopFixture(t, "normal")
+	// The installed desktop overrides these inherited values before loading
+	// startup files. A desktop-specific home must resolve the same way in tofa.
+	t.Setenv("CODEX_SHELL", "0")
+	t.Setenv("DISABLE_AUTO_UPDATE", "false")
+	t.Setenv("ZSH_TMUX_AUTOSTARTED", "false")
+	t.Setenv("ZSH_TMUX_AUTOSTART", "true")
+	home := filepath.Join(os.Getenv("HOME"), "ordinary-desktop-history")
+	startup := "if [[ ${CODEX_SHELL:-} == 1 && ${DISABLE_AUTO_UPDATE:-} == true && ${ZSH_TMUX_AUTOSTARTED:-} == true && ${ZSH_TMUX_AUTOSTART:-} == false ]]; then\n" +
+		"  export CODEX_HOME=" + fmt.Sprintf("%q", home) + "\nfi\n"
+	if err := os.WriteFile(filepath.Join(os.Getenv("ZDOTDIR"), ".zshenv"), []byte(startup), 0600); err != nil {
+		t.Fatal(err)
+	}
+	app, _ := adapterFixture(t, nil, nil)
+	if err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(capture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var child capturedDesktop
+	if err := json.Unmarshal(data, &child); err != nil {
+		t.Fatal(err)
+	}
+	if child.Env["CODEX_HOME"] != home {
+		t.Fatal("launcher missed the history location selected by desktop-specific shell startup")
+	}
+	if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".codex")); !os.IsNotExist(err) {
+		t.Fatal("launcher created a second history store at the default location")
+	}
+}
+
 func TestDesktopOwnershipLossPreventsSharedConfigurationWrite(t *testing.T) {
 	bundle, _ := desktopFixture(t, "lost-owner")
 	app, _ := adapterFixture(t, nil, nil)
