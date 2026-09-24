@@ -195,7 +195,8 @@ still wanted; removing it is a user configuration decision. Deleting the cache
 alone does not resolve the static override.
 After the maintainer authorized commenting out that one ordinary setting, the
 [live native-account preflight passed](research/desktop-native-catalog-diagnosis.md#authorized-ordinary-profile-recovery--1322-utc).
-The required UI walkthrough and production-path inference checks remain open.
+The subsequent [#50 qualification](releases/desktop-shared-history-final-2026-09-24.md)
+completed the required UI walkthrough and scoped production-path inference checks.
 
 ### Durable engine bridge
 
