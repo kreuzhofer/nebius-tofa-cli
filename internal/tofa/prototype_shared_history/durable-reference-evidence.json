@@ -1,0 +1,186 @@
+{
+  "issue": 34,
+  "throwaway": true,
+  "engine_version": "codex-cli 0.155.0-alpha.16.3",
+  "mode": "durable",
+  "real_user_profile_used": false,
+  "phases": [
+    {
+      "phase": 1,
+      "mode": "ordinary",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 1,
+          "workspace_matches": true
+        }
+      ],
+      "desktop": {
+        "phase": 1,
+        "mode": "ordinary",
+        "temporary_executable_selected": true,
+        "engine_handshake_succeeded": true,
+        "ipc_path_error": false,
+        "ui_verified": false,
+        "owned_process_group_stopped": true
+      },
+      "persisted_executable_is_durable_bridge": true,
+      "persisted_executable_works_after_cleanup": true
+    },
+    {
+      "phase": 2,
+      "mode": "tofa",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 2,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 1,
+          "workspace_matches": true
+        }
+      ],
+      "desktop": {
+        "phase": 2,
+        "mode": "tofa",
+        "temporary_executable_selected": true,
+        "engine_handshake_succeeded": true,
+        "ipc_path_error": false,
+        "ui_verified": false,
+        "owned_process_group_stopped": true
+      },
+      "persisted_executable_is_durable_bridge": true,
+      "expired_launch_reference_rejected": true,
+      "persisted_executable_works_after_cleanup": true
+    },
+    {
+      "phase": 3,
+      "mode": "ordinary",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 3,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 1,
+          "workspace_matches": true
+        }
+      ],
+      "desktop": {
+        "phase": 3,
+        "mode": "ordinary",
+        "temporary_executable_selected": true,
+        "engine_handshake_succeeded": true,
+        "ipc_path_error": false,
+        "ui_verified": false,
+        "owned_process_group_stopped": true
+      },
+      "persisted_executable_is_durable_bridge": true,
+      "persisted_executable_works_after_cleanup": true
+    },
+    {
+      "phase": 4,
+      "mode": "tofa",
+      "sessions": [
+        {
+          "label": "PROTOTYPE ordinary history",
+          "provider": "openai",
+          "title": "PROTOTYPE ordinary history",
+          "turns": 3,
+          "workspace_matches": true
+        },
+        {
+          "label": "PROTOTYPE tofa history",
+          "provider": "nebius-tofa",
+          "title": "PROTOTYPE tofa history",
+          "turns": 2,
+          "workspace_matches": true
+        }
+      ],
+      "desktop": {
+        "phase": 4,
+        "mode": "tofa",
+        "temporary_executable_selected": true,
+        "engine_handshake_succeeded": true,
+        "ipc_path_error": false,
+        "ui_verified": false,
+        "owned_process_group_stopped": true
+      },
+      "persisted_executable_is_durable_bridge": true,
+      "expired_launch_reference_rejected": true,
+      "persisted_executable_works_after_cleanup": true
+    }
+  ],
+  "requests": [
+    {
+      "lane": "native",
+      "model": "gpt-6-astra",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "Token Factory",
+      "model": "moonshotai/Kimi-K3",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "native",
+      "model": "gpt-6-astra",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "native",
+      "model": "gpt-6-astra",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    },
+    {
+      "lane": "Token Factory",
+      "model": "moonshotai/Kimi-K3",
+      "path": "/responses",
+      "status": 200,
+      "authenticated": true,
+      "source": "user"
+    }
+  ],
+  "durable_bridge_unchanged": true,
+  "expired_routes_closed": true,
+  "tofa_credentials_absent_from_shared_engine_state": true,
+  "fresh_tofa_routes": 2,
+  "ordinary_mode_has_no_tofa_provider": true,
+  "shared_config_byte_identical": false,
+  "desktop_ui_verified": false,
+  "limitations": [
+    "scratch profile only",
+    "durable bridge installation, upgrade and uninstall not qualified",
+    "ordinary-mode tofa history logo loop remains",
+    "no real Token Factory inference",
+    "unexpected process death not qualified; normal route cleanup and expired references checked"
+  ],
+  "result": "PASS",
+  "auth_unchanged": true
+}

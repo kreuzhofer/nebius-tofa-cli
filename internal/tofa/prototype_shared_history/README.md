@@ -4,8 +4,9 @@ Question: can one desktop profile retain ordinary and Token Factory conversation
 while a launch-owned executable injects temporary routing without changing shared
 account or routing settings?
 
-**Verdict: shared engine history works; the desktop executable-wrapper candidate
-is not ready for the ordinary profile.** The actual desktop writes the temporary
+**Verdict: shared engine history and the durable bridge pass the four-phase
+scratch-profile experiment. Production qualification remains incomplete.** The
+original temporary-wrapper candidate failed because the actual desktop writes the temporary
 `CODEX_CLI_PATH` into `mcp_servers.node_repl.env.CODEX_CLI_PATH` in shared
 `config.toml`. Removing the launch directory leaves that tool setting pointing at
 a missing executable. This was reproduced in a synthetic profile during the first
@@ -162,12 +163,24 @@ checks passed (`durable-executable-evidence.json`): native delegation without
 launch settings, valid launch-file handling, explicit rejection of expired files,
 unchanged bridge bytes and no embedded credential.
 
-The four-launch candidate check has **not run**. Automatic approval review timed
-out before execution, including the attempts after the maintainer explicitly
-approved it. That is a tooling blockage, not a desktop result or a safety finding.
-Production code remains unchanged. Durable bridge installation, upgrade,
-uninstall, concurrent ownership and unexpected process death remain unqualified.
-The bridge leaves the desktop's shared settings alone on shutdown.
+The four-launch durable-bridge candidate check **passed on 2026-09-24**, after
+earlier execution-review timeouts were resolved on retry. See
+[durable-reference-evidence.json](durable-reference-evidence.json). Ordinary →
+tofa → ordinary → tofa launches each selected the durable bridge and completed the
+actual desktop engine handshake. The saved executable remained callable after
+every cleanup, its bytes stayed unchanged, and expired launch-file references
+failed explicitly with exit 78. Native sessions continued through the native
+fixture; tofa recovered with a fresh endpoint and bearer. Tofa listeners closed,
+credentials were absent from shared engine files, and synthetic account auth
+stayed unchanged. No desktop UI interaction is claimed by this smoke experiment.
+
+The desktop still maintains its own shared tool settings; byte-identical config
+is not claimed. The fix is to give its saved executable reference a durable
+lifetime while keeping route files and credentials launch-owned. The bridge does
+not restore or rewrite shared settings on shutdown. This is a validated prototype
+decision, not a production implementation: installation, upgrade, uninstall,
+concurrent ownership and unexpected process death remain unqualified. The
+ordinary-mode history loop is a separate pending desktop check.
 
 There is a separate candidate for the ordinary-mode logo loop:
 
