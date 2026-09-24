@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
@@ -61,6 +62,25 @@ CAPTURE = %q
 if '--version' in sys.argv:
     print('codex-cli 0.155.0-alpha.9.2')
     sys.exit(0)
+if sys.argv[1:] in [['debug', 'models'], ['debug', 'models', '--bundled'], ['login', 'status']]:
+    discovery = pathlib.Path(__file__).parent / 'native-discovery.json'
+    if discovery.exists():
+        spec = json.loads(discovery.read_text())
+        home = pathlib.Path(os.environ['CODEX_HOME'])
+        if not (home / 'auth.json').exists():
+            (home / 'auth.json').write_text(json.dumps(spec['auth']))
+            if 'cache' in spec: (home / 'models_cache.json').write_text(json.dumps(spec['cache']))
+            (home / 'config.toml').write_text('cli_auth_credentials_store="file"\nopenai_base_url='+json.dumps(spec['endpoint'])+'\n')
+        sys.exit(subprocess.run([spec['engine'], *sys.argv[1:]], cwd=home).returncode)
+if sys.argv[1:] == ['login', 'status']:
+    print('Not logged in', file=sys.stderr)
+    sys.exit(1)
+if sys.argv[1:] == ['debug', 'models']:
+    if MODE == 'catalog-error': sys.exit(17)
+    if MODE == 'catalog-warning': print('synthetic-account-private refresh failed', file=sys.stderr)
+    source = pathlib.Path(__file__).parent / 'native-catalog.json'
+    print(source.read_text() if source.exists() else json.dumps({'models':[{'slug':'gpt-6-astra','display_name':'Astra','supported_in_api':True,'context_window':272000}]}))
+    sys.exit(0)
 if '--ordinary-probe' in sys.argv:
     print(json.dumps({'args':sys.argv[1:], 'home':os.environ.get('CODEX_HOME'), 'native_key':os.environ.get('OPENAI_API_KEY'), 'tofa_key':os.environ.get('TOFA_API_KEY')}))
     sys.exit(23)
@@ -95,7 +115,7 @@ if MODE == 'exit': sys.exit(23)
 (home / 'sessions').mkdir(exist_ok=True)
 (home / 'sessions' / 'conversation.jsonl').write_text('preserve conversation')
 pathlib.Path('user-work.txt').write_text('preserve workspace')
-pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'env': dict(os.environ)}))
+pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'catalog': json.loads(pathlib.Path(setting('model_catalog_json')).read_text()), 'env': dict(os.environ)}))
 (pathlib.Path(os.environ['CODEX_ELECTRON_USER_DATA_PATH']) / 'tool-settings.json').write_text(json.dumps({'engine':os.environ.get('CODEX_CLI_PATH')}))
 if MODE == 'shell-commands':
     result = subprocess.run(['/bin/zsh', '-ilc', 'printf "%%s|%%s" "$STARTUP_ENV" "$STARTUP_RC"'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
@@ -999,5 +1019,47 @@ func TestDesktopStartupAndRoutingFailures(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestDesktopPreservesFreshNativeCatalog(t *testing.T) {
+	bundle, capture := desktopFixture(t, "normal")
+	app, _ := adapterFixture(t, nil, nil)
+	// The executable exports effective account-dependent metadata, including fields
+	// unknown to the launcher. Each launch must obtain a new effective catalog.
+	for _, native := range []string{
+		`{"slug":"gpt-6-astra","display_name":"Astra account A","supported_in_api":false,"context_window":272000,"auto_review_model_override":"codex-auto-review","future_field":{"preserve":true}}`,
+		`{"slug":"gpt-6-astra","display_name":"Astra account B","supported_in_api":true,"context_window":400000,"future_field":{"preserve":"updated"}}`,
+	} {
+		if err := os.WriteFile(filepath.Join(bundle, "Contents/Resources/native-catalog.json"), []byte(`{"models":[`+native+`]}`), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
+			t.Fatal(err)
+		}
+		raw, err := os.ReadFile(capture)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var child struct {
+			Catalog struct{ Models []json.RawMessage }
+		}
+		if err := json.Unmarshal(raw, &child); err != nil {
+			t.Fatal(err)
+		}
+		if len(child.Catalog.Models) != 2 {
+			t.Fatalf("native choices lost: got %d descriptors, want native plus Token Factory", len(child.Catalog.Models))
+		}
+		var got, want any
+		json.Unmarshal(child.Catalog.Models[0], &got)
+		json.Unmarshal([]byte(native), &want)
+		if !reflect.DeepEqual(got, want) {
+			t.Fatal("effective native descriptor changed or became stale")
+		}
+		var descriptor map[string]any
+		json.Unmarshal(child.Catalog.Models[1], &descriptor)
+		if descriptor["slug"] != "moonshotai/Kimi-K3" || descriptor["display_name"] != "Kimi-K3 (Token Factory)" {
+			t.Fatalf("missing qualified Token Factory choice: %v", descriptor["slug"])
+		}
 	}
 }

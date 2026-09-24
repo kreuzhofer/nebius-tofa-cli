@@ -26,8 +26,8 @@ error. Windows, Intel Macs, and other app/engine/OS versions require qualificati
 ## Ownership and routing
 
 The launcher executes the app binary directly in its own process group. It supplies
-separate `CODEX_HOME`, Electron user data, an empty workspace, and a verified
-one-model catalog. It does not use `open`, restart the ordinary app, copy account
+separate `CODEX_HOME`, Electron user data, an empty workspace, and a launch catalog
+that preserves effective native descriptors and adds the verified Token Factory descriptor. It does not use `open`, restart the ordinary app, copy account
 credentials, write ordinary configuration, or adopt an existing app-server.
 Conflicting inherited Codex/OpenAI/Electron routing variables are removed.
 An inherited, nonempty `CODEX_CLI_PATH` must already identify this launcher's
@@ -52,6 +52,72 @@ they are never rewritten. Other enforced policy remains the engine's responsibil
 The original HOME is retained for native policy discovery. The preflight uses
 the engine's [`config/read` and `configRequirements/read` APIs](https://learn.chatgpt.com/docs/app-server);
 configuration and requirements are [separate layers](https://learn.chatgpt.com/docs/config-file/config-basic).
+
+### Native models and conversation routing
+
+Each launch asks the qualified bundled engine for `debug models` **before**
+applying Token Factory overrides, in the target engine home and workspace. The
+launcher preserves complete native descriptors, including account-dependent
+availability, reasoning choices, instructions and unknown fields. It appends only
+`moonshotai/Kimi-K3`, displayed as `Kimi-K3 (Token Factory)`; it neither reconstructs
+descriptors from the
+lossy `model/list` picker response nor ships a frozen native snapshot. Empty,
+malformed, duplicate or conflicting model identities cancel the launch.
+
+The qualified engine's export uses `OnlineIfUncached`: eligible signed-in accounts
+use a cache with a **five-minute TTL**, scoped to client version and provider/auth
+identity; a miss triggers native catalog discovery. Synthetic tests verify fresh
+cache reuse and refresh after expiry, an identity mismatch or a version mismatch.
+Unauthenticated and API-key exports use the engine's normal bundled metadata; this
+version's debug command does not enable API-key remote discovery. Native picker
+filtering still belongs to the engine and its current account.
+[Export implementation](https://github.com/openai/codex/blob/4607249e430dac1c961df4dc615beae88e33cec8/codex-rs/cli/src/main.rs),
+[cache contract](https://github.com/openai/codex/blob/4607249e430dac1c961df4dc615beae88e33cec8/codex-rs/models-manager/src/cache.rs).
+
+A synthetic authenticated HTTP 401 demonstrated that `debug models` can return
+bundled metadata with exit status zero and no stderr. The launcher therefore also
+uses the engine's `login status` boundary. For a ChatGPT account, the export must
+match a fresh, versioned native cache; missing, stale or inconsistent evidence
+causes an explicit freshness error. A fresh cache belonging to a different account
+can happen to match the engine's bundled fallback. Because the export API provides
+no refresh-success attestation, signed-in exports identical to `debug models
+--bundled` are also refused, even when an account genuinely receives that full
+catalog. This conservative compatibility limit is reported explicitly.
+The comparison accounts for the export-only
+legacy `base_instructions` projection; the merged descriptor itself is unchanged.
+Diagnostic-bearing exports and unrecognized login states also fail explicitly.
+The launcher does not print native diagnostics, inspect credentials, or copy them.
+A signed-in static custom catalog without matching fresh cache evidence is
+currently refused; it must be qualified before shared-profile integration.
+
+The resulting override is a **snapshot for this launch**. The engine's static
+catalog manager does not hot-reload it or perform remote refresh while it is
+active. Relaunch after account, entitlement or catalog changes; this limitation
+is printed at startup. A later launch resolves native metadata again. Existing
+account files and native provider settings remain the engine's responsibility.
+[Static catalog selection](https://github.com/openai/codex/blob/4607249e430dac1c961df4dc615beae88e33cec8/codex-rs/model-provider/src/provider.rs).
+
+Cold resume with null model/provider retains the recorded identity. A native Astra
+thread continues through its native provider during a tofa launch; a new default
+thread identifies `nebius-tofa` / `moonshotai/Kimi-K3`. The picker changes a model,
+not its provider: selecting Astra inside a Token Factory thread fails explicitly
+at the adapter, without native migration or Kimi substitution. Selecting Kimi again
+allows the same thread to continue while the launcher is active.
+
+The merged catalog also exposes native auxiliary choices such as
+`codex-auto-review`. They remain unsupported on the Token Factory route, with an
+HTTP error and terminal notice. The recognized Kimi title and non-strict review
+adaptations, schema/tool restrictions, and compaction rejection are unchanged.
+Catalog visibility does not expand supported Token Factory models.
+
+This implements [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) on
+the isolated target. It does not connect ordinary history/account state yet.
+[#50](https://github.com/kreuzhofer/nebius-tofa-cli/issues/50) must qualify the
+combined production workflow with authorized live-account access: compare native
+picker choices and full descriptors with ordinary mode, observe entitlement and
+catalog refresh on relaunch, continue a real native conversation during a tofa
+launch, and verify onboarding/account continuity and same-thread picker recovery
+in the UI. Synthetic account/cache/HTTP checks are not live-account evidence.
 
 ### Durable engine bridge
 
@@ -232,3 +298,28 @@ Final checks passed: the complete `go test -race ./...` suite with the qualified
 engine enabled, `go vet ./...`, and Linux/Windows amd64 builds. Separate standards
 and spec reviews have no remaining findings after correcting argument-value
 detection and removing duplicate test setup.
+
+### Native catalog validation, 2026-09-24 (#46)
+
+Regressions first reproduced the Token Factory-only catalog at the launcher and
+actual-engine picker boundaries, then reproduced authenticated discovery silently
+falling back after HTTP 401. Review found and reproduced the additional case of
+a foreign-account cache containing bundled-equivalent descriptors. The corrected
+launcher rejects both failures, with an explicit conservative refusal when even a
+successful account catalog is indistinguishable from the bundled fallback.
+
+Checks use synthetic credentials, temporary profiles and separate native and
+Token Factory HTTP fixtures. The retained engine is **0.155.0-alpha.9.2**, SHA-256
+`9280c0754e8f1f6b72f495d30c8c82a006dbc4995bf0492916fa0901f6bfd1f9`, on macOS
+**26.6.2 arm64**, compiled with Go **1.27.1**. The installed app has since updated;
+these checks do not change the production gate or qualify that newer app.
+
+Native cold resume, new Token Factory identity, explicit Astra failure, same-thread
+Kimi recovery, native auxiliary rejection, descriptor preservation and native
+cache/account scenarios passed. Separate Standards and Spec reviews reported zero
+remaining findings after the freshness correction. No installed Electron UI,
+ordinary live account or paid inference was exercised for this ticket.
+
+Final validation passed: `go test -race ./...` with `TOFA_TEST_DESKTOP_ENGINE`
+pointing to that retained executable, `go vet ./...`, and Linux/Windows amd64
+builds. The opt-in installed-Electron check was not enabled.

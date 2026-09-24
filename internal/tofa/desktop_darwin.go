@@ -163,14 +163,6 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if !found {
 		return errors.New("selected model is not available in this project's catalog")
 	}
-	catalog, err := prepareModelCatalog(*model, "")
-	if err != nil {
-		return err
-	}
-	if catalog == "" {
-		return errors.New("desktop launch requires verified bundled model metadata")
-	}
-	defer func() { result = errors.Join(result, os.Remove(catalog)) }()
 	parent := filepath.Join(a.Dir, "desktop-sessions")
 	if err := privateDir(parent); err != nil {
 		return err
@@ -185,6 +177,12 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 			return err
 		}
 	}
+	catalog, err := prepareDesktopCatalog(ctx, bundle.engine, home, electron, workspace, *model)
+	if err != nil {
+		return err
+	}
+	defer func() { result = errors.Join(result, os.Remove(catalog)) }()
+	fmt.Fprintln(a.Out, "Native model catalog resolved by the bundled engine and merged for this launch. Relaunch after account or catalog changes; native auxiliary models remain unsupported through Token Factory.")
 	fmt.Fprintf(a.Out, "Launching ChatGPT desktop, Codex mode, with %s (unverified).\nConversations and workspace retained at: %s\nExperimental limitations: automatic title generation can fail; auxiliary models and compaction are unsupported. Shared ordinary-desktop history requires #34.\n", *model, root)
 	adapter, err := a.startAdapter(ctx, c.ProjectID, key, *model)
 	if err != nil {
