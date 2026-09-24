@@ -2,6 +2,12 @@
 
 Investigated 2026-09-23 for [#41](https://github.com/kreuzhofer/nebius-tofa-cli/issues/41), following [the agreed specification #36](https://github.com/kreuzhofer/nebius-tofa-cli/issues/36). Exact candidate: `nvidia/Nemotron-3_5-Lightning`. This is an independent naming investigation; it does not add a main-model or Guardian candidate to [#28](https://github.com/kreuzhofer/nebius-tofa-cli/issues/28).
 
+Subsequent work: [#52](desktop-shared-title-generation.md) qualifies an explicit
+current-desktop title route to Kimi, authorized by the maintainer. It neither
+selects nor qualifies Lightning. The source findings below retain their original
+versions and date; #52 documents the newer service-selected auxiliary model and
+request serialization.
+
 ## Conclusion
 
 **No verified, supported route through the existing launcher selects Lightning for automatic titles independently of the main and Guardian roles.** Both inspected clients generate automatic titles, but their selection rules differ. CLI 0.155.1's interactive TUI uses the current conversation model for a custom provider. The installed desktop requests a fixed auxiliary model and permits provider-catalog fallback. Neither inspected title-generation path reads a dedicated title-model setting. These conclusions are bounded to the versions and source paths below; they do not claim that every Codex version lacks such a feature. [CLI selection][cli-title], [desktop evidence](#installed-desktop-evidence), [configuration schema][cli-config].

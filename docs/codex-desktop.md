@@ -328,13 +328,17 @@ installed lifecycle behavior are described below and above, respectively.
 
 ## Limitations and verification
 
-Automatic thread titles work for the captured Kimi desktop contract through a
-narrow schema-to-instructions adaptation; the desktop still validates the generated
-title and description. The launcher announces this adaptation. Different title
-schemas or tool inventories fail explicitly; read-only app title lookups that add
-tools remain unqualified. See the [#33 contract and live evidence](research/desktop-title-generation.md).
+Automatic titles on the current shared-profile combination use an explicit,
+announced title-only route from the desktop's native Luna request to Kimi. For the
+captured contract, the adapter relocates code-mode tools intact and moves the
+complete title schema to final-answer instructions; the desktop still validates
+the generated title and description. Different models, source markers, schemas
+or tool inventories fail explicitly. App-backed title lookups remain unqualified.
+See the [#52 current contract and live qualification](research/desktop-shared-title-generation.md).
+The [#33 evidence](research/desktop-title-generation.md) concerns an older client
+and isolated profile; it is not the current shared-profile qualification.
 The recognized non-strict automatic-review workaround remains unchanged. Native
-auxiliary model IDs, compaction endpoints, web search, account-backed services, and
+auxiliary requests outside the captured title contract, compaction endpoints, web search, account-backed services, and
 Chat/Work/voice are not qualified. No `--direct`, Guardian evaluation model, profile,
 or arbitrary desktop argument passthrough is exposed.
 

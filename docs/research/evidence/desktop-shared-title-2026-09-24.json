@@ -1,0 +1,1097 @@
+{
+  "schema_version": 1,
+  "issue": 52,
+  "date": "2026-09-24",
+  "result": "generated_title_persisted_and_displayed_across_ordinary_and_tofa_relaunches",
+  "source": {
+    "base_commit": "1da2989dfbc97a7eeff64b6fb3dda474dede028c",
+    "changed_production_files_sha256": {
+      "internal/tofa/adapter.go": "d1ff285b5e9e5bf77ad7cd3e7130fc1dbc20f69d748841f92f683710f3fe1605",
+      "internal/tofa/title_adapter.go": "456cf6396c66efed030d065317a87f02a8b45eaec6b4887ca3c4fe5a731fd4e6",
+      "internal/tofa/desktop_darwin.go": "85fca788ee47154fb5f9ef1115bf549972380ae3a6f530c41a22757b118ce02d"
+    }
+  },
+  "platform": {
+    "os": "macOS",
+    "version": "26.6.2",
+    "build": "25G83",
+    "architecture": "arm64",
+    "go": "go version go1.27.1 darwin/arm64"
+  },
+  "desktop": {
+    "version": "26.917.71314",
+    "build": "10954",
+    "bundle_id": "com.openai.codex",
+    "engine": "codex-cli 0.155.0-alpha.16.4",
+    "components_sha256": {
+      "Contents/Resources/app.asar": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+      "Contents/Resources/codex": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5"
+    }
+  },
+  "binaries": {
+    "successful_observed_launch_sha256": "b41098b6520685b3b77ecad40c4650be7b86b9743f414bb7678f65a6c1ef1834",
+    "observer_source_sha256": "ee4903fe963e1d80d73938f020478ee9532ece6ad1c45a29e0cb6bb04d33fb74",
+    "standalone_production_version": "v0.0.0-qualification.52",
+    "standalone_production_sha256": "e0b4cb57bbaeac190399a3923bd43665557b999cac804022b602a9a9ebcc6e92"
+  },
+  "observer": {
+    "boundary": "production App ordinary shared-profile desktop path; scratch entry point observes engine-to-adapter and provider HTTP",
+    "per_launch_limits": {
+      "requests": 6,
+      "request_bytes": 524288,
+      "max_output_tokens": 1024,
+      "transport_seconds": 90,
+      "launch_seconds": 600
+    },
+    "ordinary_credentials": "not copied, changed or logged",
+    "raw_inputs_retained_in_this_report": false,
+    "live_client_to_engine_requested_model": "not directly intercepted; current source default plus bundled-engine request/selection regression corroborate observed resolved model"
+  },
+  "effective_catalog": {
+    "sha256": "770c22f55af5ddbd75effeb8794d338455a80937b6b88dfdcf38cf80fb7ff154",
+    "models": [
+      {
+        "slug": "gpt-6-sol",
+        "priority": 0
+      },
+      {
+        "slug": "gpt-6-astra",
+        "priority": 1
+      },
+      {
+        "slug": "gpt-6-luna",
+        "priority": 3
+      },
+      {
+        "slug": "gpt-reserve",
+        "priority": 3
+      },
+      {
+        "slug": "gpt-5.6-sol",
+        "priority": 4
+      },
+      {
+        "slug": "gpt-5.6-terra",
+        "priority": 5
+      },
+      {
+        "slug": "gpt-5.6-luna",
+        "priority": 6
+      },
+      {
+        "slug": "gpt-5.5",
+        "priority": 7
+      },
+      {
+        "slug": "codex-auto-review",
+        "priority": 43
+      },
+      {
+        "slug": "moonshotai/Kimi-K3",
+        "priority": 0
+      }
+    ]
+  },
+  "attempts": [
+    {
+      "name": "initial_reproduction",
+      "binary_sha256": "d5d307251cde1ecb48d4743811d3fb2fffe20c0daec1359c233193a5b265f551",
+      "result": "title rejected locally; main rejected by diagnostic byte limit, seen as 502",
+      "request_bytes_limit": 131072,
+      "upstream_requests": 0,
+      "capture": [
+        {
+          "body_sha256": "456a7f46e1a3d0e06d69e914ee38daa0fb04483ad852b1ac6f2c7945d4311f1d",
+          "bytes": 45024,
+          "model": "gpt-5.6-luna",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "context": "all_turns",
+            "effort": "low"
+          },
+          "source": "thread_title",
+          "stream": true,
+          "text": {
+            "format": {
+              "name": "codex_output_schema",
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "description": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "title": {
+                    "maxLength": 36,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ],
+                "type": "object"
+              },
+              "strict": true,
+              "type": "json_schema"
+            },
+            "verbosity": "low"
+          },
+          "tool_choice": "auto",
+          "trigger": "thread_title",
+          "utc": "2026-09-24T15:32:08.697889Z",
+          "tool_entries": 0,
+          "tools": null
+        },
+        {
+          "body_sha256": "3290418bb6b3b66a1254f8f09d2d15097c0ff3b02c853dc80b5b56c7c46d3a95",
+          "bytes": 311014,
+          "model": "moonshotai/Kimi-K3",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "trigger": "composer",
+          "utc": "2026-09-24T15:32:08.894596Z",
+          "tool_entries": 24
+        }
+      ]
+    },
+    {
+      "name": "reproduction_with_larger_cap",
+      "binary_sha256": "b8b53a7153f478d8d7cc972f403ea58db3c358250eccd243c219527e878e437d",
+      "result": "title rejected locally as unsupported model; main completed; operator reported first-message fallback",
+      "capture": [
+        {
+          "body_sha256": "c03f5c8335f59f891a2e2dc605d4708261bc23db6802347ef93f79c67298add5",
+          "bytes": 311032,
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "utc": "2026-09-24T15:34:09.902268Z",
+          "tool_entries": 24
+        },
+        {
+          "body_sha256": "6f1dd23baa1bda6a917eab64af6a4efccd2ba2a920f2aa09387509f1f65bdf67",
+          "bytes": 313337,
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "number": 1,
+          "phase": "provider_request",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "tool_entries": 24
+        },
+        {
+          "body_sha256": "5d4ed042cc891515e9865c733115953916983a8fc84484964745cd04020ebc5c",
+          "bytes": 45026,
+          "instructions_present": false,
+          "model": "gpt-5.6-luna",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "context": "all_turns",
+            "effort": "low"
+          },
+          "source": "thread_title",
+          "stream": true,
+          "text": {
+            "format": {
+              "name": "codex_output_schema",
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "description": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "title": {
+                    "maxLength": 36,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ],
+                "type": "object"
+              },
+              "strict": true,
+              "type": "json_schema"
+            },
+            "verbosity": "low"
+          },
+          "tool_choice": "auto",
+          "tools_field_null": true,
+          "tools_field_present": false,
+          "trigger": "thread_title",
+          "utc": "2026-09-24T15:34:09.9493Z",
+          "tool_entries": 0,
+          "tools": null
+        },
+        {
+          "number": 1,
+          "phase": "provider_headers",
+          "request_id": "c2ccee12ac91385b28d6576ac0cf1403",
+          "status": 200,
+          "tool_entries": 0
+        },
+        {
+          "events": {
+            "response.completed": 1,
+            "response.content_part.added": 1,
+            "response.content_part.done": 1,
+            "response.created": 1,
+            "response.in_progress": 1,
+            "response.output_item.added": 1,
+            "response.output_item.done": 1,
+            "response.output_text.delta": 11,
+            "response.output_text.done": 1
+          },
+          "number": 1,
+          "phase": "provider_result",
+          "usage": {
+            "input_tokens": 12892,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 44,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 12936
+          },
+          "tool_entries": 0
+        },
+        {
+          "body_sha256": "e029a5662a3552dd7f4f6e4ca458dcf97ca638d91d3447c008fb9190078b0a52",
+          "bytes": 311495,
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "utc": "2026-09-24T15:38:30.687545Z",
+          "tool_entries": 24
+        },
+        {
+          "body_sha256": "896bd81ed914c5ae64b1066d6efb2f82868bb76c4a9331354fdf4a40956266b9",
+          "bytes": 313838,
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "number": 2,
+          "phase": "provider_request",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "tool_entries": 24
+        },
+        {
+          "number": 2,
+          "phase": "provider_headers",
+          "request_id": "4aca65a36a79eee9bafed11ad6b6d36e",
+          "status": 200,
+          "tool_entries": 0
+        },
+        {
+          "events": {
+            "response.completed": 1,
+            "response.content_part.added": 1,
+            "response.content_part.done": 1,
+            "response.created": 1,
+            "response.in_progress": 1,
+            "response.output_item.added": 1,
+            "response.output_item.done": 1,
+            "response.output_text.delta": 492,
+            "response.output_text.done": 1
+          },
+          "number": 2,
+          "phase": "provider_result",
+          "usage": {
+            "input_tokens": 12965,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 12864
+            },
+            "output_tokens": 1022,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 13987
+          },
+          "tool_entries": 0
+        }
+      ]
+    },
+    {
+      "name": "routing_only",
+      "binary_sha256": "5a15e578d0fc92e45abf63070aa40ff6a6cb7ce5a8d93ecba9c4d5da748b2ff1",
+      "result": "title HTTP 400; main completed; operator reported first-message fallback",
+      "provider_title_error": "Unsupported Responses API input item type: 'additional_tools' None",
+      "capture": [
+        {
+          "body_sha256": "ddb31657ca8a78c1f9a1568d8ad61bca670b80a474e08c1efc155eff18fc46cc",
+          "bytes": 44999,
+          "instructions_present": false,
+          "model": "gpt-5.6-luna",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "context": "all_turns",
+            "effort": "low"
+          },
+          "source": "thread_title",
+          "stream": true,
+          "text": {
+            "format": {
+              "name": "codex_output_schema",
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "description": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "title": {
+                    "maxLength": 36,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ],
+                "type": "object"
+              },
+              "strict": true,
+              "type": "json_schema"
+            },
+            "verbosity": "low"
+          },
+          "tool_choice": "auto",
+          "tools_field_null": true,
+          "tools_field_present": false,
+          "trigger": "thread_title",
+          "utc": "2026-09-24T15:49:07.311033Z",
+          "tool_entries": 0,
+          "tools": null
+        },
+        {
+          "body_sha256": "bb4033aef186ea94ab649b50166b9e754a93e74286d1f6f7be6679ad25e4f210",
+          "bytes": 45495,
+          "instructions_present": false,
+          "model": "moonshotai/Kimi-K3",
+          "number": 1,
+          "phase": "provider_request",
+          "reasoning": {
+            "context": "all_turns",
+            "effort": "low"
+          },
+          "source": "thread_title",
+          "stream": true,
+          "text": {
+            "format": {
+              "name": "codex_output_schema",
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "description": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "title": {
+                    "maxLength": 36,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ],
+                "type": "object"
+              },
+              "strict": true,
+              "type": "json_schema"
+            },
+            "verbosity": "low"
+          },
+          "tool_choice": "auto",
+          "tools_field_null": true,
+          "tools_field_present": false,
+          "trigger": "thread_title",
+          "tool_entries": 0,
+          "tools": null
+        },
+        {
+          "body_sha256": "91cac871d38a913930428e8b2f2afafaaf4bcc5e29cffa0165ae1506d305b20e",
+          "bytes": 310957,
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "utc": "2026-09-24T15:49:07.404536Z",
+          "tool_entries": 24
+        },
+        {
+          "body_sha256": "b0a9791f2275dcf80af12a8218cf4f4ddbd6a9d5f39ebbee7054fa221af3135d",
+          "bytes": 313262,
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "number": 2,
+          "phase": "provider_request",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "tool_entries": 24
+        },
+        {
+          "number": 1,
+          "phase": "provider_headers",
+          "request_id": "1dd9b610c97ac19ece95f38ffafb9484",
+          "status": 400,
+          "tool_entries": 0
+        },
+        {
+          "events": {},
+          "number": 1,
+          "phase": "provider_result",
+          "usage": null,
+          "tool_entries": 0
+        },
+        {
+          "number": 2,
+          "phase": "provider_headers",
+          "request_id": "952b85ff5ca619ab83e519d8f13848dd",
+          "status": 200,
+          "tool_entries": 0
+        },
+        {
+          "events": {
+            "response.completed": 1,
+            "response.content_part.added": 1,
+            "response.content_part.done": 1,
+            "response.created": 1,
+            "response.in_progress": 1,
+            "response.output_item.added": 1,
+            "response.output_item.done": 1,
+            "response.output_text.delta": 14,
+            "response.output_text.done": 1
+          },
+          "number": 2,
+          "phase": "provider_result",
+          "usage": {
+            "input_tokens": 12875,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 49,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 12924
+          },
+          "tool_entries": 0
+        }
+      ]
+    },
+    {
+      "name": "routing_and_input_translation",
+      "result": "title generated; main reply, real tool call and continuation completed",
+      "capture": [
+        {
+          "additional_tools_inventory": [
+            {
+              "members": [
+                {
+                  "name": "exec",
+                  "type": "custom"
+                },
+                {
+                  "name": "wait",
+                  "type": "function"
+                },
+                {
+                  "name": "request_user_input",
+                  "type": "function"
+                }
+              ],
+              "name": "functions",
+              "type": "namespace"
+            }
+          ],
+          "body_sha256": "31a9dde0bf04358537c756acbebe2e226c071bf9171af93f8211223705668074",
+          "bytes": 45011,
+          "input_types": [
+            "additional_tools",
+            "message",
+            "message",
+            "message",
+            "message"
+          ],
+          "instructions_present": false,
+          "model": "gpt-5.6-luna",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "context": "all_turns",
+            "effort": "low"
+          },
+          "source": "thread_title",
+          "stream": true,
+          "text": {
+            "format": {
+              "name": "codex_output_schema",
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "description": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "title": {
+                    "maxLength": 36,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ],
+                "type": "object"
+              },
+              "strict": true,
+              "type": "json_schema"
+            },
+            "verbosity": "low"
+          },
+          "tool_choice": "auto",
+          "tools_field_null": true,
+          "tools_field_present": false,
+          "trigger": "thread_title",
+          "utc": "2026-09-24T15:56:39.443427Z",
+          "tool_entries": 0,
+          "tools": null
+        },
+        {
+          "body_sha256": "524980edad12f4d3a45a1873a6d90ac0ee003aa58524e04c91a503dd71e075b4",
+          "bytes": 45506,
+          "input_types": [
+            "message",
+            "message",
+            "message",
+            "message"
+          ],
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "number": 1,
+          "phase": "provider_request",
+          "reasoning": {
+            "context": "all_turns",
+            "effort": "low"
+          },
+          "source": "thread_title",
+          "stream": true,
+          "text": {
+            "verbosity": "low"
+          },
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "thread_title",
+          "tool_entries": 1,
+          "tools": [
+            {
+              "members": [
+                {
+                  "name": "exec",
+                  "type": "custom"
+                },
+                {
+                  "name": "wait",
+                  "type": "function"
+                },
+                {
+                  "name": "request_user_input",
+                  "type": "function"
+                }
+              ],
+              "name": "functions",
+              "type": "namespace"
+            }
+          ]
+        },
+        {
+          "body_sha256": "1dc3b09381f2096d39b53a395a05070fd1852b6ec1fdc9c5ec222c6431590b98",
+          "bytes": 311033,
+          "input_types": [
+            "message",
+            "message",
+            "message"
+          ],
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "utc": "2026-09-24T15:56:39.733191Z",
+          "tool_entries": 24
+        },
+        {
+          "body_sha256": "f3be105e24b708dc477d6ed69d78e35a2637aec02988492d95f10f96cc3bc2f3",
+          "bytes": 313338,
+          "input_types": [
+            "message",
+            "message",
+            "message"
+          ],
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "number": 2,
+          "phase": "provider_request",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "tool_entries": 24
+        },
+        {
+          "number": 1,
+          "phase": "provider_headers",
+          "request_id": "8ea09eda507b7839e4351d6139690657",
+          "status": 200,
+          "tool_entries": 0
+        },
+        {
+          "events": {
+            "response.completed": 1,
+            "response.content_part.added": 1,
+            "response.content_part.done": 1,
+            "response.created": 1,
+            "response.in_progress": 1,
+            "response.output_item.added": 2,
+            "response.output_item.done": 2,
+            "response.output_text.delta": 4,
+            "response.output_text.done": 1,
+            "response.reasoning_text.delta": 29,
+            "response.reasoning_text.done": 1
+          },
+          "number": 1,
+          "phase": "provider_result",
+          "provider_error": null,
+          "usage": {
+            "input_tokens": 5387,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens": 136,
+            "output_tokens_details": {
+              "reasoning_tokens": 102
+            },
+            "total_tokens": 5523
+          },
+          "tool_entries": 0,
+          "generated_result": {
+            "title": "Explain dictionary word counting",
+            "description": "Explain using a Python dictionary to count repeated words in two short sentences"
+          }
+        },
+        {
+          "number": 2,
+          "phase": "provider_headers",
+          "request_id": "bd55d5cee45e3839b83dd9b1f376a64e",
+          "status": 200,
+          "tool_entries": 0
+        },
+        {
+          "events": {
+            "response.completed": 1,
+            "response.content_part.added": 1,
+            "response.content_part.done": 1,
+            "response.created": 1,
+            "response.in_progress": 1,
+            "response.output_item.added": 1,
+            "response.output_item.done": 1,
+            "response.output_text.delta": 16,
+            "response.output_text.done": 1
+          },
+          "number": 2,
+          "phase": "provider_result",
+          "provider_error": null,
+          "usage": {
+            "input_tokens": 12869,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 7680
+            },
+            "output_tokens": 54,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 12923
+          },
+          "tool_entries": 0
+        },
+        {
+          "body_sha256": "d047e8c4648cfd9be5f4d2f820e430fbbca4b3bbc8db6e8a7bcb0aff2599b2cc",
+          "bytes": 311551,
+          "input_types": [
+            "message",
+            "message",
+            "message",
+            "message",
+            "message"
+          ],
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "utc": "2026-09-24T15:58:51.769055Z",
+          "tool_entries": 24
+        },
+        {
+          "body_sha256": "df3ffe3a0432f30086cb11cd1e4b9ea1518018045e955bc9ee9887a051d1836b",
+          "bytes": 313894,
+          "input_types": [
+            "message",
+            "message",
+            "message",
+            "message",
+            "message"
+          ],
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "number": 3,
+          "phase": "provider_request",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "tool_entries": 24
+        },
+        {
+          "number": 3,
+          "phase": "provider_headers",
+          "request_id": "c891ba3e840eeedc9cd104ce2b1bff5d",
+          "status": 200,
+          "tool_entries": 0
+        },
+        {
+          "events": {
+            "response.completed": 1,
+            "response.created": 1,
+            "response.function_call_arguments.delta": 1,
+            "response.function_call_arguments.done": 1,
+            "response.in_progress": 1,
+            "response.output_item.added": 1,
+            "response.output_item.done": 1
+          },
+          "number": 3,
+          "phase": "provider_result",
+          "provider_error": null,
+          "usage": {
+            "input_tokens": 12963,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 12864
+            },
+            "output_tokens": 48,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 13011
+          },
+          "tool_entries": 0
+        },
+        {
+          "body_sha256": "e10c2f25781ec6134ac489922e6198dad262076cd7d5c92716d3774a2753ac49",
+          "bytes": 311971,
+          "input_types": [
+            "message",
+            "message",
+            "message",
+            "message",
+            "message",
+            "function_call",
+            "function_call_output"
+          ],
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "phase": "engine_to_adapter",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "utc": "2026-09-24T15:58:54.015834Z",
+          "tool_entries": 24
+        },
+        {
+          "body_sha256": "5c3b7277a6dee505b19a321d90bbf4bc4dbec32ba0dd58130e7649cd88959be2",
+          "bytes": 314314,
+          "input_types": [
+            "message",
+            "message",
+            "message",
+            "message",
+            "message",
+            "function_call",
+            "function_call_output"
+          ],
+          "instructions_present": true,
+          "model": "moonshotai/Kimi-K3",
+          "number": 4,
+          "phase": "provider_request",
+          "reasoning": {
+            "effort": "none"
+          },
+          "source": "user",
+          "stream": true,
+          "text": null,
+          "tool_choice": "auto",
+          "tools_field_null": false,
+          "tools_field_present": true,
+          "trigger": "composer",
+          "tool_entries": 24
+        },
+        {
+          "number": 4,
+          "phase": "provider_headers",
+          "request_id": "087f20a662d8aac91ecea48ccd63950b",
+          "status": 200,
+          "tool_entries": 0
+        },
+        {
+          "events": {
+            "response.completed": 1,
+            "response.content_part.added": 1,
+            "response.content_part.done": 1,
+            "response.created": 1,
+            "response.in_progress": 1,
+            "response.output_item.added": 1,
+            "response.output_item.done": 1,
+            "response.output_text.delta": 4,
+            "response.output_text.done": 1
+          },
+          "number": 4,
+          "phase": "provider_result",
+          "provider_error": null,
+          "usage": {
+            "input_tokens": 13085,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 12928
+            },
+            "output_tokens": 21,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 13106
+          },
+          "tool_entries": 0
+        }
+      ]
+    }
+  ],
+  "generated_title": {
+    "title": "Explain dictionary word counting",
+    "description": "Explain using a Python dictionary to count repeated words in two short sentences",
+    "title_length": 32,
+    "schema_valid": true,
+    "usefulness": "Relevant to the synthetic Python dictionary word-counting prompt; distinct from first-message fallback; no invented result",
+    "manually_named": false,
+    "operator_confirmed_display": true,
+    "persisted": {
+      "thread_id": "01a0d422-0dc6-7c23-9615-ca2a2752696e",
+      "name": "Explain dictionary word counting",
+      "model_provider": "nebius-tofa",
+      "model": "moonshotai/Kimi-K3"
+    }
+  },
+  "relaunches": {
+    "ordinary": {
+      "operator_confirmed_title_and_history": true,
+      "existing_manual_title_preserved": true,
+      "quit_with_cmd_q": true
+    },
+    "standalone_production_tofa": {
+      "operator_confirmed_title_unchanged_after_recall": true,
+      "continuation": {
+        "thread_id": "01a0d422-0dc6-7c23-9615-ca2a2752696e",
+        "name": "Explain dictionary word counting",
+        "provider": "nebius-tofa",
+        "model": "moonshotai/Kimi-K3",
+        "marker_calls": 1,
+        "marker_outputs": 1,
+        "recall_answer": "It printed `tofa-title-52-ok`."
+      },
+      "recall_engine_usage": {
+        "timestamp": "2026-09-24T16:02:02.733Z",
+        "last_token_usage": {
+          "input_tokens": 16101,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 18,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 16119
+        }
+      },
+      "provider_request_id": "not captured on standalone production run",
+      "exit": {
+        "exit_code": 0
+      },
+      "bounded_action": "one brief no-tools recall turn with a 600-second launcher deadline"
+    }
+  },
+  "preservation": {
+    "first_reproduction": {
+      "config_bytes_unchanged": false,
+      "auth_stat_unchanged": true,
+      "binary_sha256": "b8b53a7153f478d8d7cc972f403ea58db3c358250eccd243c219527e878e437d",
+      "observer_sha256": "690473e610469002160b367bd9da41b799234b0f2ed40ed3fbfd07ef33b37dad",
+      "components_unchanged": true
+    },
+    "qualification_interval": {
+      "config_bytes_unchanged_since_qualification_baseline": false,
+      "changed_config_key_names": [
+        "trust_level"
+      ],
+      "auth_stat_unchanged": true
+    },
+    "config_restore_attempted": false,
+    "normal_bridge": "replaced by standalone production launcher on final relaunch; retained as designed"
+  },
+  "limitations": [
+    "No app-backed title tool lookup or actual code-mode title tool invocation was exercised.",
+    "No Lightning model, broader platform/model support, live Guardian decision, merge or release was qualified.",
+    "First reproduction config digest changed; that early change was not attributable from its digest-only baseline. Later qualification changed only trust_level entries. No credentials were read or restored.",
+    "A requested scratch working directory was not the UI-selected thread workspace; synthetic prompts and thread-specific observations were retained, private workspace paths omitted.",
+    "No live client-to-engine request interception; requested default model is source-inferred and corroborated by the bundled-engine regression.",
+    "First full race run overlapped a live desktop; ownership guard failures invalidated that run. Clean rerun recorded separately."
+  ],
+  "validation": {
+    "full_race_suite": {
+      "command": "TOFA_TEST_CODEX=/Applications/ChatGPT.app/Contents/Resources/codex TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex TOFA_TEST_DESKTOP_APP=/Applications/ChatGPT.app go test -race ./... -count=1",
+      "result": "pass",
+      "test_and_subtest_passes": 310,
+      "test_case_skips": [],
+      "no_test_file_packages": [
+        "cmd/tofa",
+        "scripts/fixtures/evaluation_launcher"
+      ],
+      "launcher_package_seconds": 280.548
+    },
+    "go_vet": "pass",
+    "gofmt": "pass",
+    "git_diff_check": "pass",
+    "linux_amd64_build": "pass",
+    "windows_amd64_build": "pass",
+    "native_windows_linux_execution": "not run; cross-builds only",
+    "review": {
+      "standards": "pass; one reduced-fixture schema redaction defect corrected and independently rechecked; no remaining findings",
+      "spec": "no material implementation mismatch or scope creep; requested-model capture and initial settings-preservation evidence limitations remain disclosed",
+      "fixture_correction_checks": {
+        "result": "pass",
+        "command": "go test ./internal/tofa -run 'TestDesktopPreservesRoutedTitleContractAndFailures|TestDesktopRejectsChangedNativeTitleContracts|TestDesktopTitleFailureRequiresBothSourceMarkers|TestCLIDoesNotRouteNativeDesktopTitle' -count=1",
+        "seconds": 14.126
+      },
+      "full_suite_timing": "Full race suite preceded the fixture-only correction; affected contract tests rerun afterward. No production code changed after the full suite."
+    }
+  }
+}

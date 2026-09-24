@@ -241,8 +241,8 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 			return err
 		}
 		close(route.ready)
-		fmt.Fprintln(a.Out, "Native model catalog resolved and merged for this launch. Relaunch after account or catalog changes; native auxiliary models remain unsupported through Token Factory.")
-		fmt.Fprintf(a.Out, "Launching Codex desktop with %s (unverified), using ordinary history and profile.\nToken Factory history remains readable after exit; relaunch through tofa with --model moonshotai/Kimi-K3 to continue. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; auxiliary models and compaction remain unsupported. Keep this terminal open.\n", *model)
+		fmt.Fprintln(a.Out, "Native model catalog resolved and merged for this launch. Relaunch after account or catalog changes; only the announced automatic-title contract has an auxiliary route through Token Factory.")
+		fmt.Fprintf(a.Out, "Launching Codex desktop with %s (unverified), using ordinary history and profile.\nToken Factory history remains readable after exit; relaunch through tofa with --model moonshotai/Kimi-K3 to continue. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; other auxiliary requests and compaction remain unsupported. Keep this terminal open.\n", *model)
 		fmt.Fprintln(a.Out, "Desktop environment probe isolated; coding commands retain normal shell startup.")
 		return nil
 	}

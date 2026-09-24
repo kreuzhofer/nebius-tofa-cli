@@ -1,0 +1,172 @@
+{
+  "model": "gpt-5.6-luna",
+  "text": {
+    "format": {
+      "name": "codex_output_schema",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 36,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ],
+        "type": "object"
+      },
+      "strict": true,
+      "type": "json_schema"
+    },
+    "verbosity": "low"
+  },
+  "tool_choice": "auto",
+  "stream": true,
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "low"
+  },
+  "input": [
+    {
+      "id": "at_fixture",
+      "role": "developer",
+      "tools": [
+        {
+          "description": "Synthetic tool description.",
+          "name": "functions",
+          "tools": [
+            {
+              "description": "Synthetic tool description.",
+              "format": {
+                "definition": "\nstart: pragma_source | plain_source\npragma_source: PRAGMA_LINE NEWLINE SOURCE\nplain_source: SOURCE\n\nPRAGMA_LINE: /[ \\t]*\\/\\/ @exec:[^\\r\\n]*/\nNEWLINE: /\\r?\\n/\nSOURCE: /[\\s\\S]+/\n",
+                "syntax": "lark",
+                "type": "grammar"
+              },
+              "name": "exec",
+              "type": "custom"
+            },
+            {
+              "description": "Synthetic tool description.",
+              "name": "wait",
+              "parameters": {
+                "additionalProperties": false,
+                "properties": {
+                  "cell_id": {
+                    "description": "Synthetic tool description.",
+                    "type": "string"
+                  },
+                  "max_tokens": {
+                    "description": "Synthetic tool description.",
+                    "type": "number"
+                  },
+                  "terminate": {
+                    "description": "Synthetic tool description.",
+                    "type": "boolean"
+                  },
+                  "yield_time_ms": {
+                    "description": "Synthetic tool description.",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "cell_id"
+                ],
+                "type": "object"
+              },
+              "strict": false,
+              "type": "function"
+            },
+            {
+              "description": "Synthetic tool description.",
+              "name": "request_user_input",
+              "parameters": {
+                "additionalProperties": false,
+                "properties": {
+                  "questions": {
+                    "description": "Synthetic tool description.",
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "header": {
+                          "description": "Synthetic tool description.",
+                          "type": "string"
+                        },
+                        "id": {
+                          "description": "Synthetic tool description.",
+                          "type": "string"
+                        },
+                        "options": {
+                          "description": "Synthetic tool description.",
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "description": {
+                                "description": "Synthetic tool description.",
+                                "type": "string"
+                              },
+                              "label": {
+                                "description": "Synthetic tool description.",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "label",
+                              "description"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "question": {
+                          "description": "Synthetic tool description.",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "header",
+                        "question",
+                        "options"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "questions"
+                ],
+                "type": "object"
+              },
+              "strict": false,
+              "type": "function"
+            }
+          ],
+          "type": "namespace"
+        }
+      ],
+      "type": "additional_tools"
+    },
+    {
+      "type": "message",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Return a title and description for explaining Python integer addition."
+        }
+      ]
+    }
+  ],
+  "client_metadata": {
+    "x-codex-turn-metadata": "{\"thread_source\": \"thread_title\", \"turn_trigger\": \"thread_title\"}"
+  }
+}

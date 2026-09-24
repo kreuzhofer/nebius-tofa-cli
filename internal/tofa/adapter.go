@@ -173,17 +173,34 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 				http.Error(writer, "request adapter: expected a JSON object", http.StatusBadRequest)
 				return
 			}
-			if selectedModel != "" {
-				var payload struct {
-					Model string `json:"model"`
-				}
-				if json.Unmarshal(body, &payload) != nil || payload.Model != selectedModel {
-					notice("unsupported model; only the explicitly selected model is routed")
-					http.Error(writer, "request adapter: unsupported model; request was not sent upstream", http.StatusBadRequest)
+			titleRouted := false
+			if selectedModel == "moonshotai/Kimi-K3" {
+				body, titleRouted, err = routeDesktopTitle(body)
+				if err != nil {
+					notice(err.Error())
+					http.Error(writer, "request adapter: "+err.Error(), http.StatusBadRequest)
 					return
 				}
 			}
-			body, titleAdapted, err := adaptDesktopTitle(body)
+			if selectedModel != "" {
+				var payload struct {
+					Model          string          `json:"model"`
+					ClientMetadata json.RawMessage `json:"client_metadata"`
+				}
+				if json.Unmarshal(body, &payload) != nil || payload.Model != selectedModel {
+					message := "unsupported model; request was not sent upstream"
+					if isDesktopTitle(payload.ClientMetadata) {
+						message = "automatic title generation is unavailable: the desktop requested an unsupported model; request was not sent upstream"
+					}
+					notice(message)
+					http.Error(writer, "request adapter: "+message, http.StatusBadRequest)
+					return
+				}
+			}
+			titleAdapted := false
+			if !titleRouted {
+				body, titleAdapted, err = adaptDesktopTitle(body)
+			}
 			if err != nil {
 				notice(err.Error())
 				http.Error(writer, "request adapter: "+err.Error(), http.StatusBadRequest)
@@ -215,6 +232,10 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 		}),
 	}
 	fmt.Fprintln(a.Out, "Route: per-launch Responses request adapter (assistant-history repair).")
+	if selectedModel == "moonshotai/Kimi-K3" {
+		fmt.Fprintln(a.Out, "Automatic title routing: gpt-5.6-luna -> moonshotai/Kimi-K3 (captured thread_title contract only; other auxiliary requests remain unsupported).")
+		fmt.Fprintln(a.Out, "Automatic title adaptation: code-mode tools relocated intact; title schema moved to final-answer instructions; desktop still validates the title.")
+	}
 	go func() {
 		err := adapter.server.Serve(listener)
 		if errors.Is(err, http.ErrServerClosed) {

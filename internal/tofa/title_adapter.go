@@ -10,6 +10,113 @@ import (
 // The desktop independently parses JSON and validates title and description.
 const desktopTitleSchema = `{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"title":{"type":"string","minLength":1,"maxLength":36},"description":{"type":"string","minLength":1}},"required":["title","description"],"additionalProperties":false}`
 
+func isDesktopTitle(metadataJSON json.RawMessage) bool {
+	var metadata map[string]json.RawMessage
+	var turnJSON string
+	var turn struct {
+		Source  string `json:"thread_source"`
+		Trigger string `json:"turn_trigger"`
+	}
+	json.Unmarshal(metadataJSON, &metadata)
+	json.Unmarshal(metadata["x-codex-turn-metadata"], &turnJSON)
+	return json.Unmarshal([]byte(turnJSON), &turn) == nil && turn.Source == "thread_title" && turn.Trigger == "thread_title"
+}
+
+// The current shared-profile desktop retains Luna in its native catalog. This
+// explicit launcher policy translates its captured code-mode title request. It
+// does not change the catalog or the engine's thread settings.
+func routeDesktopTitle(body []byte) ([]byte, bool, error) {
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, false, err
+	}
+	var model string
+	json.Unmarshal(payload["model"], &model)
+	if model != "gpt-5.6-luna" || !isDesktopTitle(payload["client_metadata"]) {
+		return body, false, nil
+	}
+	textOptions, schema, valid := desktopTitleFormat(payload)
+	unsupported := errors.New("automatic title generation is unavailable: unsupported desktop title contract; request was not sent upstream")
+	if !valid || len(payload["tools"]) != 0 || len(payload["instructions"]) != 0 {
+		return nil, false, unsupported
+	}
+	var input []json.RawMessage
+	if json.Unmarshal(payload["input"], &input) != nil || len(input) == 0 {
+		return nil, false, unsupported
+	}
+	var additional struct {
+		Type  string          `json:"type"`
+		Role  string          `json:"role"`
+		ID    string          `json:"id"`
+		Tools json.RawMessage `json:"tools"`
+	}
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(input[0], &additional) != nil || json.Unmarshal(input[0], &fields) != nil || len(fields) != 4 || additional.Type != "additional_tools" || additional.Role != "developer" || additional.ID == "" || !desktopTitleCodeTools(additional.Tools) {
+		return nil, false, unsupported
+	}
+	for _, item := range input[1:] {
+		var entry struct{ Type string }
+		if json.Unmarshal(item, &entry) != nil || entry.Type == "additional_tools" {
+			return nil, false, unsupported
+		}
+	}
+	// Token Factory rejects additional_tools input items. Relocate all captured
+	// definitions intact, and retain the full schema as final-answer guidance:
+	// Kimi rejects constrained decoding together with tools (#33).
+	payload["tools"] = additional.Tools
+	payload["input"], _ = json.Marshal(input[1:])
+	canonicalSchema, _ := json.Marshal(schema)
+	payload["instructions"], _ = json.Marshal("For this desktop thread title, return your final answer as JSON matching this complete schema (no markdown or extra text):\n" + string(canonicalSchema))
+	delete(textOptions, "format")
+	payload["text"], _ = json.Marshal(textOptions)
+	payload["model"] = json.RawMessage(`"moonshotai/Kimi-K3"`)
+	result, err := json.Marshal(payload)
+	return result, true, err
+}
+
+func desktopTitleCodeTools(raw json.RawMessage) bool {
+	var namespaces []struct {
+		Type  string `json:"type"`
+		Name  string `json:"name"`
+		Tools []struct {
+			Type string `json:"type"`
+			Name string `json:"name"`
+		} `json:"tools"`
+	}
+	if json.Unmarshal(raw, &namespaces) != nil || len(namespaces) != 1 || namespaces[0].Type != "namespace" || namespaces[0].Name != "functions" {
+		return false
+	}
+	allowed := map[string]string{"exec": "custom", "wait": "function", "request_user_input": "function"}
+	if len(namespaces[0].Tools) != len(allowed) {
+		return false
+	}
+	for _, tool := range namespaces[0].Tools {
+		kind, found := allowed[tool.Name]
+		if !found || tool.Type != kind {
+			return false
+		}
+		delete(allowed, tool.Name)
+	}
+	return true
+}
+
+func desktopTitleFormat(payload map[string]json.RawMessage) (map[string]json.RawMessage, any, bool) {
+	var textOptions, format map[string]json.RawMessage
+	if json.Unmarshal(payload["text"], &textOptions) != nil || json.Unmarshal(textOptions["format"], &format) != nil {
+		return nil, nil, false
+	}
+	var schema, expected any
+	json.Unmarshal(format["schema"], &schema)
+	json.Unmarshal([]byte(desktopTitleSchema), &expected)
+	var kind, name, choice string
+	var strict *bool
+	json.Unmarshal(format["type"], &kind)
+	json.Unmarshal(format["name"], &name)
+	json.Unmarshal(payload["tool_choice"], &choice)
+	valid := reflect.DeepEqual(schema, expected) && len(format) == 4 && kind == "json_schema" && name == "codex_output_schema" && json.Unmarshal(format["strict"], &strict) == nil && strict != nil && *strict && choice == "auto"
+	return textOptions, schema, valid
+}
+
 func adaptDesktopTitle(body []byte) ([]byte, bool, error) {
 	var payload map[string]json.RawMessage
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -17,37 +124,12 @@ func adaptDesktopTitle(body []byte) ([]byte, bool, error) {
 	}
 	var model string
 	json.Unmarshal(payload["model"], &model)
-	if model != "moonshotai/Kimi-K3" {
-		return body, false, nil
-	}
-	var metadata map[string]json.RawMessage
-	var turnJSON string
-	var turn struct {
-		Source  string `json:"thread_source"`
-		Trigger string `json:"turn_trigger"`
-	}
-	json.Unmarshal(payload["client_metadata"], &metadata)
-	json.Unmarshal(metadata["x-codex-turn-metadata"], &turnJSON)
-	if json.Unmarshal([]byte(turnJSON), &turn) != nil || turn.Source != "thread_title" || turn.Trigger != "thread_title" {
+	if model != "moonshotai/Kimi-K3" || !isDesktopTitle(payload["client_metadata"]) {
 		return body, false, nil
 	}
 	unsupported := errors.New("unsupported Kimi-K3 desktop title contract; request was not sent upstream")
-	var textOptions, format map[string]json.RawMessage
-	if json.Unmarshal(payload["text"], &textOptions) != nil || json.Unmarshal(textOptions["format"], &format) != nil {
-		return nil, false, unsupported
-	}
-	var schema, expected any
-	json.Unmarshal(format["schema"], &schema)
-	json.Unmarshal([]byte(desktopTitleSchema), &expected)
-	if !reflect.DeepEqual(schema, expected) {
-		return nil, false, unsupported
-	}
-	var kind, name, choice string
-	var strict *bool
-	json.Unmarshal(format["type"], &kind)
-	json.Unmarshal(format["name"], &name)
-	json.Unmarshal(payload["tool_choice"], &choice)
-	if len(format) != 4 || kind != "json_schema" || name != "codex_output_schema" || json.Unmarshal(format["strict"], &strict) != nil || strict == nil || !*strict || choice != "auto" {
+	textOptions, schema, valid := desktopTitleFormat(payload)
+	if !valid {
 		return nil, false, unsupported
 	}
 	var tools []struct {
