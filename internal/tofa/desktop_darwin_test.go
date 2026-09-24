@@ -157,6 +157,7 @@ if lock.is_symlink():
     except ProcessLookupError: lock.unlink()
 try: lock.symlink_to(socket.gethostname()+'-'+str(os.getpid()))
 except FileExistsError: sys.exit(0)
+if pathlib.Path(CAPTURE+'.fail-startup').exists(): sys.exit(17)
 if MODE == 'before-ownership':
     request=urllib.request.Request(os.environ['TOFA_DESKTOP_CONTEXT']+'/responses',data=json.dumps({'model':'moonshotai/Kimi-K3','input':[]}).encode(),headers={'Authorization':'Bearer '+os.environ['TOFA_API_KEY'],'Content-Type':'application/json'})
     try:
@@ -183,7 +184,7 @@ if MODE == 'exit': sys.exit(23)
 (home / 'sessions').mkdir(exist_ok=True)
 (home / 'sessions' / 'conversation.jsonl').write_text('preserve conversation')
 pathlib.Path('user-work.txt').write_text('preserve workspace')
-pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'catalog': json.loads(pathlib.Path(setting('model_catalog_json')).read_text()), 'env': dict(os.environ)}))
+pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'catalog_path': setting('model_catalog_json'), 'catalog': json.loads(pathlib.Path(setting('model_catalog_json')).read_text()), 'env': dict(os.environ)}))
 (pathlib.Path(os.environ['CODEX_ELECTRON_USER_DATA_PATH']) / 'tool-settings.json').write_text(json.dumps({'engine':os.environ.get('CODEX_CLI_PATH')}))
 if MODE == 'edit-config':
     with config_path.open('a') as out: out.write('\n[user_preferences]\nkeep_edit = true\n')
@@ -204,9 +205,11 @@ if MODE != 'exit':
     worker_args = [str(engine), '-c', 'features.code_mode_host=true', 'app-server'] + ([] if bundled_engine.is_symlink() else ['--owned-worker'])
     worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     pathlib.Path(CAPTURE+'.pid').write_text(str(worker.pid))
-    if MODE not in ['ignore', 'engine-exit']: time.sleep(0.4); sys.exit(0)
+    if MODE not in ['ignore', 'engine-exit', 'controlled']: time.sleep(0.4); sys.exit(0)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
-    while True: time.sleep(1)
+    while True:
+        if MODE == 'controlled' and pathlib.Path(CAPTURE+'.exit').exists(): sys.exit(0)
+        time.sleep(0.05)
 `, python, mode, capture)
 	for _, name := range []string{"Contents/MacOS/ChatGPT", "Contents/Resources/codex"} {
 		if err := os.WriteFile(filepath.Join(bundle, name), []byte(script), 0700); err != nil {
@@ -1011,8 +1014,9 @@ func TestDesktopBundledEngineOverridesAtAppServerBoundary(t *testing.T) {
 }
 
 type capturedDesktop struct {
-	Env map[string]string
-	Cwd string
+	CatalogPath string `json:"catalog_path"`
+	Env         map[string]string
+	Cwd         string
 }
 
 func liveDesktopFixture(t *testing.T, app *tofa.App, bundle, capture string) (capturedDesktop, func()) {

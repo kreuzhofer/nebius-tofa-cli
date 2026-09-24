@@ -385,3 +385,58 @@ installed-desktop opt-ins, `go vet ./...`, Linux/Windows amd64 builds, three
 installed-engine history diagnostics and five installed-native ownership
 diagnostics. The final Go and native suites ran sequentially. Independent
 Standards and Spec reviews have no remaining confirmed findings.
+
+## Failure recovery (#48)
+
+The adapter and its in-memory routing record belong to the launcher process.
+Normal exit, cancellation, engine loss and adapter failure stop only the spawned
+process group, close its listener, and remove its runtime directory. SIGKILL of
+the launcher also closes the adapter at the OS boundary: an orphaned desktop
+cannot keep using Token Factory. A present expired, empty or malformed launch
+context is an error, including when invoking the saved durable engine bridge;
+it never becomes an ordinary invocation.
+
+After abrupt launcher death, **quit any surviving desktop manually**, then run
+the same tofa launch command. The launcher refuses a surviving desktop, including
+one whose native profile lock is missing. It does not signal a PID found in an
+abandoned record or adopt that process. Once the desktop has exited, the qualified
+native client handles its proven-stale singleton lock as before.
+
+Each new runtime directory under `desktop-launches/` has a private, non-secret
+`owner.json` containing its format version, launcher PID and ordinary profile
+path. The model catalog now lives inside that directory alongside the shell and
+preflight artifacts. While holding the ordinary-profile lease, relaunch removes
+an abandoned directory only when its ownership record matches that profile and
+the recorded launcher PID is demonstrably absent. A possibly live PID (including
+PID reuse) retains the directory. Another profile's artifacts are retained.
+Unknown, malformed, missing or symlinked ownership records and symlinked runtime
+directories are retained with a diagnostic for manual inspection. This includes
+older unmarked runtime directories; recovery does not guess ownership of old
+catalog files in the system temporary directory. The native lock and durable
+launcher lease are never deleted by recovery.
+
+Recovery does not restore shared configuration snapshots or delete history,
+ordinary credentials, workspace files, or the inactive provider definition.
+Relaunch supplies a fresh bearer and endpoint; an old bearer cannot authenticate
+to the new adapter. Runtime ownership records are never accepted as launch
+capabilities.
+
+The executable/HTTP regression first reproduced runtime-directory and catalog
+leaks after SIGKILL, then verified recovery, repeated relaunch, stale-context
+rejection, credential rotation, live-owner refusal, and preservation of unknown
+artifacts and files outside the owned directory. The public installed-engine
+history regression exercises normal exit, cancellation, engine loss, adapter
+failure, startup failure and abrupt launcher death. It checks unique thread IDs,
+ordered messages and tool results, titles, workspaces, ordinary inactive sends,
+and continuation in the same thread after relaunch, with synthetic credentials
+and inference only. Installed Electron UI, live accounts and paid inference
+remain separate opt-in qualification; these tests do not establish those claims.
+
+Validation on macOS 26.6.2 arm64 with Go 1.27.1: the full
+`TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex go test -race ./... -count=1`
+run passed (225 test cases, 3 opt-in skips), as did `go vet ./...`, Linux amd64
+and Windows amd64 cross-builds, offline installer tests, and native installation
+lifecycle/terminal tests against a binary built from this change. The skipped Go
+tests were the two opt-in installed Codex CLI tool/approval-review checks and
+`TestDesktopInstalledAppShellIsolation`. Native Linux/Windows execution, installed
+Electron UI, live-account and paid-inference qualification were not run.

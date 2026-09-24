@@ -17,7 +17,7 @@ import (
 // Export before applying Token Factory overrides. The engine owns native auth,
 // policy, cache freshness and descriptor resolution; model/list is a lossy
 // picker projection and cannot be used to reconstruct these descriptors.
-func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspace, model string) (string, error) {
+func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspace, model, runtimeDir string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, engine, "debug", "models")
@@ -43,7 +43,7 @@ func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspac
 		}
 		seen[descriptor.Slug] = true
 	}
-	catalog, err := prepareModelCatalog(model, "")
+	catalog, err := prepareModelCatalogInDir(model, "", runtimeDir)
 	if err != nil {
 		return "", err
 	}

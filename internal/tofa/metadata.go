@@ -14,6 +14,10 @@ var codexPrompt string
 var candidateSnapshot []byte
 
 func prepareModelCatalog(model, guardian string) (string, error) {
+	return prepareModelCatalogInDir(model, guardian, "")
+}
+
+func prepareModelCatalogInDir(model, guardian, dir string) (string, error) {
 	var snapshot struct {
 		Models map[string]struct {
 			DisplayName string   `json:"display_name"`
@@ -72,7 +76,7 @@ func prepareModelCatalog(model, guardian string) (string, error) {
 	if err != nil {
 		return "", errors.New("could not encode launch model catalog")
 	}
-	file, err := os.CreateTemp("", "tofa-model-catalog-*.json")
+	file, err := os.CreateTemp(dir, "tofa-model-catalog-*.json")
 	if err != nil {
 		return "", errors.New("could not create launch model catalog")
 	}

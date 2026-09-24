@@ -22,7 +22,7 @@ import (
 
 func TestMain(tests *testing.M) {
 	if len(os.Args) > 2 && os.Args[1] == "--test-desktop-launch" {
-		app := &tofa.App{Dir: os.Args[2]}
+		app := &tofa.App{Dir: os.Args[2], Endpoint: os.Getenv("TOFA_TEST_ENDPOINT")}
 		if err := app.Run(os.Args[3:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)

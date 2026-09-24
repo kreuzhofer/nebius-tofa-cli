@@ -189,11 +189,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if err != nil {
 		return err
 	}
-	parent := filepath.Join(a.Dir, "desktop-launches")
-	if err := privateDir(parent); err != nil {
-		return err
-	}
-	root, err := os.MkdirTemp(parent, "launch-")
+	root, err := prepareDesktopRuntime(a.Dir, profile, a.Out)
 	if err != nil {
 		return err
 	}
@@ -220,15 +216,8 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		return err
 	}
 	env := append(desktopEnv(home, profile, adapter.token), "ZDOTDIR="+shellDir, "CODEX_CLI_PATH="+bridge, "TOFA_DESKTOP_CONTEXT="+adapter.endpoint)
-	var catalog string
-	defer func() {
-		if catalog != "" {
-			result = errors.Join(result, os.Remove(catalog))
-		}
-	}()
 	owned := func(ownerContext context.Context, pid int) error {
-		var err error
-		catalog, err = prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, *model)
+		catalog, err := prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, *model, root)
 		if err != nil {
 			return err
 		}

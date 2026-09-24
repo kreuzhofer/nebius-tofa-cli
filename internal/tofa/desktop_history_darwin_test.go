@@ -1,24 +1,39 @@
 package tofa_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"testing"
+	"time"
 )
 
 func TestDesktopHistoryRoundTripRequiresFreshLaunch(t *testing.T) {
+	desktopHistoryRoundTrip(t, "cancellation")
+}
+
+func TestDesktopHistoryRecoversFailures(t *testing.T) {
+	for _, failure := range []string{"normal exit", "engine loss", "adapter failure", "startup failure", "abrupt death"} {
+		t.Run(failure, func(t *testing.T) { desktopHistoryRoundTrip(t, failure) })
+	}
+}
+
+func desktopHistoryRoundTrip(t *testing.T, failure string) {
 	installed := os.Getenv("TOFA_TEST_DESKTOP_ENGINE")
 	if installed == "" {
 		t.Skip("set TOFA_TEST_DESKTOP_ENGINE")
 	}
-	bundle, capture := desktopFixture(t, "ignore")
+	bundle, capture := desktopFixture(t, "controlled")
 	engine := filepath.Join(bundle, "Contents/Resources/codex")
 	if err := os.Remove(engine); err != nil {
 		t.Fatal(err)
@@ -84,6 +99,15 @@ func TestDesktopHistoryRoundTripRequiresFreshLaunch(t *testing.T) {
 		}
 		respond(w, map[string]any{"id": "function_fixture", "type": "function_call", "call_id": "history_call", "name": "exec_command", "arguments": `{"cmd":"printf history-tool-result","max_output_tokens":100}`, "status": "completed"})
 	}, nil)
+
+	listening := make(chan net.Listener, 10)
+	app.Listen = func(network, address string) (net.Listener, error) {
+		listener, err := net.Listen(network, address)
+		if err == nil {
+			listening <- listener
+		}
+		return listener, err
+	}
 	home := filepath.Join(os.Getenv("HOME"), ".codex")
 	workspace := filepath.Join(filepath.Dir(capture), "workspace")
 	for _, path := range []string{home, workspace} {
@@ -109,7 +133,15 @@ func TestDesktopHistoryRoundTripRequiresFreshLaunch(t *testing.T) {
 	e.turnText(nativeID, "completed", "Native first message")
 	e.call("thread/name/set", map[string]string{"threadId": nativeID, "name": "Native title"})
 	e.close()
-	child, stop := liveDesktopFixture(t, app, bundle, capture)
+
+	var child capturedDesktop
+	var stop func()
+	if failure == "abrupt death" {
+		child, stop = executableDesktopFixture(t, app, bundle, capture)
+	} else {
+		child, stop = liveDesktopFixture(t, app, bundle, capture)
+	}
+	firstRoute, firstKey := child.Env["TOFA_DESKTOP_CONTEXT"], child.Env["TOFA_API_KEY"]
 	e = openDesktopEngine(t, child)
 	resumed := e.call("thread/resume", map[string]any{"threadId": nativeID, "model": nil, "modelProvider": nil})
 	if resumed["modelProvider"] != "openai" || resumed["model"] != "gpt-6-astra" {
@@ -120,14 +152,105 @@ func TestDesktopHistoryRoundTripRequiresFreshLaunch(t *testing.T) {
 	tofaID := started["thread"].(map[string]any)["id"].(string)
 	e.turnText(tofaID, "completed", "Token Factory first message")
 	e.call("thread/name/set", map[string]string{"threadId": tofaID, "name": "Token Factory title"})
+
 	e.close()
+	// Edits made while the launch is active must survive every failure path.
+	configPath := filepath.Join(home, "config.toml")
+	file, err := os.OpenFile(configPath, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, writeErr := file.WriteString("\n[tui]\nanimations = false\n")
+	closeErr := file.Close()
+	if writeErr != nil || closeErr != nil {
+		t.Fatalf("write concurrent setting: %v %v", writeErr, closeErr)
+	}
+	workPath := filepath.Join(workspace, "ordinary-work.txt")
+	if err := os.WriteFile(workPath, []byte("ordinary workspace content"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	preserved := map[string][]byte{}
+	for _, path := range []string{configPath, filepath.Join(home, "auth.json"), workPath} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		preserved[path] = data
+	}
+	owner, err := os.Readlink(filepath.Join(child.Env["CODEX_ELECTRON_USER_DATA_PATH"], "SingletonLock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	desktopPID, err := strconv.Atoi(owner[strings.LastIndex(owner, "-")+1:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	switch failure {
+	case "normal exit":
+		if err := os.WriteFile(capture+".exit", nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+		waitDesktopPIDStopped(t, desktopPID)
+	case "engine loss":
+		data, err := os.ReadFile(capture + ".pid")
+		if err != nil {
+			t.Fatal(err)
+		}
+		pid, err := strconv.Atoi(string(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := syscall.Kill(pid, syscall.SIGKILL); err != nil {
+			t.Fatal(err)
+		}
+		waitDesktopPIDStopped(t, desktopPID)
+	case "adapter failure":
+		if err := (<-listening).Close(); err != nil {
+			t.Fatal(err)
+		}
+		waitDesktopPIDStopped(t, desktopPID)
+	}
 	stop()
+	if failure == "abrupt death" {
+		assertExpiredDesktopContext(t, child)
+		// Simulate manually quitting only the test's surviving desktop.
+		syscall.Kill(-desktopPID, syscall.SIGKILL)
+		waitDesktopPIDStopped(t, desktopPID)
+	}
+	if failure == "normal exit" {
+		if err := os.Remove(capture + ".exit"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if failure == "startup failure" {
+		// Fail a relaunch after history exists, before publishing its live route.
+		if err := os.WriteFile(capture+".fail-startup", nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+		cancel()
+		if err == nil || !strings.Contains(err.Error(), "exit status 17") {
+			t.Fatalf("startup failure was not surfaced: %v", err)
+		}
+		if err := os.Remove(capture + ".fail-startup"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assertExpiredDesktopContext(t, child)
 	ordinary.Env["CODEX_CLI_PATH"] = child.Env["CODEX_CLI_PATH"]
 	ordinary.Env["TOFA_API_KEY"] = child.Env["TOFA_API_KEY"] // Stale credentials must not revive ordinary inference.
 	ordinary.Env["TOFA_DESKTOP_INACTIVE"] = "synthetic-inherited-credential"
 	want := []string{"user:Token Factory first message", "tool:printf history-tool-result:history-tool-result", "assistant:Token Factory history answer"}
+
 	check := func(e *desktopEngine) {
 		t.Helper()
+		for path, want := range preserved {
+			data, err := os.ReadFile(path)
+			if err != nil || string(data) != string(want) {
+				t.Fatalf("failure recovery changed ordinary state: %s", filepath.Base(path))
+			}
+		}
 		listed := e.call("thread/list", map[string]any{"modelProviders": []string{}, "useStateDbOnly": true})["data"].([]any)
 		ids := map[string]int{}
 		for _, raw := range listed {
@@ -193,7 +316,12 @@ func TestDesktopHistoryRoundTripRequiresFreshLaunch(t *testing.T) {
 		if err := os.Remove(capture); err != nil {
 			t.Fatal(err)
 		}
+
 		child, stop = liveDesktopFixture(t, app, bundle, capture)
+		if child.Env["TOFA_DESKTOP_CONTEXT"] == firstRoute || child.Env["TOFA_API_KEY"] == firstKey {
+			t.Fatal("history recovery reused stale inference access")
+		}
+
 		e = openDesktopEngine(t, child)
 		check(e)
 		e.call("thread/resume", map[string]any{"threadId": tofaID, "model": nil, "modelProvider": nil})
