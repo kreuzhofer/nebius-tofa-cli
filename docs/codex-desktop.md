@@ -3,6 +3,12 @@
 Source-build feature for [#32](https://github.com/kreuzhofer/nebius-tofa-cli/issues/32);
 not included in v0.1.0-rc.2.
 
+The production implementation uses **one ordinary desktop profile and history**.
+End-to-end qualification is still incomplete: see the
+[current build, fresh checks, and live-account blocker](releases/desktop-shared-history-2026-09-24.md).
+Earlier isolated/prototype observations below are provenance, not qualification
+of the combined workflow.
+
 ```sh
 go build -o tofa ./cmd/tofa
 ./tofa launch codex-desktop --model moonshotai/Kimi-K3 --allow-unverified
@@ -12,6 +18,30 @@ Use an existing `tofa auth login`. The model must be explicitly selected and
 available in the saved project's catalog. `--project-id ID` overrides that project.
 Availability and bundled provider metadata do not certify a supported combination;
 the unverified gate remains mandatory.
+
+### Switching launch modes and recovering a conversation
+
+1. Quit the ordinary desktop, then run the command above from your workspace.
+   Keep that terminal open for the entire Token Factory session. Existing native
+   conversations keep their provider; new default conversations use Kimi-K3.
+2. Quit the owned app and wait for the launcher to exit before opening the app
+   normally. Both modes use the same history; no import or synchronization is
+   needed. Opening the app while the launcher is active does not change modes.
+3. Ordinary mode can display Token Factory history, but cannot send through Token
+   Factory. An unavailable-provider or missing-launch-credential error requires
+   a fresh tofa launch. Changing the picker to GPT/Astra does not migrate the
+   conversation to OpenAI.
+4. Quit the ordinary app, rerun the launch command, reopen the **same conversation**
+   and select `Kimi-K3 (Token Factory)` if its model was changed. Continue there;
+   creating a replacement conversation is not the recovery procedure.
+
+After an abrupt launcher exit, quit any surviving desktop manually before retrying.
+Do not delete history, provider metadata, bridge directories or native lock files
+to recover. For ownership conflicts or damaged artifacts, follow
+[failure recovery](#failure-recovery-48) and
+[installed lifecycle instructions](#installed-lifecycle-and-retained-history).
+
+### Compatibility
 
 The gate accepts macOS **26.6.2 arm64**, ChatGPT **26.917.71314 (10954)**,
 bundle ID `com.openai.codex`, and bundled engine **0.155.0-alpha.16.4**. The target is
@@ -140,14 +170,21 @@ HTTP error and terminal notice. The recognized Kimi title and non-strict review
 adaptations, schema/tool restrictions, and compaction rejection are unchanged.
 Catalog visibility does not expand supported Token Factory models.
 
-This implements [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) on
-the isolated target. It does not connect ordinary history/account state yet.
+The [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) catalog behavior
+is integrated with the ordinary profile by
+[#47](https://github.com/kreuzhofer/nebius-tofa-cli/issues/47).
 [#50](https://github.com/kreuzhofer/nebius-tofa-cli/issues/50) must qualify the
 combined production workflow with authorized live-account access: compare native
 picker choices and full descriptors with ordinary mode, observe entitlement and
 catalog refresh on relaunch, continue a real native conversation during a tofa
 launch, and verify onboarding/account continuity and same-thread picker recovery
 in the UI. Synthetic account/cache/HTTP checks are not live-account evidence.
+The [current qualification attempt](releases/desktop-shared-history-2026-09-24.md)
+found a signed-in ordinary profile with a static custom catalog and no matching
+account-cache evidence. Such a profile remains outside the accepted launch
+contract; refreshing models alone cannot qualify a static catalog. Review that
+ordinary configuration explicitly before retrying, or use `launch codex`.
+The launcher does not remove user catalog settings to make its checks pass.
 
 ### Durable engine bridge
 
