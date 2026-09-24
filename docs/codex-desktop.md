@@ -5,7 +5,7 @@ not included in v0.1.0-rc.2.
 
 The production implementation uses **one ordinary desktop profile and history**.
 End-to-end qualification is still incomplete: see the
-[current build, fresh checks, and live-account blocker](releases/desktop-shared-history-2026-09-24.md).
+[qualification record and remaining live checks](releases/desktop-shared-history-2026-09-24.md).
 Earlier isolated/prototype observations below are provenance, not qualification
 of the combined workflow.
 
@@ -179,7 +179,7 @@ picker choices and full descriptors with ordinary mode, observe entitlement and
 catalog refresh on relaunch, continue a real native conversation during a tofa
 launch, and verify onboarding/account continuity and same-thread picker recovery
 in the UI. Synthetic account/cache/HTTP checks are not live-account evidence.
-The [current qualification attempt](releases/desktop-shared-history-2026-09-24.md)
+The [initial qualification attempt](releases/desktop-shared-history-2026-09-24.md)
 found a signed-in ordinary profile with a static custom catalog and no matching
 account-cache evidence. Such a profile remains outside the accepted launch
 contract; refreshing models alone cannot qualify a static catalog. Review that
@@ -191,6 +191,9 @@ bypasses native discovery. The freshness error now points to that setting.
 To restore native discovery, explicitly review whether the ordinary override is
 still wanted; removing it is a user configuration decision. Deleting the cache
 alone does not resolve the static override.
+After the maintainer authorized commenting out that one ordinary setting, the
+[live native-account preflight passed](research/desktop-native-catalog-diagnosis.md#authorized-ordinary-profile-recovery--1322-utc).
+The required UI walkthrough and production-path inference checks remain open.
 
 ### Durable engine bridge
 

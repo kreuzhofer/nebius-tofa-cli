@@ -77,3 +77,24 @@ was left intact during this diagnosis. The same static setup therefore still
 refuses launch, now with relevant recovery guidance. Removing it succeeded in
 the synthetic fixture; real-account refresh and the full UI/live-inference
 walkthrough still need to be performed before completing #50.
+
+## Authorized ordinary-profile recovery — 13:22 UTC
+
+After the diagnosis, the maintainer explicitly authorized commenting out only the
+root-level `model_catalog_json` setting and retrying the live preflight. That one
+line in the ordinary configuration was commented out; all other bytes and file
+permissions were preserved. The catalog file was retained. No credential was
+copied, and no login/logout was performed.
+
+The installed alpha.16.4 engine's ordinary-account preflight then **passed**.
+Its export contained nine native descriptors matching a fresh cache with an
+account identity and `client_version: 0.155.0`. The export differed from bundled
+metadata; both exports exited successfully without diagnostics. The saved Token
+Factory login also continued to list Kimi-K3 successfully through the unchanged
+local qualification candidate.
+
+[Sanitized recovery evidence](evidence/desktop-native-catalog-recovery-2026-09-24.json)
+records the checks separately from the earlier incomplete attempt. This resolves
+the observed static-catalog prerequisite for the current account. It is an engine
+and catalog preflight, not a production desktop launch, UI observation, or inference
+test. #50's remaining live acceptance checks are still required.
