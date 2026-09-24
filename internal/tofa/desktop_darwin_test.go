@@ -559,6 +559,54 @@ func TestDesktopRejectsManagedRoutingBeforeStartingApp(t *testing.T) {
 	}
 }
 
+func TestDesktopManagedLoginMethods(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		requirements string
+		allowed      bool
+	}{
+		{"both methods", "{'allowedLoginMethods': ['api', 'chatgpt']}", true},
+		{"both reversed", "{'allowedLoginMethods': ['chatgpt', 'api']}", true},
+		{"API only", "{'allowedLoginMethods': ['api']}", false},
+		{"ChatGPT only", "{'allowedLoginMethods': ['chatgpt']}", false},
+		{"no methods", "{'allowedLoginMethods': []}", false},
+		{"unknown method", "{'allowedLoginMethods': ['api', 'chatgpt', 'future']}", false},
+		{"duplicate method", "{'allowedLoginMethods': ['api', 'api']}", false},
+		{"malformed methods", "{'allowedLoginMethods': 'api,chatgpt'}", false},
+		{"both with routing restriction", "{'allowedLoginMethods': ['api', 'chatgpt'], 'modelProvider': 'openai'}", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			bundle, capture := desktopFixture(t, "normal")
+			engine := filepath.Join(bundle, "Contents/Resources/codex")
+			script, err := os.ReadFile(engine)
+			if err != nil {
+				t.Fatal(err)
+			}
+			script = []byte(strings.ReplaceAll(string(script), "{'modelProvider': 'openai'} if MODE == 'managed' else None", test.requirements))
+			if err := os.WriteFile(engine, script, 0700); err != nil {
+				t.Fatal(err)
+			}
+			app, _ := adapterFixture(t, nil, nil)
+			err = app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+			if test.allowed {
+				if err != nil {
+					t.Fatalf("desktop refused policy allowing both login methods: %v", err)
+				}
+				if _, err := os.Stat(capture); err != nil {
+					t.Fatalf("desktop did not start: %v", err)
+				}
+			} else {
+				if err == nil || !strings.Contains(err.Error(), "managed") {
+					t.Fatalf("managed restriction not enforced: %v", err)
+				}
+				if _, err := os.Stat(capture); !os.IsNotExist(err) {
+					t.Fatal("desktop launched despite conflicting policy")
+				}
+			}
+		})
+	}
+}
+
 func TestDesktopRefusesExistingOrdinaryProfileOwner(t *testing.T) {
 	bundle, capture := desktopFixture(t, "normal")
 	profile := filepath.Join(os.Getenv("HOME"), "Library/Application Support/Codex")

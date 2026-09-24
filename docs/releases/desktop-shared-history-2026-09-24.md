@@ -1,6 +1,12 @@
 # Shared desktop history qualification — 2026-09-24
 
 **Outcome: incomplete; this combination is not qualified end to end.**
+This record describes the initial candidate below. Subsequent
+[native-catalog recovery](../research/desktop-native-catalog-diagnosis.md#authorized-ordinary-profile-recovery--1322-utc)
+passed; the first human-run launch then exposed a
+[login-policy validation bug](../research/desktop-login-policy-diagnosis.md)
+before the app started. Those later checks do not replace this candidate's evidence.
+
 This is the production-path qualification record for
 [#50](https://github.com/kreuzhofer/nebius-tofa-cli/issues/50), under
 [#44](https://github.com/kreuzhofer/nebius-tofa-cli/issues/44) and
