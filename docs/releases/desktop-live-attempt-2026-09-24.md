@@ -85,3 +85,22 @@ include ordinary-mode history and both logo-loop checks, explicit inactive send
 failure, second-launch same-conversation Kimi recovery, native continuation and
 picker parity after relaunch, and final ordinary-mode preservation. Retain the
 two qualification conversations so those checks can use the existing history.
+
+## Follow-up launch/quit diagnostic — 14:24 UTC
+
+The operator ran a separate launch-and-quit check using the unchanged candidate.
+The [sanitized diagnostic report](evidence/desktop-quit-diagnostic-2026-09-24.json)
+has SHA-256 `f145ce6063757f49e826c75eff14594f6f19080e911baef5f56f784f7c66d21b`.
+Candidate/app/platform identity and native-account freshness checks passed. The
+operator recorded a usable desktop and quit method `cmd_q`; the launcher exited
+with code 0 and the diagnostic helper reaped it. No launcher error category was
+recorded. The helper retained only recognized error categories, never raw output.
+
+The earlier exit-1 failure **did not reproduce** in this short check. This does
+not establish a fix or explain the earlier cause: the short diagnostic did not
+repeat the inference and picker interactions preceding the original failure.
+It also did not collect ordinary-mode history or relaunch-recovery observations.
+Those remain pending, with the two existing conversations retained for stages
+5–8. A continuation is separate evidence and must record this intervening
+launch/quit session; it must not rewrite the original partial attempt as a
+successful uninterrupted walkthrough.
