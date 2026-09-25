@@ -191,8 +191,9 @@ if MODE == 'exit': sys.exit(23)
 (home / 'sessions').mkdir(exist_ok=True)
 (home / 'sessions' / 'conversation.jsonl').write_text('preserve conversation')
 pathlib.Path('user-work.txt').write_text('preserve workspace')
-pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'catalog_path': setting('model_catalog_json'), 'catalog': json.loads(pathlib.Path(setting('model_catalog_json')).read_text()), 'env': dict(os.environ)}))
+# Persist settings before publishing the capture: callers may stop the fixture immediately.
 (pathlib.Path(os.environ['CODEX_ELECTRON_USER_DATA_PATH']) / 'tool-settings.json').write_text(json.dumps({'engine':os.environ.get('CODEX_CLI_PATH')}))
+pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'catalog_path': setting('model_catalog_json'), 'catalog': json.loads(pathlib.Path(setting('model_catalog_json')).read_text()), 'env': dict(os.environ)}))
 if MODE == 'edit-config':
     with config_path.open('a') as out: out.write('\n[user_preferences]\nkeep_edit = true\n')
 if MODE == 'shell-commands':
