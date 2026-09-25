@@ -1,0 +1,97 @@
+{
+  "date": "2026-09-25",
+  "base_commit": "31fccb3",
+  "candidate_version": "v0.0.0-test.arm64-fix",
+  "platform": "Windows 11 Pro ARM64 build 26200; UTM disposable snapshot; SabreTest",
+  "shells": [
+    "Windows PowerShell 5.1 (x64 process environment)",
+    "PowerShell 7.6.6 ARM64"
+  ],
+  "regression_before_fix": [
+    {
+      "name": "installer-red-ps5",
+      "exit_code": 1
+    },
+    {
+      "name": "installer-red-ps7",
+      "exit_code": 1
+    }
+  ],
+  "production_sha256": {
+    "scripts/install.ps1": "e17996f46cad2856f99500ae0d63ab33cf20cdaf2995b602565c4355076df1e3",
+    "scripts/windows_process.py": "2cfd5d132feecdb23beefc2ca6285ddc0673cff70432d7d7159272edc8d5b8dd"
+  },
+  "candidate_arm64_sha256": "60cd6fab7cb8e2eef20de394bbae8e423fdab34fb54764926b1881627ab863e5",
+  "macos": {
+    "go_race": "passed",
+    "go_vet": "passed",
+    "python_passed": 111,
+    "python_skipped": 41,
+    "six_platform_builds": "passed"
+  },
+  "reviews": {
+    "standards_findings": 0,
+    "spec_findings": 0
+  },
+  "verified_dependencies": [
+    {
+      "dependency": "node",
+      "sha256_verified": true
+    },
+    {
+      "dependency": "pwsh",
+      "sha256_verified": true
+    }
+  ],
+  "native_results": [
+    {
+      "name": "installer-ps5",
+      "exit_code": 0,
+      "seconds": 2.83,
+      "user_path_preserved": true,
+      "log_sha256": "ed40a2f0be3a7f23b9d336f3d4835938ccd1c178da5cc5349f2892375698a41f"
+    },
+    {
+      "name": "installer-ps7",
+      "exit_code": 0,
+      "seconds": 2.63,
+      "user_path_preserved": true,
+      "log_sha256": "7dbf82bd890bbf2913a53525e534491ce99badbe99b45674fe9dbec76d42e0b0"
+    },
+    {
+      "name": "windows-process",
+      "exit_code": 0,
+      "seconds": 5.36,
+      "user_path_preserved": true,
+      "log_sha256": "52c0e13a112ee3704375f43b4705f9920cf10718b20ed49dbdda7dda7d09a011",
+      "tests_passed": 10
+    },
+    {
+      "name": "qualification-ps5",
+      "exit_code": 0,
+      "seconds": 301.31,
+      "user_path_preserved": true,
+      "log_sha256": "b6765b807cea37285d30dc409e34bc50a5fdf128d41df6a9892aafa57f9e60ee",
+      "tests_passed": 17
+    },
+    {
+      "name": "qualification-ps7",
+      "exit_code": 0,
+      "seconds": 278.75,
+      "user_path_preserved": true,
+      "log_sha256": "aaf367edbbde207ad83a5e2bceafb47e3ab2ac89c7953795c5dd1c7a29bea57f",
+      "tests_passed": 17
+    },
+    {
+      "name": "lifecycle-ps7",
+      "exit_code": 0,
+      "seconds": 17.95,
+      "user_path_preserved": true,
+      "log_sha256": "411847a5701f491c5202e5fee0503db0a044e2f2d065cf332453b989a651f05c"
+    }
+  ],
+  "limits": [
+    "Synthetic local qualification only; no live model or normal-account release qualification.",
+    "Native AMD64 execution not available locally; host mapping covered at the Windows API boundary."
+  ]
+}

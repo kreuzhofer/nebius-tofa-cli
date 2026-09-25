@@ -1,5 +1,7 @@
 """Native Windows process ownership, without shell command parsing."""
 
+import ctypes
+from ctypes import wintypes
 import os
 from pathlib import Path
 import shutil
@@ -8,10 +10,18 @@ import subprocess
 
 def architecture():
     """Return the native OS release architecture, including emulated Python."""
-    value = os.environ.get("PROCESSOR_ARCHITEW6432") or os.environ.get("PROCESSOR_ARCHITECTURE", "")
-    result = {"amd64": "amd64", "arm64": "arm64"}.get(value.lower())
+    # Environment variables describe the emulated process on Windows ARM64.
+    # IsWow64Process2 reports the host independently of the caller's architecture.
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    query = kernel.IsWow64Process2
+    query.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.USHORT), ctypes.POINTER(wintypes.USHORT)]
+    query.restype = wintypes.BOOL
+    process_machine, native_machine = wintypes.USHORT(), wintypes.USHORT()
+    if not query(wintypes.HANDLE(-1), ctypes.byref(process_machine), ctypes.byref(native_machine)):
+        raise ctypes.WinError()
+    result = {0x8664: "amd64", 0xAA64: "arm64"}.get(native_machine.value)
     if result is None:
-        raise ValueError("Windows qualification requires an AMD64 or ARM64 operating system")
+        raise ValueError("Unsupported native Windows architecture: " + hex(native_machine.value))
     return result
 
 

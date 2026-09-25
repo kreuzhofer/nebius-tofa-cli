@@ -54,6 +54,9 @@ Rerun the installer to upgrade; saved preferences and credentials are retained.
 
 ### Windows PowerShell
 
+Requires Windows 10 version 1709 or later. The installer detects the native
+AMD64 or ARM64 host, including when PowerShell runs under emulation.
+
 ```powershell
 $Version = 'v0.1.0-rc.2'
 $Installer = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/install.ps1" -ErrorAction Stop

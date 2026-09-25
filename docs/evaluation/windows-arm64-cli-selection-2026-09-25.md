@@ -1,5 +1,10 @@
 # Windows ARM64 CLI selection validation — 2026-09-25
 
+Follow-up: the installer architecture gap recorded below is resolved for the
+[new local candidate](windows-arm64-architecture-2026-09-25.md); all 17
+qualification tests passed under both PowerShell 5.1 and 7. Original results
+below are retained as historical evidence.
+
 Issue [#56](https://github.com/kreuzhofer/nebius-tofa-cli/issues/56) was validated
 against installed Codex CLI 0.156.1 on Windows 11 Pro ARM64 (build 26200), using
 the SabreTest account in a local UTM VM. The source candidate was `16f0a35` plus

@@ -12,9 +12,27 @@ Assert-NotLink $Root
 $Manifest=Join-Path $Root '.tofa-install'
 if ((Test-Path -LiteralPath $Root) -and !(Test-Path -LiteralPath $Manifest) -and @(Get-ChildItem -Force -LiteralPath $Root).Count) {throw 'Existing directory is not owned by tofa'}
 if ((Test-Path -LiteralPath $Manifest) -and ((Get-Content -Raw -LiteralPath $Manifest).Trim() -ne 'tofa-install-v1')) {throw 'Unknown install manifest'}
-$Arch=$env:PROCESSOR_ARCHITEW6432
-if (!$Arch) {$Arch=$env:PROCESSOR_ARCHITECTURE}
-switch ($Arch) {'ARM64' {$Arch='arm64'} 'AMD64' {$Arch='amd64'} default {throw "Unsupported architecture: $Arch"}}
+# Process environment and GetNativeSystemInfo can report the emulated x64
+# architecture on ARM64. Query the host machine explicitly instead.
+if (-not ('Tofa.InstallArchitecture' -as [type])) {
+ Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+namespace Tofa {
+ public static class InstallArchitecture {
+  [DllImport("kernel32.dll", SetLastError = true)]
+  [return: MarshalAs(UnmanagedType.Bool)]
+  public static extern bool IsWow64Process2(IntPtr process, out ushort processMachine, out ushort nativeMachine);
+ }
+}
+'@
+}
+[UInt16]$ProcessMachine=0
+[UInt16]$NativeMachine=0
+if (![Tofa.InstallArchitecture]::IsWow64Process2([IntPtr]::new(-1),[ref]$ProcessMachine,[ref]$NativeMachine)) {
+ throw [ComponentModel.Win32Exception]::new([Runtime.InteropServices.Marshal]::GetLastWin32Error())
+}
+$Arch=switch ($NativeMachine) {0xAA64 {'arm64'} 0x8664 {'amd64'} default {throw "Unsupported native Windows architecture: $NativeMachine"}}
 if ($Version -eq 'latest') {$Version=(Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest").tag_name}
 if ($Version -notmatch '^[A-Za-z0-9._-]+$') {throw 'Invalid resolved release tag'}
 $Asset="tofa_${Version}_windows_${Arch}.exe"
