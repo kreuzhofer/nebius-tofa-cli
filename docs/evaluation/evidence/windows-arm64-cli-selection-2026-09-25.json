@@ -1,0 +1,65 @@
+{
+  "date": "2026-09-25",
+  "scope": "Synthetic local Windows ARM64 validation for issue #56; no live model support qualification",
+  "base_commit": "16f0a35",
+  "test_changes": "Follow-up commit containing this evidence",
+  "platform": "Windows 11 Pro ARM64, build 26200, UTM disposable snapshot",
+  "client": "codex-cli 0.156.1 (aarch64-pc-windows-msvc)",
+  "test_binary_sha256": "a059dff5e4a76f7a0c9f3a08aab4b09182f5e9195b6c4e9907693ee22767893f",
+  "native_go": {
+    "package": "./internal/tofa",
+    "top_level_passed": 54,
+    "failed": 0,
+    "exit_code": 0,
+    "seconds": 61.1,
+    "log_sha256": "6f800db087c5352c6e0f9d7884c5c5206b080bfe4bef2b4428c19b3a850deda8"
+  },
+  "installed_approval_subtests": [
+    "allow",
+    "allow_after_tool_check",
+    "deny",
+    "same-model_allow",
+    "same-model_deny",
+    "explicit_distinct_allow",
+    "explicit_distinct_deny",
+    "invalid_JSON",
+    "missing_outcome",
+    "invalid_outcome",
+    "invalid_risk",
+    "upstream_error",
+    "cancelled_review"
+  ],
+  "windows_process_python": {
+    "tests": 9,
+    "exit_code": 0
+  },
+  "offline_installer_lifecycle": {
+    "exit_code": 0
+  },
+  "limits": [
+    "Synthetic upstream responses only; no model marked supported by these results.",
+    "Windows ARM64 Go race detector unsupported; macOS race suite passed.",
+    "Desktop clients and Claude were not qualified.",
+    "Broader Windows qualification runner remains failing on the ARM64/emulated-PowerShell architecture boundary."
+  ],
+  "native_installer_lifecycle": {
+    "exit_code": 0,
+    "version": "v0.0.0-test.56",
+    "user_path_preserved": true,
+    "shell": "PowerShell 7.6.6 ARM64"
+  },
+  "qualification_runner": {
+    "tests": 17,
+    "exit_code": 1,
+    "failures": 12,
+    "errors": 1,
+    "user_path_preserved": true,
+    "reason": "Emulated Windows PowerShell 5.1 reports AMD64 with no PROCESSOR_ARCHITEW6432; installer requests AMD64 asset after native Python runner downloaded ARM64. Later assertions fail before their intended stages.",
+    "log_sha256": "85dbc631720d79b4b6b7c513472b12d2587d25fe43ca5004e77586fe945d1454"
+  },
+  "macos_python": {
+    "passed": 110,
+    "skipped": 41,
+    "invocation_note": "Discovery passed 104 tests. Six argument-taking tests were rerun correctly: lifecycle_test.py DIST VERSION (4) and terminal_test.py BINARY (2), all passed."
+  }
+}

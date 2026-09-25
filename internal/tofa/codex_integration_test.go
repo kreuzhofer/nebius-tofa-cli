@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -92,11 +93,11 @@ func TestInstalledCodexToolAndContinuationThroughAdapter(t *testing.T) {
 			for _, tool := range payload.Tools {
 				switch tool.Name {
 				case "exec_command":
-					name, arguments = tool.Name, `{"cmd":"printf tofa-fixture-tool","max_output_tokens":100}`
+					name, arguments = tool.Name, `{"cmd":"echo tofa-fixture-tool","max_output_tokens":100}`
 				case "shell_command":
-					name, arguments = tool.Name, `{"command":"printf tofa-fixture-tool"}`
+					name, arguments = tool.Name, `{"command":"echo tofa-fixture-tool"}`
 				case "shell":
-					name, arguments = tool.Name, `{"command":["sh","-c","printf tofa-fixture-tool"]}`
+					name, arguments = tool.Name, `{"command":["sh","-c","echo tofa-fixture-tool"]}`
 				}
 				if name != "" {
 					break
@@ -146,6 +147,11 @@ func TestInstalledCodexToolAndContinuationThroughAdapter(t *testing.T) {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 		defer cancel()
+		// Isolated Windows homes have no configured sandbox backend. Enable the
+		// restricted-token backend so read-only tools remain sandboxed.
+		if runtime.GOOS == "windows" {
+			args = append([]string{"-c", `windows.sandbox="unelevated"`}, args...)
+		}
 		command := exec.CommandContext(ctx, clientPath, args...)
 		command.Dir, command.Env = root, isolated
 		output, err := command.CombinedOutput()
@@ -297,7 +303,7 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 						return
 					}
 					if test.name == "allow after tool check" && reviewCount == 1 {
-						item = map[string]any{"id": "fc_inspection", "type": "function_call", "call_id": "call_inspection", "name": "exec_command", "arguments": `{"cmd":"printf tofa-review-inspection","max_output_tokens":100}`, "status": "completed"}
+						item = map[string]any{"id": "fc_inspection", "type": "function_call", "call_id": "call_inspection", "name": "exec_command", "arguments": `{"cmd":"echo tofa-review-inspection","max_output_tokens":100}`, "status": "completed"}
 					} else {
 						if test.name == "allow after tool check" {
 							found := false
@@ -325,7 +331,7 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 						}
 					}
 					if count == 1 {
-						item = map[string]any{"id": "fc_review_fixture", "type": "function_call", "call_id": "call_review_fixture", "name": "exec_command", "arguments": `{"cmd":"printf tofa-review-gated-action","sandbox_permissions":"require_escalated","justification":"Run the user-authorized harmless approval fixture.","max_output_tokens":100}`, "status": "completed"}
+						item = map[string]any{"id": "fc_review_fixture", "type": "function_call", "call_id": "call_review_fixture", "name": "exec_command", "arguments": `{"cmd":"echo tofa-review-gated-action","sandbox_permissions":"require_escalated","justification":"Run the user-authorized harmless approval fixture.","max_output_tokens":100}`, "status": "completed"}
 					} else {
 						item = fixtureMessage("Fixture complete.")
 					}
@@ -364,6 +370,11 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 						}
 					}()
 				}
+				// Isolated Windows homes have no configured sandbox backend. Enable the
+				// restricted-token backend so read-only tools remain sandboxed.
+				if runtime.GOOS == "windows" {
+					args = append([]string{"-c", `windows.sandbox="unelevated"`}, args...)
+				}
 				command := exec.CommandContext(ctx, clientPath, args...)
 				command.Dir, command.Env = root, isolated
 				var err error
@@ -395,7 +406,21 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 				t.Fatalf("execution gate: executions=%d want allow=%v\n%s", got, test.allow, clientOutput)
 			}
 			// The JSON event stream is an independent observation of actual command execution.
-			completed := strings.Contains(string(clientOutput), `"aggregated_output":"tofa-review-gated-action"`)
+			completed := false
+			for _, line := range strings.Split(string(clientOutput), "\n") {
+				var event struct {
+					Type string `json:"type"`
+					Item struct {
+						Type     string `json:"type"`
+						Output   string `json:"aggregated_output"`
+						ExitCode *int   `json:"exit_code"`
+						Status   string `json:"status"`
+					} `json:"item"`
+				}
+				if json.Unmarshal([]byte(line), &event) == nil && event.Type == "item.completed" && event.Item.Type == "command_execution" && event.Item.Status == "completed" && event.Item.ExitCode != nil && *event.Item.ExitCode == 0 && strings.TrimSpace(event.Item.Output) == "tofa-review-gated-action" {
+					completed = true
+				}
+			}
 			if completed != test.allow {
 				t.Fatalf("command execution events disagree: allow=%v\n%s", test.allow, clientOutput)
 			}
