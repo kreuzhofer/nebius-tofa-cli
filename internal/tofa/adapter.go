@@ -234,6 +234,7 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 	fmt.Fprintln(a.Out, "Route: per-launch Responses request adapter (assistant-history repair).")
 	if selectedModel == "moonshotai/Kimi-K3" {
 		fmt.Fprintln(a.Out, "Automatic title routing: gpt-5.6-luna -> moonshotai/Kimi-K3 (captured thread_title contract only; other auxiliary requests remain unsupported).")
+		fmt.Fprintln(a.Out, "Automatic title routing: gpt-6-luna -> moonshotai/Kimi-K3 (same verified thread_title contract).")
 		fmt.Fprintln(a.Out, "Automatic title adaptation: code-mode tools relocated intact; title schema moved to final-answer instructions; desktop still validates the title.")
 	}
 	go func() {

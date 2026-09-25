@@ -43,7 +43,10 @@ func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspac
 		}
 		seen[descriptor.Slug] = true
 	}
-	catalog, err := prepareModelCatalogInDir(model, "", runtimeDir)
+	// The shared catalog includes the native reviewer. Bind only the added
+	// Token Factory model's reviewer to its supported route; native descriptors
+	// and the engine's approval policy, assessment parser and gates stay intact.
+	catalog, err := prepareModelCatalogInDir(model, model, runtimeDir)
 	if err != nil {
 		return "", err
 	}

@@ -173,6 +173,16 @@ HTTP error and terminal notice. The recognized Kimi title and non-strict review
 adaptations, schema/tool restrictions, and compaction rejection are unchanged.
 Catalog visibility does not expand supported Token Factory models.
 
+The added Kimi descriptor explicitly selects `moonshotai/Kimi-K3` for its
+automatic reviewer. This prevents the merged native catalog from selecting
+`codex-auto-review` for a Token Factory conversation. Startup announces this
+selection. Native descriptors and reviewers are unchanged; the launcher does not
+enable **Approve for me**, change managed policy, fabricate assessments, or bypass
+the engine's decision parser and execution gates. The existing non-strict Kimi
+review adaptation still preserves all reviewer tools and assessment guidance.
+Live desktop review on this corrected source still requires qualification; see
+the [rc.3 failure and routing correction](releases/desktop-prerelease-routing-2026-09-25.md).
+
 The [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) catalog behavior
 is integrated with the ordinary profile by
 [#47](https://github.com/kreuzhofer/nebius-tofa-cli/issues/47).
@@ -335,6 +345,12 @@ complete title schema to final-answer instructions; the desktop still validates
 the generated title and description. Different models, source markers, schemas
 or tool inventories fail explicitly. App-backed title lookups remain unqualified.
 See the [#52 current contract and live qualification](research/desktop-shared-title-generation.md).
+The observed `gpt-6-luna` selection has a separate verified inventory: four
+`functions` tools, `clock.sleep`, and six `collaboration` tools. The original
+`gpt-5.6-luna` inventory remains three `functions` tools. Both inventories retain
+their complete definitions; they are not interchangeable. The bundled-engine
+replay verifies both. The [#35 correction](releases/desktop-prerelease-routing-2026-09-25.md)
+records the newer model's live failure and the remaining live qualification work.
 The [#33 evidence](research/desktop-title-generation.md) concerns an older client
 and isolated profile; it is not the current shared-profile qualification.
 The recognized non-strict automatic-review workaround remains unchanged. Native

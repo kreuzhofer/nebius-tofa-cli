@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "issue": 35,
+  "updated_utc": "2026-09-25T09:35:53.065023+00:00",
+  "scope": "integrated_candidate_desktop_and_installed_lifecycle",
+  "candidate": {
+    "source_commit": "b53679f44255beb093db09a710a13cce073073ca",
+    "candidate_version": "v0.1.0-rc.3",
+    "candidate_sha256": "aed90826cf2f9eb6b358d345b530f8ad55880530c48c5907f487c98c75e1575a",
+    "app_version": "26.917.71314",
+    "app_build": "10954",
+    "bundle_id": "com.openai.codex",
+    "engine_version": "codex-cli 0.155.0-alpha.16.4",
+    "platform": {
+      "os": "macOS",
+      "version": "26.6.2",
+      "build": "25G83",
+      "arch": "arm64"
+    },
+    "app_sha256": {
+      "Contents/Resources/app.asar": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+      "Contents/Resources/codex": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+      "Contents/MacOS/ChatGPT": "381cff21b027c5dd76391eae427125117b8ccf9ef565f66d1470a3bbcf755af7",
+      "Contents/Frameworks/Codex Framework.framework/Versions/153.0.8010.53/Codex Framework": "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2"
+    },
+    "installation_artifacts": {
+      "candidate": {
+        "tofa_v0.1.0-rc.3_darwin_arm64": "aed90826cf2f9eb6b358d345b530f8ad55880530c48c5907f487c98c75e1575a",
+        "install.sh": "72fbe5ceafef4a361fa56bccaed3472691e3c2a47804ede4cde070256ae693d2"
+      },
+      "previous": {
+        "tofa_v0.1.0-rc.2_darwin_arm64": "275d2c1627f6a4e388f2562e3c418ad8a5e03298b53c3697192759f1f8eb55e4",
+        "install.sh": "5a145252b70f0f39f80a75e4152760e62c89d0f33ecc92f10eb6465a58b2d1bc"
+      }
+    }
+  },
+  "model": "moonshotai/Kimi-K3",
+  "allow_unverified": true,
+  "connection": "launch-owned authenticated loopback Responses adapter",
+  "observer": "human operator",
+  "human_observations": {
+    "UI_BASELINE_ACCOUNT": "pass",
+    "UI_BASELINE_HISTORY": "pass",
+    "UI_TOFA1_PARITY": "pass",
+    "UI_STREAMING": "pass",
+    "UI_GENERATED_TITLE": "not_observed",
+    "UI_TOOL_CONTINUATION": "pass",
+    "UI_ANOTHER_TURN": "pass",
+    "UI_AUTO_APPROVAL": "fail"
+  },
+  "automated_evidence": {
+    "approval__failure": {
+      "passed": false,
+      "failure_kind": "RuntimeError",
+      "checked_utc": "2026-09-25T09:35:53.013581+00:00"
+    },
+    "approval_execution": {
+      "passed": false,
+      "boundary": "actual user-requested marker; human observation separately establishes automatic approval",
+      "checked_utc": "2026-09-25T09:35:53.013061+00:00"
+    },
+    "candidate_install": {
+      "installer_exit_zero": true,
+      "installed_hash_matches": true,
+      "installed_version_matches": true,
+      "engine_config_preserved": true,
+      "engine_auth_preserved": true,
+      "session_index_preserved": true,
+      "engine_state_preserved": true,
+      "engine_wal_preserved": true,
+      "tool_settings_preserved": true,
+      "desktop_preferences_preserved": true,
+      "tofa_config_preserved": true,
+      "tofa_file_credentials_preserved": true,
+      "zsh_startup_preserved": true,
+      "sessions_preserved": true,
+      "archived_sessions_preserved": true,
+      "workspace_preserved": true,
+      "passed": true,
+      "boundary": "real-account installer with local checksum-verified candidate; no PATH modification",
+      "checked_utc": "2026-09-25T09:22:07.048505+00:00"
+    },
+    "candidate_install_inputs": {
+      "passed": true,
+      "boundary": "pinned installer and binary integrity",
+      "checked_utc": "2026-09-25T09:22:05.595238+00:00"
+    },
+    "identity_initial": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-25T09:21:09.083537+00:00"
+    },
+    "identity_initial_candidate": {
+      "passed": true,
+      "boundary": "candidate integrity before external operations",
+      "checked_utc": "2026-09-25T09:21:08.681333+00:00"
+    },
+    "identity_install_candidate": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-25T09:22:05.955565+00:00"
+    },
+    "identity_install_candidate_candidate": {
+      "passed": true,
+      "boundary": "candidate integrity before external operations",
+      "checked_utc": "2026-09-25T09:22:05.600439+00:00"
+    },
+    "identity_install_previous": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-25T09:22:04.798230+00:00"
+    },
+    "identity_install_previous_candidate": {
+      "passed": true,
+      "boundary": "candidate integrity before external operations",
+      "checked_utc": "2026-09-25T09:22:04.438156+00:00"
+    },
+    "identity_launch1": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-25T09:22:22.316618+00:00"
+    },
+    "identity_launch1_candidate": {
+      "passed": true,
+      "boundary": "candidate integrity before external operations",
+      "checked_utc": "2026-09-25T09:22:21.952923+00:00"
+    },
+    "launch1_catalog": {
+      "native_descriptors_preserved": true,
+      "exactly_one_kimi_added": true,
+      "passed": true,
+      "native_descriptor_count": 9,
+      "native_catalog_changed_since_baseline": false,
+      "boundary": "launch-owned catalog file compared with ordinary public export; not picker/UI evidence",
+      "checked_utc": "2026-09-25T09:22:57.331372+00:00"
+    },
+    "launch1_startup": {
+      "passed": true,
+      "boundary": "production startup announcement after ownership/routing handshake; not UI readiness",
+      "checked_utc": "2026-09-25T09:22:25.481736+00:00"
+    },
+    "native_baseline": {
+      "chatgpt_login": true,
+      "export_success_without_diagnostics": true,
+      "bundled_success_without_diagnostics": true,
+      "cache_fresh": true,
+      "cache_has_identity": true,
+      "cache_version_matches": true,
+      "export_matches_cache": true,
+      "export_differs_from_bundled": true,
+      "nonempty_catalog": true,
+      "passed": true,
+      "descriptor_count": 9,
+      "boundary": "authorized ordinary-account engine API; not UI or inference",
+      "checked_utc": "2026-09-25T09:22:03.467657+00:00"
+    },
+    "native_launch1": {
+      "chatgpt_login": true,
+      "export_success_without_diagnostics": true,
+      "bundled_success_without_diagnostics": true,
+      "cache_fresh": true,
+      "cache_has_identity": true,
+      "cache_version_matches": true,
+      "export_matches_cache": true,
+      "export_differs_from_bundled": true,
+      "nonempty_catalog": true,
+      "passed": true,
+      "descriptor_count": 9,
+      "boundary": "authorized ordinary-account engine API; not UI or inference",
+      "checked_utc": "2026-09-25T09:22:22.407266+00:00"
+    },
+    "previous_install": {
+      "installer_exit_zero": true,
+      "installed_hash_matches": true,
+      "installed_version_matches": true,
+      "engine_config_preserved": true,
+      "engine_auth_preserved": true,
+      "session_index_preserved": true,
+      "engine_state_preserved": true,
+      "engine_wal_preserved": true,
+      "tool_settings_preserved": true,
+      "desktop_preferences_preserved": true,
+      "tofa_config_preserved": true,
+      "tofa_file_credentials_preserved": true,
+      "zsh_startup_preserved": true,
+      "sessions_preserved": true,
+      "archived_sessions_preserved": true,
+      "workspace_preserved": true,
+      "passed": true,
+      "boundary": "real-account installer with local checksum-verified candidate; no PATH modification",
+      "checked_utc": "2026-09-25T09:22:05.504131+00:00"
+    },
+    "previous_install_inputs": {
+      "passed": true,
+      "boundary": "pinned installer and binary integrity",
+      "checked_utc": "2026-09-25T09:22:04.432152+00:00"
+    },
+    "token_factory_catalog": {
+      "catalog_exit_zero": true,
+      "kimi_available": true,
+      "no_diagnostics": true,
+      "passed": true,
+      "boundary": "Token Factory model availability; not inference",
+      "checked_utc": "2026-09-25T09:22:04.302631+00:00"
+    }
+  },
+  "walkthrough_completed": false,
+  "missing_observations": [
+    "UI_CANCELLATION",
+    "UI_COMPACTION_LIMIT",
+    "UI_FINAL_ACCOUNT_SETTINGS",
+    "UI_FINAL_HISTORY",
+    "UI_FINAL_WORKSPACES",
+    "UI_ORDINARY_HISTORY",
+    "UI_ORDINARY_NATIVE",
+    "UI_ORDINARY_SEND_REFUSAL",
+    "UI_REINSTALL_RESUME",
+    "UI_TOFA2_NATIVE",
+    "UI_TOFA2_RECOVERY",
+    "UI_UNINSTALL_ACCOUNT",
+    "UI_UNINSTALL_HISTORY",
+    "UI_UNSUPPORTED_MODEL"
+  ],
+  "missing_automated_checks": [
+    "identity_after_launch1",
+    "identity_after_launch2",
+    "identity_after_launch3",
+    "identity_final",
+    "identity_launch2",
+    "identity_launch3",
+    "launch1_cleanup",
+    "launch1_exit",
+    "launch2_catalog",
+    "launch2_cleanup",
+    "launch2_exit",
+    "launch2_startup",
+    "launch3_catalog",
+    "launch3_cleanup",
+    "launch3_exit",
+    "launch3_startup",
+    "native_launch2",
+    "native_launch3",
+    "reinstall_install",
+    "uninstall"
+  ],
+  "outcome": "incomplete",
+  "end_to_end_qualification_claimed": false,
+  "limitations": [
+    "Human-observed streaming; no live wire-event counts",
+    "No account/entitlement changes induced",
+    "Compaction is explicitly unsupported",
+    "Windows desktop is not qualified",
+    "Review all observations; helper never declares release qualification"
+  ]
+}
