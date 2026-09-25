@@ -42,11 +42,13 @@ func TestRealChildReceivesScopedEnvironmentAndExitStatus(t *testing.T) {
 	t.Setenv("TOFA_TEST_CAPTURE", capture)
 	t.Setenv("CODEX_HOME", home)
 	t.Setenv("TOFA_API_KEY", "parent-token")
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(`{"data":[{"id":"fixture-model"}]}`)) }))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"data":[{"id":"moonshotai/Kimi-K3"}]}`))
+	}))
 	defer server.Close()
 	var out bytes.Buffer
 	app := tofa.App{Dir: dir, Vault: v, Out: &out, Endpoint: server.URL, HTTP: server.Client()}
-	err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified", "--direct", "--", "hello"})
+	err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified", "--direct", "--", "hello"})
 	exit, ok := err.(*exec.ExitError)
 	if !ok || exit.ExitCode() != 23 {
 		t.Fatalf("lost child exit code: %v", err)
@@ -93,7 +95,7 @@ func TestUnixLaunchSignalsStopChildAndAdapter(t *testing.T) {
 			}
 			return listener, err
 		}
-		if err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"}); err == nil {
+		if err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err == nil {
 			t.Fatal("signal cancellation returned success")
 		}
 		connection, err := net.DialTimeout("tcp", address, time.Second)

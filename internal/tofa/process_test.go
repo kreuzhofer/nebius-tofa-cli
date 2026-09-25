@@ -94,7 +94,7 @@ func TestAdaptedRealChildKeepsExitCodeAndLocalCredential(t *testing.T) {
 	capture := fakeInstalledClient(t, "exit")
 	app, _ := adapterFixture(t, nil, nil)
 	app.RunClient = nil
-	err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"})
+	err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 	var exit *exec.ExitError
 	if !errors.As(err, &exit) || exit.ExitCode() != 23 {
 		t.Fatalf("lost child status: %v", err)
@@ -133,7 +133,7 @@ func TestLaunchCancellationBoundsUnresponsiveChildCleanup(t *testing.T) {
 			}
 			result := make(chan error, 1)
 			go func() {
-				result <- app.RunContext(ctx, []string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"})
+				result <- app.RunContext(ctx, []string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 			}()
 			deadline := time.After(5 * time.Second)
 			tick := time.NewTicker(10 * time.Millisecond)
@@ -190,7 +190,7 @@ func TestChildStartFailureClosesAdapter(t *testing.T) {
 		}
 		return listener, err
 	}
-	err = app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"})
+	err = app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 	if err == nil || !strings.Contains(err.Error(), "could not start") {
 		t.Fatalf("missing child startup error: %v", err)
 	}

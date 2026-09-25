@@ -21,7 +21,7 @@ func TestExplicitUnverifiedLaunchScopesOnlyChild(t *testing.T) {
 			t.Errorf("incorrect scoped model discovery")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"data":[{"id":"example/model"}]}`))
+		w.Write([]byte(`{"data":[{"id":"moonshotai/Kimi-K3"}]}`))
 	}))
 	defer server.Close()
 	var out bytes.Buffer
@@ -29,7 +29,7 @@ func TestExplicitUnverifiedLaunchScopesOnlyChild(t *testing.T) {
 	app := tofa.App{Dir: dir, Vault: v, Out: &out, Endpoint: server.URL, HTTP: server.Client(), RunClient: func(args, env []string) error {
 		calls++
 		all := strings.Join(args, " ")
-		for _, want := range []string{`model="example/model"`, `model_provider="nebius-tofa"`, `ai_project_id = "override"`, `wire_api = "responses"`} {
+		for _, want := range []string{`model="moonshotai/Kimi-K3"`, `model_provider="nebius-tofa"`, `ai_project_id = "override"`, `wire_api = "responses"`} {
 			if !strings.Contains(all, want) {
 				t.Errorf("missing %s in %s", want, all)
 			}
@@ -42,16 +42,16 @@ func TestExplicitUnverifiedLaunchScopesOnlyChild(t *testing.T) {
 		}
 		return nil
 	}}
-	if err := app.Run([]string{"launch", "codex", "--model", "example/model"}); err == nil {
+	if err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--project-id", "override"}); err == nil {
 		t.Fatal("unverified model accepted by default")
 	}
-	if err := app.Run([]string{"launch", "codex", "--model", "example/model", "--allow-unverified", "--direct", "--project-id", "override", "--", "hello"}); err != nil {
+	if err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified", "--direct", "--project-id", "override", "--", "hello"}); err != nil {
 		t.Fatal(err)
 	}
 	if calls != 1 {
 		t.Fatal("incorrect child count")
 	}
-	if err := app.Run([]string{"launch", "codex", "--model", "example/model", "--allow-unverified", "--", "-c", "model_provider=evil"}); err == nil {
+	if err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified", "--", "-c", "model_provider=evil"}); err == nil {
 		t.Fatal("accepted routing override")
 	}
 	c, _, err := s.Credentials()

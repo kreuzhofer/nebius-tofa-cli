@@ -293,7 +293,35 @@ input modalities, alongside the pinned Codex coding prompt. Optional Responses
 reasoning effort, summary and verbosity controls are omitted until their contracts
 are established. Catalog files are removed after launch; forced termination can
 leave a `tofa-model-catalog-*.json` file in the OS temporary directory. Unknown
-model IDs retain existing metadata behavior. All models require `--allow-unverified`.
+model IDs without bundled model-specific metadata now fail explicitly, even with
+`--allow-unverified`. Both roles must appear in the current selected project's catalog.
+The bundled metadata remains the dated 2026-09-23 snapshot; availability is refreshed
+on every launch.
+
+Adapted Codex CLI launches default to `zai-org/GLM-5.3-Flash` as Guardian, without a
+second prompt. Override it explicitly when needed:
+
+```sh
+./tofa launch codex --model deepseek-ai/DeepSeek-V4.1-Flash --allow-unverified
+./tofa launch codex --model moonshotai/Kimi-K3 --guardian-model moonshotai/Kimi-K3 --allow-unverified
+```
+
+An unavailable or incompatible main or Guardian is an error, including the default
+Guardian. Nothing is substituted. The launcher displays the effective main,
+Guardian, route and experimental status before starting the client. The diagnostic
+`--direct` route preserves native reviewer selection, announces that exception and
+rejects `--guardian-model` (including the retained internal
+`--evaluation-guardian-model` alias). Passing both aliases is an error. Native
+approval policies and routing-override protections still apply.
+
+Support decisions use [recorded combination statuses](internal/tofa/assets/model-verification.json)
+for the exact target, route and main/Guardian roles. All current combinations still
+require `--allow-unverified`: the [historical CLI campaign](docs/evaluation/selected-pairs-2026-09-23.md)
+explicitly retained experimental status, and does not promote launcher or desktop
+support. Changing a role or route does not inherit another combination's support.
+Evaluation tools retain their explicit same-model default and the internal flag.
+This explicit CLI selection change does not introduce the upcoming interactive
+picker or desktop model selection.
 See [the metadata research](https://github.com/kreuzhofer/nebius-tofa-cli/blob/03d47a502c09debc36a2072c3aa3a929beb6c38d/docs/research/kimi-provider-metadata.md)
 for the provider snapshot and remaining gaps.
 

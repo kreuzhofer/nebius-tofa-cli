@@ -195,24 +195,30 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 	t.Log(strings.TrimSpace(string(version)))
 	for _, test := range []struct {
 		name, assessment string
+		guardian         string
 		allow            bool
 		status           int
 	}{
-		{"allow", `{"outcome":"allow"}`, true, 200},
-		{"allow after tool check", `{"outcome":"allow"}`, true, 200},
-		{"deny", `{"outcome":"deny"}`, false, 200},
-		{"invalid JSON", `not an assessment`, false, 200},
-		{"missing outcome", `{"risk_level":"low"}`, false, 200},
-		{"invalid outcome", `{"outcome":"maybe"}`, false, 200},
-		{"invalid risk", `{"outcome":"allow","risk_level":"safe"}`, false, 200},
-		{"upstream error", "", false, 500},
-		{"cancelled review", "", false, -1},
+		{"allow", `{"outcome":"allow"}`, "", true, 200},
+		{"allow after tool check", `{"outcome":"allow"}`, "", true, 200},
+		{"deny", `{"outcome":"deny"}`, "", false, 200},
+		{"same-model allow", `{"outcome":"allow"}`, "moonshotai/Kimi-K3", true, 200},
+		{"same-model deny", `{"outcome":"deny"}`, "moonshotai/Kimi-K3", false, 200},
+		{"explicit distinct allow", `{"outcome":"allow"}`, "zai-org/GLM-5.3-Flash", true, 200},
+		{"explicit distinct deny", `{"outcome":"deny"}`, "zai-org/GLM-5.3-Flash", false, 200},
+		{"invalid JSON", `not an assessment`, "", false, 200},
+		{"missing outcome", `{"risk_level":"low"}`, "", false, 200},
+		{"invalid outcome", `{"outcome":"maybe"}`, "", false, 200},
+		{"invalid risk", `{"outcome":"allow","risk_level":"safe"}`, "", false, 200},
+		{"upstream error", "", "", false, 500},
+		{"cancelled review", "", "", false, -1},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var mainRequests, reviewRequests, executions atomic.Int32
 			reviewStarted := make(chan struct{}, 1)
 			upstream := func(writer http.ResponseWriter, request *http.Request) {
 				var payload struct {
+					Model        string                     `json:"model"`
 					Instructions string                     `json:"instructions"`
 					Text         map[string]json.RawMessage `json:"text"`
 					Input        []struct {
@@ -231,18 +237,45 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 					return
 				}
 				reviewer := len(payload.Tools) == 3
+				wantModel := "moonshotai/Kimi-K3"
+				if reviewer {
+					wantModel = test.guardian
+					if wantModel == "" {
+						wantModel = "zai-org/GLM-5.3-Flash"
+					}
+				}
+				if payload.Model != wantModel {
+					t.Errorf("upstream model = %s, want %s (review=%v)", payload.Model, wantModel, reviewer)
+					writer.WriteHeader(400)
+					return
+				}
 				var item map[string]any
 				if reviewer {
 					reviewCount := reviewRequests.Add(1)
-					if _, exists := payload.Text["format"]; exists {
-						t.Error("review schema still constrains tool generation")
-						writer.WriteHeader(400)
-						return
-					}
-					if !strings.Contains(payload.Instructions, "When you are ready to give your final answer, return JSON matching this schema:") || !strings.Contains(payload.Instructions, `"required":["outcome"]`) {
-						t.Error("complete final-answer schema missing from real reviewer instructions")
-						writer.WriteHeader(400)
-						return
+					if payload.Model == "moonshotai/Kimi-K3" {
+						if _, exists := payload.Text["format"]; exists {
+							t.Error("review schema still constrains tool generation")
+							writer.WriteHeader(400)
+							return
+						}
+						if !strings.Contains(payload.Instructions, "When you are ready to give your final answer, return JSON matching this schema:") || !strings.Contains(payload.Instructions, `"required":["outcome"]`) {
+							t.Error("complete final-answer schema missing from real reviewer instructions")
+							writer.WriteHeader(400)
+							return
+						}
+					} else {
+						var format struct {
+							Type   string          `json:"type"`
+							Schema json.RawMessage `json:"schema"`
+						}
+						if json.Unmarshal(payload.Text["format"], &format) != nil || format.Type != "json_schema" || !strings.Contains(string(format.Schema), `"outcome"`) {
+							t.Error("native Guardian schema lost for non-Kimi model")
+							writer.WriteHeader(400)
+							return
+						}
+						if strings.Contains(payload.Instructions, "When you are ready to give your final answer, return JSON matching this schema:") {
+							t.Error("Kimi adaptation applied to another model")
+						}
 					}
 					names := map[string]bool{"exec_command": true, "write_stdin": true, "view_image": true}
 					for _, tool := range payload.Tools {
@@ -337,7 +370,12 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 				clientOutput, err = command.CombinedOutput()
 				return err
 			}
-			err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified", "--", "--sandbox", "read-only", "exec", "--skip-git-repo-check", "--ignore-rules", "--json", "Run the harmless fixture command once. If review fails, stop without bypassing review or retrying."})
+			args := []string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"}
+			if test.guardian != "" {
+				args = append(args, "--guardian-model", test.guardian)
+			}
+			args = append(args, "--", "--sandbox", "read-only", "exec", "--skip-git-repo-check", "--ignore-rules", "--json", "Run the harmless fixture command once. If review fails, stop without bypassing review or retrying.")
+			err := app.Run(args)
 			if err != nil && test.status != -1 {
 				t.Fatalf("Codex failed: %v\n%s", err, clientOutput)
 			}
