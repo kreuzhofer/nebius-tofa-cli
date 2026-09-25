@@ -33,10 +33,11 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 	if installed == "" {
 		t.Skip("set TOFA_TEST_DESKTOP_ENGINE")
 	}
-	for _, scenario := range []string{"online", "unavailable", "unavailable with foreign cache", "bundled-identical account"} {
+	for _, scenario := range []string{"online", "unavailable", "unavailable with foreign cache", "bundled-identical account", "static custom catalog"} {
 		t.Run(scenario, func(t *testing.T) {
 			unavailable := strings.HasPrefix(scenario, "unavailable")
 			bundledOnly := scenario == "bundled-identical account"
+			static := scenario == "static custom catalog"
 			bundle, capture := desktopFixture(t, "normal")
 			probeHome := t.TempDir()
 			command := exec.Command(installed, "debug", "models", "--bundled")
@@ -73,6 +74,9 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 			token := encode(`{"alg":"none","typ":"JWT"}`) + "." + encode(`{"https://api.openai.com/auth":{"chatgpt_plan_type":"plus","chatgpt_account_id":"synthetic-account","chatgpt_user_id":"synthetic-user"}}`) + "." + encode("signature")
 			auth := map[string]any{"auth_mode": "chatgpt", "tokens": map[string]string{"id_token": token, "access_token": "synthetic-access", "refresh_token": "synthetic-refresh", "account_id": "synthetic-account"}, "last_refresh": time.Now().UTC().Format(time.RFC3339)}
 			discovery := map[string]any{"engine": installed, "endpoint": server.URL, "auth": auth}
+			if static {
+				discovery["catalog"] = map[string]any{"models": []any{descriptor}}
+			}
 			if scenario == "unavailable with foreign cache" {
 				var shipped struct{ Models []map[string]any }
 				if err := json.Unmarshal(raw, &shipped); err != nil {
@@ -92,6 +96,33 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 			}
 			app, _ := adapterFixture(t, nil, nil)
 			err = app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+			if static {
+				if requests.Load() != 0 {
+					t.Fatal("static catalog unexpectedly performed native discovery")
+				}
+				if err == nil || !strings.Contains(err.Error(), "model_catalog_json") {
+					t.Fatalf("static catalog refusal must identify the setting that bypasses discovery: %v", err)
+				}
+				if _, err := os.Stat(capture); !os.IsNotExist(err) {
+					t.Fatal("desktop initialized with an unqualified static account catalog")
+				}
+				home := filepath.Join(os.Getenv("HOME"), ".codex")
+				configPath := filepath.Join(home, "config.toml")
+				config, readErr := os.ReadFile(configPath)
+				if readErr != nil {
+					t.Fatal(readErr)
+				}
+				staticLine := "model_catalog_json=" + fmt.Sprintf("%q", filepath.Join(home, "static-models.json")) + "\n"
+				if !strings.Contains(string(config), staticLine) {
+					t.Fatal("refused launch removed the user's static catalog setting")
+				}
+				// Only the operator's explicit correction enables native discovery.
+				// Apply that correction to this synthetic profile, then retry.
+				if err := os.WriteFile(configPath, []byte(strings.Replace(string(config), staticLine, "", 1)), 0600); err != nil {
+					t.Fatal(err)
+				}
+				err = app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+			}
 			if requests.Load() == 0 {
 				t.Fatal("native account catalog was never requested")
 			}

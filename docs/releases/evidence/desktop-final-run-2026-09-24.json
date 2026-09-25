@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "issue": 50,
+  "updated_utc": "2026-09-24T15:08:27.514915+00:00",
+  "scope": "corrected_candidate_recovery_shutdown_and_final_preservation",
+  "prior_evidence": {
+    "first_live_attempt_sha256": "803a06d760ada17ce95d3d49d5324cdea153de8d2892b07f5349d464e7648408",
+    "intervening_launch_quit_sha256": "f145ce6063757f49e826c75eff14594f6f19080e911baef5f56f784f7c66d21b",
+    "earlier_exit_failure_resolved": false,
+    "continuation_report_sha256": "2e4483fe2ea50fc95d744cad84138a664b4a626526d911841e8ea7a5c73e7360"
+  },
+  "candidate": {
+    "source_commit": "b7720045227b3ee0f5c577fac6efbc2a1314eead",
+    "candidate_version": "v0.0.0-qualification.50.b772004",
+    "candidate_sha256": "713bb2444ea985ad8cd0215c6904332b055c228b2a8384deaa0cb01e1fd4a1d1",
+    "app_version": "26.917.71314",
+    "app_build": "10954",
+    "bundle_id": "com.openai.codex",
+    "engine_version": "codex-cli 0.155.0-alpha.16.4",
+    "platform": {
+      "os": "macOS",
+      "version": "26.6.2",
+      "build": "25G83",
+      "arch": "arm64"
+    },
+    "app_sha256": {
+      "Contents/Resources/app.asar": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+      "Contents/Resources/codex": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+      "Contents/MacOS/ChatGPT": "381cff21b027c5dd76391eae427125117b8ccf9ef565f66d1470a3bbcf755af7",
+      "Contents/Frameworks/Codex Framework.framework/Versions/153.0.8010.53/Codex Framework": "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2"
+    }
+  },
+  "model": "moonshotai/Kimi-K3",
+  "allow_unverified": true,
+  "connection": "launch-owned authenticated loopback Responses adapter",
+  "observer": "human operator",
+  "human_observations": {
+    "UI_TOFA2_READY": "pass",
+    "UI_TOFA2_ACCOUNT": "pass",
+    "UI_TOFA2_RECOVERY": "pass",
+    "UI_TOFA2_HISTORY": "pass",
+    "UI_TOFA2_NATIVE": "pass",
+    "UI_TOFA2_PICKER": "pass",
+    "UI_FINAL_ACCOUNT": "pass",
+    "UI_FINAL_HISTORY": "pass",
+    "UI_FINAL_WORKSPACE": "pass",
+    "UI_FINAL_SETTINGS": "pass"
+  },
+  "automated_evidence": {
+    "identity_after_launch2": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-24T15:07:47.736251+00:00"
+    },
+    "identity_final": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-24T15:08:27.381765+00:00"
+    },
+    "identity_initial": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-24T15:06:33.234409+00:00"
+    },
+    "identity_launch2": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-24T15:06:40.407144+00:00"
+    },
+    "launch2_catalog": {
+      "native_descriptors_preserved": true,
+      "exactly_one_kimi_added": true,
+      "passed": true,
+      "native_descriptor_count": 9,
+      "native_catalog_changed_since_baseline": false,
+      "boundary": "launch-owned catalog file compared with ordinary public export; not picker/UI evidence",
+      "checked_utc": "2026-09-24T15:06:52.279426+00:00"
+    },
+    "launch2_cleanup": {
+      "launcher_exit_zero": true,
+      "launcher_pid_absent": true,
+      "launch_runtime_removed": true,
+      "passed": true,
+      "boundary": "launcher exit and owned runtime removal; UI preservation is human-observed",
+      "checked_utc": "2026-09-24T15:07:47.272224+00:00"
+    },
+    "launch2_exit": {
+      "passed": true,
+      "exit_code": 0,
+      "boundary": "owned launcher process exit",
+      "checked_utc": "2026-09-24T15:07:41.805885+00:00"
+    },
+    "launch2_startup": {
+      "passed": true,
+      "boundary": "production startup announcement after ownership/routing handshake; not UI readiness",
+      "checked_utc": "2026-09-24T15:06:44.048038+00:00"
+    },
+    "native_baseline": {
+      "chatgpt_login": true,
+      "export_success_without_diagnostics": true,
+      "bundled_success_without_diagnostics": true,
+      "cache_fresh": true,
+      "cache_has_identity": true,
+      "cache_version_matches": true,
+      "export_matches_cache": true,
+      "export_differs_from_bundled": true,
+      "nonempty_catalog": true,
+      "passed": true,
+      "descriptor_count": 9,
+      "boundary": "authorized ordinary-account engine API; not UI or inference",
+      "checked_utc": "2026-09-24T15:06:33.941771+00:00"
+    },
+    "native_launch2": {
+      "chatgpt_login": true,
+      "export_success_without_diagnostics": true,
+      "bundled_success_without_diagnostics": true,
+      "cache_fresh": true,
+      "cache_has_identity": true,
+      "cache_version_matches": true,
+      "export_matches_cache": true,
+      "export_differs_from_bundled": true,
+      "nonempty_catalog": true,
+      "passed": true,
+      "descriptor_count": 9,
+      "boundary": "authorized ordinary-account engine API; not UI or inference",
+      "checked_utc": "2026-09-24T15:06:40.629678+00:00"
+    },
+    "token_factory_catalog": {
+      "catalog_exit_zero": true,
+      "kimi_available": true,
+      "no_diagnostics": true,
+      "passed": true,
+      "boundary": "Token Factory model availability; not inference",
+      "checked_utc": "2026-09-24T15:06:34.346326+00:00"
+    }
+  },
+  "walkthrough_completed": true,
+  "missing_observations": [],
+  "missing_automated_checks": [],
+  "outcome": "continuation_observations_complete_review_required",
+  "end_to_end_qualification_claimed": false,
+  "limitations": [
+    "Human-observed streaming; no live wire-event counts",
+    "No account/entitlement changes are induced",
+    "Real installed upgrade/uninstall and broader prerelease acceptance remain #35",
+    "Automatic titles/review, auxiliary operations and compaction retain documented limits",
+    "Earlier first-launch exit failure remains unresolved; intervening launch/quit passed",
+    "Corrected candidate checks are separate evidence; previous human observations retain their prior build identity"
+  ]
+}

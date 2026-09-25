@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-24",
+  "issue": 50,
+  "outcome": "incomplete",
+  "end_to_end_qualified": false,
+  "candidate": {
+    "source_commit": "933447577e008f4a94929c8816d5c5ff5e1d4e31",
+    "version": "v0.0.0-qualification.50.9334475",
+    "build": "clean git archive; scripts/build.sh; CGO_ENABLED=0; -trimpath; version ldflag",
+    "go_version": "go1.27.1 darwin/arm64",
+    "release_published": false,
+    "sha256": {
+      "install.ps1": "2dd81c6358b1d84e7d80f1d20cad1aa63c87a021372591f3d2549cec8051e9a9",
+      "install.sh": "72fbe5ceafef4a361fa56bccaed3472691e3c2a47804ede4cde070256ae693d2",
+      "tofa_v0.0.0-qualification.50.9334475_darwin_amd64": "6cd4076f44c3da2fa0f54a169fa6d73444e2ebc1b148970902e18fd7eb73614d",
+      "tofa_v0.0.0-qualification.50.9334475_darwin_arm64": "76c13df565c356ea9777ae2fc1bfeb455b46b04395089a51a327909aa675c86c",
+      "tofa_v0.0.0-qualification.50.9334475_linux_amd64": "755df0e98012b61b0cb7c708de5c0c5ffb3981498a8290a73133820999811b28",
+      "tofa_v0.0.0-qualification.50.9334475_linux_arm64": "46b34430e7b88d28e6f48190b3924589afc2f6a9f1a4668fad3506716d06c200",
+      "tofa_v0.0.0-qualification.50.9334475_windows_amd64.exe": "7140f72eaa5ebdfd695044db5cfb5d2af049a9fdc6099806315505132050660d",
+      "tofa_v0.0.0-qualification.50.9334475_windows_arm64.exe": "ba5dabb212e3a847b84f49e745c55cc00907d053f5bc48a7478d7e8c36f96970",
+      "uninstall.ps1": "0b0a63484262720ecd8f38e748c9fac9913c8cf2d39ac945729e9c66c846a82b",
+      "uninstall.sh": "692fd1469d5d03d9fb1bbefbb829cb0b4c3bb2437be67feb87d2ec4745d00089"
+    },
+    "sha256sums_sha256": "3b79ac6e0b3b81ca75c12dfebe9add3537f408c6477dfc139e496e030199b4d9"
+  },
+  "host": {
+    "os": "macOS",
+    "version": "26.6.2",
+    "build": "25G83",
+    "arch": "arm64",
+    "login_shell": "/bin/zsh"
+  },
+  "desktop": {
+    "app": {
+      "CFBundleIdentifier": "com.openai.codex",
+      "CFBundleShortVersionString": "26.917.71314",
+      "CFBundleVersion": "10954"
+    },
+    "engine": "codex-cli 0.155.0-alpha.16.4",
+    "sha256_before": {
+      "Contents/Resources/app.asar": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+      "Contents/Resources/codex": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+      "Contents/MacOS/ChatGPT": "381cff21b027c5dd76391eae427125117b8ccf9ef565f66d1470a3bbcf755af7",
+      "Contents/Frameworks/Codex Framework.framework/Versions/153.0.8010.53/Codex Framework": "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2"
+    },
+    "sha256_after": {
+      "Contents/Resources/app.asar": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+      "Contents/Resources/codex": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+      "Contents/MacOS/ChatGPT": "381cff21b027c5dd76391eae427125117b8ccf9ef565f66d1470a3bbcf755af7",
+      "Contents/Frameworks/Codex Framework.framework/Versions/153.0.8010.53/Codex Framework": "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2"
+    },
+    "compatibility_gates_changed": false,
+    "bundle_unchanged_during_checks": true
+  },
+  "model": "moonshotai/Kimi-K3",
+  "allow_unverified_required": true,
+  "authorized_live_access": true,
+  "token_factory_catalog_preflight": {
+    "token_factory_catalog_exit": 0,
+    "kimi_k3_available": true,
+    "login_required": false,
+    "diagnostic_present": false
+  },
+  "native_account_preflight": {
+    "boundary": "ordinary login-shell history and installed-engine public login status/debug models; no desktop launch",
+    "chatgpt_login": true,
+    "export_exit": 0,
+    "export_diagnostics_present": false,
+    "bundled_exit": 0,
+    "native_descriptor_count": 13,
+    "cache_fresh_within_five_minutes": true,
+    "cache_identity_present": false,
+    "cache_version_matches": false,
+    "export_matches_cache": false,
+    "export_differs_from_bundled": true,
+    "custom_model_catalog_configured": true,
+    "cache_client_version": "0.154.0",
+    "cache_model_count": 7,
+    "config_read_success": true,
+    "ordinary_profile_modified_by_qualification": false,
+    "credentials_copied": false,
+    "production_launch_attempted": false,
+    "interpretation": "Read-only preflight does not satisfy the production native-account freshness guard. Static custom catalogs without matching account-cache evidence are explicitly refused by the existing contract; no live desktop launch was attempted."
+  },
+  "ui_observations": {
+    "status": "not_run",
+    "ordinary_tofa_ordinary_tofa": null,
+    "list_parity_and_complete_tool_history": null,
+    "stable_titles_and_workspaces": null,
+    "history_provider_logo_loop_absent": null,
+    "saved_engine_reference_logo_loop_absent": null,
+    "account_onboarding_continuity": null,
+    "picker_limitation_and_same_session_recovery": null,
+    "reason": "Ordinary custom catalog does not meet existing native freshness contract; supported Computer Use node_repl tool unavailable."
+  },
+  "live_inference": {
+    "status": "not_run",
+    "production_desktop_path": false,
+    "token_factory_streaming": null,
+    "token_factory_tool_execution_and_results": null,
+    "token_factory_continued_conversation": null,
+    "native_continuation_during_tofa_launch": null,
+    "paid_inference_performed": false
+  },
+  "offline_checks": [
+    {
+      "command": "TOFA_TEST_DESKTOP_ENGINE=<installed-engine> python3 scripts/desktop_history_test.py -v",
+      "result": "passed",
+      "tests": 3,
+      "seconds": 37.569
+    },
+    {
+      "command": "TOFA_TEST_DESKTOP_APP=<installed-app> python3 scripts/desktop_ownership_test.py -v",
+      "result": "passed",
+      "tests": 5,
+      "seconds": 7.95
+    },
+    {
+      "command": "python3 scripts/lifecycle_test.py <candidate-dist> v0.0.0-qualification.50.9334475 -v",
+      "result": "passed",
+      "tests": 4,
+      "seconds": 4.453
+    },
+    {
+      "command": "python3 scripts/install_test.py",
+      "result": "passed",
+      "tests": 2,
+      "seconds": 0.909
+    },
+    {
+      "command": "python3 scripts/terminal_test.py <candidate>",
+      "result": "passed",
+      "tests": 2,
+      "seconds": 0.215
+    },
+    {
+      "command": "python3 scripts/live_compat_test.py -v",
+      "result": "passed",
+      "tests": 19,
+      "seconds": 80.967
+    },
+    {
+      "command": "python3 scripts/qualify_macos_test.py -v",
+      "result": "passed",
+      "tests": 18,
+      "seconds": 59.995
+    },
+    {
+      "command": "python3 scripts/release_test.py -v",
+      "result": "passed",
+      "tests": 6,
+      "seconds": 3.039
+    },
+    {
+      "command": "python3 scripts/build_test.py -v",
+      "result": "passed",
+      "tests": 6,
+      "seconds": 11.282
+    }
+  ],
+  "static_analysis": {
+    "command": "go vet ./...",
+    "result": "passed"
+  },
+  "targeted_desktop_tests": {
+    "command": "TOFA_TEST_DESKTOP_ENGINE=<installed-engine> go test ./internal/tofa -run '^TestDesktop' -count=1",
+    "top_level_passed": 40,
+    "top_level_skipped": [
+      "TestDesktopInstalledAppShellIsolation"
+    ],
+    "seconds": 207.4,
+    "boundary": "Production launcher plus actual bundled engine, fixture desktop, synthetic credentials/inference"
+  },
+  "full_race_suite": {
+    "command": "TOFA_TEST_DESKTOP_ENGINE=<installed-engine> TOFA_TEST_DESKTOP_APP=<installed-app> go test -race ./... -count=1",
+    "result": "passed",
+    "package_results": [
+      {
+        "package": "github.com/kreuzhofer/nebius-tofa-cli/cmd/tofa",
+        "result": "skip",
+        "seconds": 0.001
+      },
+      {
+        "package": "github.com/kreuzhofer/nebius-tofa-cli/scripts/fixtures/evaluation_launcher",
+        "result": "skip",
+        "seconds": 0
+      },
+      {
+        "package": "github.com/kreuzhofer/nebius-tofa-cli/scripts",
+        "result": "pass",
+        "seconds": 1.623
+      },
+      {
+        "package": "github.com/kreuzhofer/nebius-tofa-cli/internal/tofa",
+        "result": "pass",
+        "seconds": 230.557
+      }
+    ],
+    "top_level_tests_passed": 89,
+    "test_skips": [
+      "TestInstalledCodexToolAndContinuationThroughAdapter",
+      "TestInstalledCodexApprovalReviewThroughAdapter"
+    ],
+    "skip_reason": "Separate installed Codex CLI tests require TOFA_TEST_CODEX; it was not set. Desktop engine/app opt-ins were enabled.",
+    "installed_engine_opt_in": true,
+    "installed_desktop_opt_in": true
+  },
+  "native_ownership": {
+    "successful": true,
+    "tests_run": 5,
+    "app_version": "26.917.71314",
+    "app_build": "10954",
+    "engine_version": "codex-cli 0.155.0-alpha.16.4",
+    "bundle_sha256": {
+      "Contents/Resources/app.asar": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+      "Contents/Resources/codex": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+      "Contents/Frameworks/Codex Framework.framework/Versions/153.0.8010.53/Codex Framework": "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2"
+    },
+    "updater_disabled_in_test_processes": true,
+    "observations": {
+      "test_explicit_same_profile_launch_reuses_ordinary_owner": {
+        "qualified": true,
+        "native_owner_matches_spawned_desktop": true,
+        "contender_exit_code": 0,
+        "contender_started_engine": false,
+        "existing_browser_notification": true,
+        "native_artifacts_after_sigterm": [
+          "SingletonLock",
+          "SingletonSocket",
+          "SingletonCookie"
+        ],
+        "owned_desktops_exited_after_sigterm": true
+      },
+      "test_graceful_quit_records_artifacts_and_allows_native_relaunch": {
+        "primary_window_ready_before_quit": true,
+        "owned_pid_native_termination_requested": true,
+        "graceful_exit_code": 0,
+        "native_artifacts_after_graceful_quit": [
+          "SingletonLock",
+          "SingletonSocket",
+          "SingletonCookie"
+        ],
+        "relaunch_started_owned_engine": true,
+        "native_artifacts_after_sigterm": [
+          "SingletonLock",
+          "SingletonSocket",
+          "SingletonCookie"
+        ],
+        "owned_desktops_exited_after_sigterm": true
+      },
+      "test_ordinary_launch_reuses_existing_ordinary_owner": {
+        "qualified": true,
+        "native_owner_matches_spawned_desktop": true,
+        "contender_exit_code": 0,
+        "contender_started_engine": false,
+        "existing_browser_notification": true,
+        "native_artifacts_after_sigterm": [
+          "SingletonLock",
+          "SingletonSocket",
+          "SingletonCookie"
+        ],
+        "owned_desktops_exited_after_sigterm": true
+      },
+      "test_ordinary_launch_reuses_explicit_same_profile_owner": {
+        "qualified": true,
+        "native_owner_matches_spawned_desktop": true,
+        "contender_exit_code": 0,
+        "contender_started_engine": false,
+        "existing_browser_notification": true,
+        "native_artifacts_after_sigterm": [
+          "SingletonLock",
+          "SingletonSocket",
+          "SingletonCookie"
+        ],
+        "owned_desktops_exited_after_sigterm": true
+      },
+      "test_simultaneous_launches_expose_ownership_evidence": {
+        "native_ownership_qualified": false,
+        "launcher_must_refuse_missing_owner_evidence": true,
+        "at_most_one_engine_started": true,
+        "winner_engine_started": true,
+        "native_owner_matches_spawned_desktop": false,
+        "native_lock_present": false,
+        "contender_exit_code": 21,
+        "contender_started_engine": false,
+        "native_singleton_creation_error": true,
+        "native_artifacts_after_sigterm": [
+          "SingletonSocket",
+          "SingletonCookie"
+        ],
+        "owned_desktops_exited_after_sigterm": true
+      }
+    }
+  },
+  "platform_checks": {
+    "six_distribution_builds": "passed",
+    "native_macos_candidate_lifecycle": "passed",
+    "native_linux_execution": "not_run",
+    "native_windows_execution": "not_run",
+    "broader_desktop_support_claimed": false
+  },
+  "skipped_live_checks": [
+    "Real ordinary-profile desktop launch and UI walkthrough",
+    "Production desktop Token Factory streaming/tool/continued-conversation check",
+    "Native-account inference during tofa launch and catalog refresh on relaunch",
+    "Live prerelease install/upgrade/removal on ordinary accounts",
+    "Windows live CLI qualification"
+  ],
+  "preservation": {
+    "credentials_copied_into_fixtures_or_evidence": false,
+    "credential_changes_requested_or_performed": false,
+    "ordinary_configuration_edited_by_qualification": false,
+    "operator_desktop_quit_or_relaunched": false,
+    "prototype_harness_shipped": false
+  },
+  "tracking": {
+    "prerelease_issue": 35,
+    "parent_issues": [
+      34,
+      44
+    ],
+    "automatically_closed": []
+  },
+  "reviews": {
+    "baseline_commit": "933447577e008f4a94929c8816d5c5ff5e1d4e31",
+    "standards_findings": 0,
+    "spec_fixable_findings": 0,
+    "spec_blocked_acceptance_groups": 3
+  }
+}

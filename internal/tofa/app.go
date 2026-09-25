@@ -93,6 +93,8 @@ func (a *App) RunContext(ctx context.Context, args []string) error {
 		return a.interactive(ctx, s)
 	}
 	switch args[0] {
+	case "desktop-lifecycle":
+		return a.desktopLifecycle(ctx, args[1:])
 	case "auth":
 		if len(args) < 2 {
 			return errors.New("use tofa auth login or tofa auth logout")

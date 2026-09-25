@@ -281,6 +281,11 @@ func refuseDesktopProcesses(ctx context.Context, profile string) error {
 
 func checkDesktopRequirements(requirements map[string]any) error {
 	for _, key := range []string{"modelProvider", "modelProviders", "modelCatalogJson", "models", "sqliteHome", "logDir", "cliAuthCredentialsStore", "allowedLoginMethods", "enforceResidency"} {
+		// The engine reports both effective login methods even when only
+		// unrelated managed requirements are present. This set is unrestricted.
+		if key == "allowedLoginMethods" && (reflect.DeepEqual(requirements[key], []any{"api", "chatgpt"}) || reflect.DeepEqual(requirements[key], []any{"chatgpt", "api"})) {
+			continue
+		}
 		if requirements[key] != nil {
 			return fmt.Errorf("managed %s requirement is not qualified for desktop routing; contact your administrator", key)
 		}

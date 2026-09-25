@@ -3,6 +3,15 @@
 Source-build feature for [#32](https://github.com/kreuzhofer/nebius-tofa-cli/issues/32);
 not included in v0.1.0-rc.2.
 
+The production implementation uses **one ordinary desktop profile and history**.
+The [reviewed qualification](releases/desktop-shared-history-final-2026-09-24.md)
+records passing live streaming/tools, shared history, ordinary send refusal,
+relaunch recovery, corrected shutdown and final ordinary-mode preservation for
+the pinned combination. Automatic title generation was not observed; the feature
+and auxiliary-operation limits below remain experimental.
+Earlier isolated/prototype observations below are provenance, not qualification
+of the combined workflow.
+
 ```sh
 go build -o tofa ./cmd/tofa
 ./tofa launch codex-desktop --model moonshotai/Kimi-K3 --allow-unverified
@@ -12,6 +21,30 @@ Use an existing `tofa auth login`. The model must be explicitly selected and
 available in the saved project's catalog. `--project-id ID` overrides that project.
 Availability and bundled provider metadata do not certify a supported combination;
 the unverified gate remains mandatory.
+
+### Switching launch modes and recovering a conversation
+
+1. Quit the ordinary desktop, then run the command above from your workspace.
+   Keep that terminal open for the entire Token Factory session. Existing native
+   conversations keep their provider; new default conversations use Kimi-K3.
+2. Quit the owned app and wait for the launcher to exit before opening the app
+   normally. Both modes use the same history; no import or synchronization is
+   needed. Opening the app while the launcher is active does not change modes.
+3. Ordinary mode can display Token Factory history, but cannot send through Token
+   Factory. An unavailable-provider or missing-launch-credential error requires
+   a fresh tofa launch. Changing the picker to GPT/Astra does not migrate the
+   conversation to OpenAI.
+4. Quit the ordinary app, rerun the launch command, reopen the **same conversation**
+   and select `Kimi-K3 (Token Factory)` if its model was changed. Continue there;
+   creating a replacement conversation is not the recovery procedure.
+
+After an abrupt launcher exit, quit any surviving desktop manually before retrying.
+Do not delete history, provider metadata, bridge directories or native lock files
+to recover. For ownership conflicts or damaged artifacts, follow
+[failure recovery](#failure-recovery-48) and
+[installed lifecycle instructions](#installed-lifecycle-and-retained-history).
+
+### Compatibility
 
 The gate accepts macOS **26.6.2 arm64**, ChatGPT **26.917.71314 (10954)**,
 bundle ID `com.openai.codex`, and bundled engine **0.155.0-alpha.16.4**. The target is
@@ -140,14 +173,30 @@ HTTP error and terminal notice. The recognized Kimi title and non-strict review
 adaptations, schema/tool restrictions, and compaction rejection are unchanged.
 Catalog visibility does not expand supported Token Factory models.
 
-This implements [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) on
-the isolated target. It does not connect ordinary history/account state yet.
-[#50](https://github.com/kreuzhofer/nebius-tofa-cli/issues/50) must qualify the
-combined production workflow with authorized live-account access: compare native
-picker choices and full descriptors with ordinary mode, observe entitlement and
-catalog refresh on relaunch, continue a real native conversation during a tofa
-launch, and verify onboarding/account continuity and same-thread picker recovery
-in the UI. Synthetic account/cache/HTTP checks are not live-account evidence.
+The [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) catalog behavior
+is integrated with the ordinary profile by
+[#47](https://github.com/kreuzhofer/nebius-tofa-cli/issues/47).
+The [#50 qualification](releases/desktop-shared-history-final-2026-09-24.md)
+records authorized live-account checks of native picker/full-descriptor parity,
+fresh catalog resolution on relaunch, native continuation, account/onboarding
+continuity and same-conversation recovery. No live entitlement change was induced;
+synthetic account/cache/HTTP variations remain distinct from that evidence.
+The [initial qualification attempt](releases/desktop-shared-history-2026-09-24.md)
+found a signed-in ordinary profile with a static custom catalog and no matching
+account-cache evidence. Such a profile remains outside the accepted launch
+contract; refreshing models alone cannot qualify a static catalog. Review that
+ordinary configuration explicitly before retrying, or use `launch codex`.
+The launcher does not remove user catalog settings to make its checks pass.
+The [follow-up diagnosis](research/desktop-native-catalog-diagnosis.md) reproduced
+this refusal with the current engine: a static `model_catalog_json` override
+bypasses native discovery. The freshness error now points to that setting.
+To restore native discovery, explicitly review whether the ordinary override is
+still wanted; removing it is a user configuration decision. Deleting the cache
+alone does not resolve the static override.
+After the maintainer authorized commenting out that one ordinary setting, the
+[live native-account preflight passed](research/desktop-native-catalog-diagnosis.md#authorized-ordinary-profile-recovery--1322-utc).
+The subsequent [#50 qualification](releases/desktop-shared-history-final-2026-09-24.md)
+completed the required UI walkthrough and scoped production-path inference checks.
 
 ### Durable engine bridge
 
@@ -189,17 +238,66 @@ an explicit conflict, never permission to overwrite another executable. A setup
 write failure removes only the directory created by that attempt. A fully
 installed bridge remains usable even if subsequent desktop setup fails.
 
-The later installed-lifecycle ticket owns upgrade and uninstall integration.
 Version 2 adds the startup ownership acknowledgement and installs alongside
-version 1. Existing version-1 directories and saved references are left intact;
-new launches use version 2. A verified version-2 bridge is reused rather than
-replaced on each source launch. That ticket must preserve saved executable paths and
-the matching ownership record, define atomic upgrade/recovery (including an
-interrupted initial installation), and detach saved references before removal.
-Do not delete this directory as ordinary session cleanup. Moving/removing the
-bundled application causes an explicit execution error; a launch from a new
-bundle path gets a distinct owned bridge. No ordinary profile migration or
-installer/uninstaller changes are included in this slice.
+version 1. New launches use version 2. Installation, supported upgrades and source
+launches refresh verified helpers without changing their saved paths. Installed
+upgrades also preserve version-1 references. Moving/removing the bundled application
+causes an explicit execution error; a launch from a new bundle path gets a distinct
+owned bridge. Do not delete bridge directories as ordinary session cleanup.
+
+### Installed lifecycle and retained history
+
+The macOS installer uses its checksum-verified candidate to coordinate existing
+desktop integration. It checks every bridge and the qualified client version before
+changing helpers, and installs the main executable only after helpers are usable.
+Install, uninstall and purge hold the ordinary-profile launcher lease and refuse a
+native desktop owner, an incumbent desktop process, a competing launcher, or an
+unresolved runtime owner. Quit the owning desktop/launcher and retry; these operations
+never signal another owner's process or change its singleton files.
+
+Records with `LifecycleVersion: 1` identify helpers that can coordinate standalone
+removal. The script verifies their recorded digest before executing them, including
+when the main installed binary is broken. Legacy helpers can be upgraded by a
+compatible installed launcher; if neither exists, reinstall a compatible release.
+
+Bridge replacement uses a write-ahead `PendingSHA256` in `owner.json`, followed by
+an atomic executable rename and a final ownership-record write. Either executable
+is verifiable after an interrupted replacement. Retrying completes the transition;
+a failed upgrade can leave an updated helper beside the previous main executable,
+with ordinary delegation intact. Missing, edited, symlinked or unknown-version
+artifacts stop the operation. Restore the matching executable/record from a trusted
+copy, or inspect and move conflicting artifacts aside before reinstalling. An
+interrupted first bridge installation has not published a saved reference yet;
+its incomplete directory is likewise an explicit conflict, never automatically
+claimed or deleted. Incompatible clients require restoring the qualified application
+or uninstalling to detach integration before proceeding.
+
+Normal uninstall and `--purge` **detach** verified bridges rather than deleting
+paths that the desktop may have saved. The retained executable and ownership record
+are self-contained: they do not depend on the removed main launcher. `Detached`
+disables all launch-context routing, including stale or forged context, with
+reinstallation guidance. Ordinary calls still delegate to the recorded bundled
+engine, scrub both launcher credential environment variables, and preserve ordinary
+arguments, settings and exit status. A retained bridge can coordinate repeated
+standalone uninstall/purge after the main executable has gone. Reinstallation or a
+qualified source launch refreshes and reattaches it. No live adapter, endpoint or
+launch bearer is retained. Known abandoned launch directories are cleaned only after
+their owners are proven dead; unknown artifacts stop removal for inspection.
+
+Removal does not edit the ordinary engine configuration or desktop tool settings.
+The retained non-secret `model_providers.nebius-tofa` definition supplies the provider
+identity/name and `responses` wire protocol needed to hydrate existing history. Its
+unusable `http://127.0.0.1:0` URL and missing `TOFA_DESKTOP_INACTIVE` credential prevent
+inference; the explicit recovery instruction, disabled OpenAI auth/websockets and
+zero retry limits keep unavailable inference bounded and observable. No former
+adapter address, launch key, or ordinary account credential is in that definition.
+User-edited provider settings remain user-owned and are retained unchanged.
+
+Both removal modes preserve conversations, account credentials, onboarding, workspace
+files and unrelated settings. Normal uninstall retains saved launcher preferences and
+Token Factory credentials under the existing CLI contract; `--purge` removes those
+saved launcher credentials, not ordinary account state. Retained bridge metadata and
+inactive provider information are non-secret and survive purge for history access.
 
 The real Token Factory key stays inside the launcher. The owned client gets only
 a random per-launch bearer token for an authenticated IPv4 loopback adapter.
@@ -223,19 +321,24 @@ are not automatically imported.
 
 The [#34 contract check](research/desktop-shared-history.md) established the
 accepted limitation: Token Factory access lasts only while the launcher runs.
-Shared-history engine and launcher tests pass; real-account UI acceptance of the
-combined production path remains tracked in #50. Abrupt launcher death and
-installer/uninstaller integration remain separate #48/#49 work.
+Shared-history engine and launcher tests pass, with
+[scoped real-account UI qualification](releases/desktop-shared-history-final-2026-09-24.md)
+recorded for #50. Abrupt-launch recovery and
+installed lifecycle behavior are described below and above, respectively.
 
 ## Limitations and verification
 
-Automatic thread titles work for the captured Kimi desktop contract through a
-narrow schema-to-instructions adaptation; the desktop still validates the generated
-title and description. The launcher announces this adaptation. Different title
-schemas or tool inventories fail explicitly; read-only app title lookups that add
-tools remain unqualified. See the [#33 contract and live evidence](research/desktop-title-generation.md).
+Automatic titles on the current shared-profile combination use an explicit,
+announced title-only route from the desktop's native Luna request to Kimi. For the
+captured contract, the adapter relocates code-mode tools intact and moves the
+complete title schema to final-answer instructions; the desktop still validates
+the generated title and description. Different models, source markers, schemas
+or tool inventories fail explicitly. App-backed title lookups remain unqualified.
+See the [#52 current contract and live qualification](research/desktop-shared-title-generation.md).
+The [#33 evidence](research/desktop-title-generation.md) concerns an older client
+and isolated profile; it is not the current shared-profile qualification.
 The recognized non-strict automatic-review workaround remains unchanged. Native
-auxiliary model IDs, compaction endpoints, web search, account-backed services, and
+auxiliary requests outside the captured title contract, compaction endpoints, web search, account-backed services, and
 Chat/Work/voice are not qualified. No `--direct`, Guardian evaluation model, profile,
 or arbitrary desktop argument passthrough is exposed.
 
@@ -385,3 +488,102 @@ installed-desktop opt-ins, `go vet ./...`, Linux/Windows amd64 builds, three
 installed-engine history diagnostics and five installed-native ownership
 diagnostics. The final Go and native suites ran sequentially. Independent
 Standards and Spec reviews have no remaining confirmed findings.
+
+## Failure recovery (#48)
+
+The adapter and its in-memory routing record belong to the launcher process.
+Normal exit, cancellation, engine loss and adapter failure stop only the spawned
+process group, close its listener, and remove its runtime directory. SIGKILL of
+the launcher also closes the adapter at the OS boundary: an orphaned desktop
+cannot keep using Token Factory. A present expired, empty or malformed launch
+context is an error, including when invoking the saved durable engine bridge;
+it never becomes an ordinary invocation.
+
+After abrupt launcher death, **quit any surviving desktop manually**, then run
+the same tofa launch command. The launcher refuses a surviving desktop, including
+one whose native profile lock is missing. It does not signal a PID found in an
+abandoned record or adopt that process. Once the desktop has exited, the qualified
+native client handles its proven-stale singleton lock as before.
+
+Each new runtime directory under `desktop-launches/` has a private, non-secret
+`owner.json` containing its format version, launcher PID and ordinary profile
+path. The model catalog now lives inside that directory alongside the shell and
+preflight artifacts. While holding the ordinary-profile lease, relaunch removes
+an abandoned directory only when its ownership record matches that profile and
+the recorded launcher PID is demonstrably absent. A possibly live PID (including
+PID reuse) retains the directory. Another profile's artifacts are retained.
+Unknown, malformed, missing or symlinked ownership records and symlinked runtime
+directories are retained with a diagnostic for manual inspection. This includes
+older unmarked runtime directories; recovery does not guess ownership of old
+catalog files in the system temporary directory. The native lock and durable
+launcher lease are never deleted by recovery.
+
+Recovery does not restore shared configuration snapshots or delete history,
+ordinary credentials, workspace files, or the inactive provider definition.
+Relaunch supplies a fresh bearer and endpoint; an old bearer cannot authenticate
+to the new adapter. Runtime ownership records are never accepted as launch
+capabilities.
+
+The executable/HTTP regression first reproduced runtime-directory and catalog
+leaks after SIGKILL, then verified recovery, repeated relaunch, stale-context
+rejection, credential rotation, live-owner refusal, and preservation of unknown
+artifacts and files outside the owned directory. The public installed-engine
+history regression exercises normal exit, cancellation, engine loss, adapter
+failure, startup failure and abrupt launcher death. It checks unique thread IDs,
+ordered messages and tool results, titles, workspaces, ordinary inactive sends,
+and continuation in the same thread after relaunch, with synthetic credentials
+and inference only. Installed Electron UI, live accounts and paid inference
+remain separate opt-in qualification; these tests do not establish those claims.
+
+Validation on macOS 26.6.2 arm64 with Go 1.27.1: the full
+`TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex go test -race ./... -count=1`
+run passed (225 test cases, 3 opt-in skips), as did `go vet ./...`, Linux amd64
+and Windows amd64 cross-builds, offline installer tests, and native installation
+lifecycle/terminal tests against a binary built from this change. The skipped Go
+tests were the two opt-in installed Codex CLI tool/approval-review checks and
+`TestDesktopInstalledAppShellIsolation`. Native Linux/Windows execution, installed
+Electron UI, live-account and paid-inference qualification were not run.
+
+### Installed lifecycle qualification (#49)
+
+The local-release regression installs an actual compiled launcher into a temporary
+home, upgrades saved version-1 and version-2 references, invokes CLI uninstall,
+reinstalls, and runs standalone uninstall/purge repeatedly, including with a broken
+main executable. It verifies ordinary argument/exit-status delegation, retained
+reference usability, ordinary account and onboarding bytes, shared configuration,
+tool settings and workspace preservation, plus removal of saved launcher credentials
+on purge. It refuses native/launcher owners, another profile's runtime owner,
+incompatible clients, missing/edited/unknown-version ownership, partial initial
+installation, symlinked integration and user-edited recovery executables.
+
+A real file-size-limited child reproduces executable replacement failure after the
+ownership journal has been written. Saved references remain callable both then and
+in the persisted state immediately after rename; retry completes removal. The public
+bundled-engine history driver also verifies list/read/resume and unavailable sends
+after normal uninstall and purge, preserving thread identities, ordered messages
+and tool results, titles and workspaces. These checks use synthetic account and
+inference fixtures only.
+
+The standards and specification reviews found an unsupported lifecycle-version
+acceptance bug. An executable-boundary regression reproduced it, and strict version
+validation fixed it; both reviews then reported zero remaining findings.
+
+An initial full race run hit the existing three-second installed-Electron ownership
+handshake timeout while other build/check work was running. The same test then passed
+four consecutive isolated runs, with the last three completing in approximately
+1.7 seconds each. The cause of that timing-sensitive failure was not established;
+the startup deadline was not changed. Native startup checks do not establish the
+real-account/UI acceptance or paid-inference qualification tracked separately in #50.
+
+Final validation passed on macOS 26.6.2 arm64 / Go 1.27.1 with ChatGPT
+26.917.71314 (10954), bundled engine `0.155.0-alpha.16.4`:
+
+- Full `go test -race ./... -count=1` with both `TOFA_TEST_DESKTOP_ENGINE` and
+  `TOFA_TEST_DESKTOP_APP` set to that installed application, rerun without concurrent
+  builds (232 seconds for the launcher package).
+- `go vet ./...`, shell syntax validation and diff whitespace checks.
+- Both offline installer tests and all four native local-release lifecycle checks.
+- Linux amd64 and Windows amd64 cross-builds.
+
+The two separate installed Codex CLI inference/tool-review opt-ins were not enabled.
+Cross-builds do not establish native Linux/Windows runtime qualification.

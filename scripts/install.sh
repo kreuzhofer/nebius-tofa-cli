@@ -48,11 +48,20 @@ if command -v sha256sum >/dev/null 2>&1; then actual=$(sha256sum "$work/tofa" | 
 mkdir -p "$root/bin"
 [ ! -L "$root/bin" ] && [ ! -L "$root/bin/tofa" ] || fail 'refusing symlink in installation'
 printf '%s\n' tofa-install-v1 > "$root/.tofa-install"
+config=${XDG_CONFIG_HOME:-"$HOME/.config"}/tofa
+[ ! -L "$config/desktop-bridge-v1" ] && [ ! -L "$config/desktop-bridge-v2" ] || fail 'refusing symlink desktop integration'
+# Existing saved desktop references need a lease and a compatible helper update.
+# A clean installation creates the bridge on its first qualified desktop launch.
+if [ "$platform" = darwin ] && { [ -e "$config/desktop-bridge-v1" ] || [ -e "$config/desktop-bridge-v2" ]; }; then
+ chmod 700 "$work/tofa"
+ "$work/tofa" desktop-lifecycle install "$root" || fail 'desktop upgrade stopped; existing installation retained; resolve the reported ownership or compatibility problem and retry'
+else
 # Stage on the target filesystem so replacement is atomic.
 staged=$(mktemp "$root/bin/.tofa.XXXXXX")
 cp "$work/tofa" "$staged"
 chmod 755 "$staged"
 mv -f "$staged" "$root/bin/tofa"
+fi
 quote() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
 bin=$(quote "$root/bin")
 activation="export PATH=$bin:\"\$PATH\""

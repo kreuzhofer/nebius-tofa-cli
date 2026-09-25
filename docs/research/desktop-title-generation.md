@@ -2,6 +2,11 @@
 
 Implementation and qualification for [#33](https://github.com/kreuzhofer/nebius-tofa-cli/issues/33).
 
+This is historical evidence for the older isolated-profile combination below.
+The [#52 shared-profile investigation](desktop-shared-title-generation.md) records
+the current client's different model selection and request shape, correction,
+and live generated-title qualification. The #33 results remain unchanged.
+
 ## Configuration and source contract
 
 The [vendor configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)

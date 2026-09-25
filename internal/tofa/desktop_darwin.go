@@ -189,11 +189,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if err != nil {
 		return err
 	}
-	parent := filepath.Join(a.Dir, "desktop-launches")
-	if err := privateDir(parent); err != nil {
-		return err
-	}
-	root, err := os.MkdirTemp(parent, "launch-")
+	root, err := prepareDesktopRuntime(a.Dir, profile, a.Out)
 	if err != nil {
 		return err
 	}
@@ -220,15 +216,8 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		return err
 	}
 	env := append(desktopEnv(home, profile, adapter.token), "ZDOTDIR="+shellDir, "CODEX_CLI_PATH="+bridge, "TOFA_DESKTOP_CONTEXT="+adapter.endpoint)
-	var catalog string
-	defer func() {
-		if catalog != "" {
-			result = errors.Join(result, os.Remove(catalog))
-		}
-	}()
 	owned := func(ownerContext context.Context, pid int) error {
-		var err error
-		catalog, err = prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, *model)
+		catalog, err := prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, *model, root)
 		if err != nil {
 			return err
 		}
@@ -252,8 +241,8 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 			return err
 		}
 		close(route.ready)
-		fmt.Fprintln(a.Out, "Native model catalog resolved and merged for this launch. Relaunch after account or catalog changes; native auxiliary models remain unsupported through Token Factory.")
-		fmt.Fprintf(a.Out, "Launching Codex desktop with %s (unverified), using ordinary history and profile.\nToken Factory history remains readable after exit; relaunch through tofa with --model moonshotai/Kimi-K3 to continue. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; auxiliary models and compaction remain unsupported. Keep this terminal open.\n", *model)
+		fmt.Fprintln(a.Out, "Native model catalog resolved and merged for this launch. Relaunch after account or catalog changes; only the announced automatic-title contract has an auxiliary route through Token Factory.")
+		fmt.Fprintf(a.Out, "Launching Codex desktop with %s (unverified), using ordinary history and profile.\nToken Factory history remains readable after exit; relaunch through tofa with --model moonshotai/Kimi-K3 to continue. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; other auxiliary requests and compaction remain unsupported. Keep this terminal open.\n", *model)
 		fmt.Fprintln(a.Out, "Desktop environment probe isolated; coding commands retain normal shell startup.")
 		return nil
 	}
@@ -421,6 +410,13 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 	startup := time.NewTimer(15 * time.Second)
 	defer startup.Stop()
 	engineSeen := false
+	var engineExit <-chan time.Time
+	var shutdown *time.Timer
+	defer func() {
+		if shutdown != nil {
+			shutdown.Stop()
+		}
+	}()
 	for {
 		select {
 		case err := <-done:
@@ -430,6 +426,8 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 			return err
 		case <-ctx.Done():
 			return stop(ctx.Err())
+		case <-engineExit:
+			return stop(errors.New("owned desktop app-server exited; launch cancelled"))
 		case <-startup.C:
 			if !engineSeen {
 				return stop(errors.New("desktop did not start its owned bundled app-server within 15 seconds"))
@@ -442,6 +440,9 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 				case <-time.After(100 * time.Millisecond):
 					return stop(errors.New("desktop native profile ownership lost; owned launch cancelled"))
 				}
+			}
+			if engineExit != nil {
+				continue
 			}
 			probe, cancel := context.WithTimeout(ctx, time.Second)
 			output, err := exec.CommandContext(probe, "/bin/ps", "-axo", "pid=,pgid=,stat=,args=").Output()
@@ -464,13 +465,11 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 				}
 			}
 			if engineSeen && !found {
-				// During normal shutdown the engine can exit just before Electron.
-				select {
-				case err := <-done:
-					return err
-				case <-time.After(200 * time.Millisecond):
-					return stop(errors.New("owned desktop app-server exited; launch cancelled"))
-				}
+				// Electron can take longer than a polling interval to finish
+				// after its engine exits. Keep ownership/cancellation checks
+				// active during this bounded wait; never adopt a replacement.
+				shutdown = time.NewTimer(2 * time.Second)
+				engineExit = shutdown.C
 			}
 			engineSeen = engineSeen || found
 		}

@@ -1,5 +1,6 @@
 #!/bin/sh
-# Standalone recovery path: does not execute the installed binary.
+# Standalone recovery path. Desktop integration uses a verified bridge when
+# the main installed executable has already been removed.
 set -eu
 umask 077
 fail() { printf '%s\n' "tofa: $*" >&2; exit 1; }
@@ -14,6 +15,32 @@ case "$root:$config" in *'
 case "$root" in /*) ;; *) fail 'install directory must be absolute';; esac
 case "$config" in /*) ;; *) fail 'configuration directory must be absolute';; esac
 [ ! -L "$root" ] && [ ! -L "$config" ] || fail 'refusing symlink directory'
+[ ! -L "$config/desktop-bridge-v1" ] && [ ! -L "$config/desktop-bridge-v2" ] || fail 'refusing symlink desktop integration'
+if [ "$(uname -s)" = Darwin ] && [ "${TOFA_DESKTOP_LIFECYCLE_PARENT:-}" != "$PPID" ] && { [ -e "$config/desktop-bridge-v1" ] || [ -e "$config/desktop-bridge-v2" ]; }; then
+ helper=
+ # Prefer a retained coordinator even if the main installed binary is broken.
+ for candidate in "$config"/desktop-bridge-v2/*/tofa-desktop-engine "$config"/desktop-bridge-v1/*/tofa-desktop-engine; do
+  if [ -f "$candidate" ] && [ ! -L "$candidate" ] && [ -f "${candidate%/*}/owner.json" ] && grep -q '"LifecycleVersion":1[,}]' "${candidate%/*}/owner.json"; then helper=$candidate; break; fi
+ done
+ if [ -n "$helper" ]; then
+  bridge_dir=${helper%/*}
+  [ ! -L "$bridge_dir" ] && [ ! -L "${bridge_dir%/*}" ] && [ -f "$bridge_dir/owner.json" ] && [ ! -L "$bridge_dir/owner.json" ] || fail 'refusing unowned desktop recovery helper'
+  # Check before executing: a user-edited executable cannot validate itself.
+  expected=$(sed -n 's/.*"SHA256":"\([0-9a-f]*\)".*/\1/p' "$bridge_dir/owner.json")
+  pending=$(sed -n 's/.*"PendingSHA256":"\([0-9a-f]*\)".*/\1/p' "$bridge_dir/owner.json")
+  actual=$(shasum -a 256 "$helper" | awk '{print $1}')
+  { [ "${#expected}" -eq 64 ] && [ "$actual" = "$expected" ]; } || { [ "${#pending}" -eq 64 ] && [ "$actual" = "$pending" ]; } || fail 'desktop recovery helper differs from its ownership record; restore matching artifacts or reinstall a compatible release'
+  set -- --tofa-installed-lifecycle uninstall
+ elif [ -f "$root/bin/tofa" ] && [ ! -L "$root/bin" ] && [ ! -L "$root/bin/tofa" ]; then
+  [ -f "$root/.tofa-install" ] && [ ! -L "$root/.tofa-install" ] && [ "$(cat "$root/.tofa-install")" = tofa-install-v1 ] || fail 'unknown install ownership; desktop cleanup stopped'
+  helper=$root/bin/tofa
+  set -- desktop-lifecycle uninstall
+ else
+  fail 'desktop recovery helper is missing or incompatible; reinstall a compatible tofa release before uninstalling; shared state retained'
+ fi
+ if [ "$purge" = yes ]; then set -- "$@" --purge; fi
+ exec "$helper" "$@"
+fi
 if [ "$purge" = yes ] && [ -d "$config" ];then
  # Retain references on any native-store failure so cleanup can be retried.
  [ ! -e "$config/.auth-lock" ] || fail 'authentication operation active (or stale .auth-lock); cleanup stopped'

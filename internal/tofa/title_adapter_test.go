@@ -19,6 +19,29 @@ func desktopTitleFixture(t *testing.T) []byte {
 	return body
 }
 
+func TestCLIDoesNotRouteNativeDesktopTitle(t *testing.T) {
+	body, err := os.ReadFile("testdata/desktop-native-title-request.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	app, output := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
+		got, err := io.ReadAll(r.Body)
+		if err != nil || !reflect.DeepEqual(jsonValue(t, got), jsonValue(t, body)) {
+			t.Error("desktop title policy changed a CLI request")
+		}
+	}, func(endpoint, token string) error {
+		response := adapterRequest(t, endpoint, token, string(body))
+		if response.StatusCode != 200 {
+			t.Error(response.Status)
+		}
+		return nil
+	})
+	runAdapted(t, app)
+	if strings.Contains(output.String(), "Automatic title routing:") {
+		t.Fatal("CLI announced a desktop-only route")
+	}
+}
+
 func TestAdapterPreservesDesktopTitleContract(t *testing.T) {
 	body := desktopTitleFixture(t)
 	want := jsonValue(t, body).(map[string]any)

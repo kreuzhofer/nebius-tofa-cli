@@ -1,0 +1,26 @@
+{
+  "checked_utc": "2026-09-24T13:22:01.009350+00:00",
+  "boundary": "authorized ordinary-account installed-engine preflight; no desktop launch or inference",
+  "approved_change": "commented out only root model_catalog_json; catalog file retained",
+  "credentials_copied": false,
+  "engine_version_matches": true,
+  "chatgpt_login": true,
+  "export_exit": 0,
+  "export_diagnostics_present": false,
+  "bundled_exit": 0,
+  "bundled_diagnostics_present": false,
+  "native_descriptor_count": 9,
+  "cache_model_count": 9,
+  "cache_fresh_within_five_minutes": true,
+  "cache_identity_present": true,
+  "cache_version_matches": true,
+  "export_matches_cache": true,
+  "export_differs_from_bundled": true,
+  "freshness_preflight_passed": true,
+  "token_factory_catalog_preflight": {
+    "candidate_version": "v0.0.0-qualification.50.9334475",
+    "catalog_exit": 0,
+    "kimi_k3_available": true,
+    "diagnostics_present": false
+  }
+}

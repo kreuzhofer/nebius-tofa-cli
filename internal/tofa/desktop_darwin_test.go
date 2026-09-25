@@ -72,6 +72,11 @@ if sys.argv[1:] in [['debug', 'models'], ['debug', 'models', '--bundled'], ['log
             (home / 'auth.json').write_text(json.dumps(spec['auth']))
             if 'cache' in spec: (home / 'models_cache.json').write_text(json.dumps(spec['cache']))
             (home / 'config.toml').write_text('cli_auth_credentials_store="file"\nopenai_base_url='+json.dumps(spec['endpoint'])+'\n')
+            if 'catalog' in spec:
+                catalog = home / 'static-models.json'
+                catalog.write_text(json.dumps(spec['catalog']))
+                with (home / 'config.toml').open('a') as config:
+                    config.write('model_catalog_json='+json.dumps(str(catalog))+'\n')
         sys.exit(subprocess.run([spec['engine'], *sys.argv[1:]], cwd=home).returncode)
 if sys.argv[1:] == ['login', 'status']:
     print('Not logged in', file=sys.stderr)
@@ -94,8 +99,10 @@ if '--ordinary-probe' in sys.argv:
     print(json.dumps({'args':sys.argv[1:], 'home':os.environ.get('CODEX_HOME'), 'native_key':os.environ.get('OPENAI_API_KEY'), 'tofa_key':os.environ.get('TOFA_API_KEY')}))
     sys.exit(23)
 if '--owned-worker' in sys.argv:
+    pathlib.Path(CAPTURE+'.worker-ready').touch()
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     if MODE == 'engine-exit': time.sleep(0.7); sys.exit(19)
+    if MODE in ['graceful-engine-first', 'engine-first-failure']: time.sleep(0.7); sys.exit(0)
     while True: time.sleep(1)
 home = pathlib.Path(os.environ['CODEX_HOME'])
 home.mkdir(parents=True, exist_ok=True)
@@ -157,6 +164,7 @@ if lock.is_symlink():
     except ProcessLookupError: lock.unlink()
 try: lock.symlink_to(socket.gethostname()+'-'+str(os.getpid()))
 except FileExistsError: sys.exit(0)
+if pathlib.Path(CAPTURE+'.fail-startup').exists(): sys.exit(17)
 if MODE == 'before-ownership':
     request=urllib.request.Request(os.environ['TOFA_DESKTOP_CONTEXT']+'/responses',data=json.dumps({'model':'moonshotai/Kimi-K3','input':[]}).encode(),headers={'Authorization':'Bearer '+os.environ['TOFA_API_KEY'],'Content-Type':'application/json'})
     try:
@@ -183,8 +191,9 @@ if MODE == 'exit': sys.exit(23)
 (home / 'sessions').mkdir(exist_ok=True)
 (home / 'sessions' / 'conversation.jsonl').write_text('preserve conversation')
 pathlib.Path('user-work.txt').write_text('preserve workspace')
-pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'catalog': json.loads(pathlib.Path(setting('model_catalog_json')).read_text()), 'env': dict(os.environ)}))
+# Persist settings before publishing the capture: callers may stop the fixture immediately.
 (pathlib.Path(os.environ['CODEX_ELECTRON_USER_DATA_PATH']) / 'tool-settings.json').write_text(json.dumps({'engine':os.environ.get('CODEX_CLI_PATH')}))
+pathlib.Path(CAPTURE).write_text(json.dumps({'args': sys.argv[1:], 'home': str(home), 'electron': os.environ['CODEX_ELECTRON_USER_DATA_PATH'], 'cwd': os.getcwd(), 'key': os.environ['TOFA_API_KEY'], 'config': config_text, 'catalog_path': setting('model_catalog_json'), 'catalog': json.loads(pathlib.Path(setting('model_catalog_json')).read_text()), 'env': dict(os.environ)}))
 if MODE == 'edit-config':
     with config_path.open('a') as out: out.write('\n[user_preferences]\nkeep_edit = true\n')
 if MODE == 'shell-commands':
@@ -202,11 +211,26 @@ if MODE != 'exit':
     engine = pathlib.Path(os.environ.get('CODEX_CLI_PATH') or pathlib.Path(__file__).parent.parent / 'Resources' / 'codex')
     bundled_engine = pathlib.Path(__file__).parent.parent / 'Resources' / 'codex'
     worker_args = [str(engine), '-c', 'features.code_mode_host=true', 'app-server'] + ([] if bundled_engine.is_symlink() else ['--owned-worker'])
+    worker_ready = pathlib.Path(CAPTURE+'.worker-ready')
+    worker_ready.unlink(missing_ok=True)
     worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if not bundled_engine.is_symlink():
+        deadline = time.monotonic() + 5
+        while not worker_ready.exists():
+            if worker.poll() is not None: raise RuntimeError('fixture worker exited before readiness')
+            if time.monotonic() >= deadline: raise RuntimeError('fixture worker readiness timed out')
+            time.sleep(0.01)
     pathlib.Path(CAPTURE+'.pid').write_text(str(worker.pid))
-    if MODE not in ['ignore', 'engine-exit']: time.sleep(0.4); sys.exit(0)
+    if MODE in ['graceful-engine-first', 'engine-first-failure']:
+        worker.wait()
+        time.sleep(0.8)
+        pathlib.Path(CAPTURE+'.graceful-exit').touch()
+        sys.exit(23 if MODE == 'engine-first-failure' else 0)
+    if MODE not in ['ignore', 'engine-exit', 'controlled']: time.sleep(0.4); sys.exit(0)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
-    while True: time.sleep(1)
+    while True:
+        if MODE == 'controlled' and pathlib.Path(CAPTURE+'.exit').exists(): sys.exit(0)
+        time.sleep(0.05)
 `, python, mode, capture)
 	for _, name := range []string{"Contents/MacOS/ChatGPT", "Contents/Resources/codex"} {
 		if err := os.WriteFile(filepath.Join(bundle, name), []byte(script), 0700); err != nil {
@@ -548,6 +572,54 @@ func TestDesktopRejectsManagedRoutingBeforeStartingApp(t *testing.T) {
 	}
 	if _, err := os.Stat(capture); !os.IsNotExist(err) {
 		t.Fatal("desktop launched despite conflicting policy")
+	}
+}
+
+func TestDesktopManagedLoginMethods(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		requirements string
+		allowed      bool
+	}{
+		{"both methods", "{'allowedLoginMethods': ['api', 'chatgpt']}", true},
+		{"both reversed", "{'allowedLoginMethods': ['chatgpt', 'api']}", true},
+		{"API only", "{'allowedLoginMethods': ['api']}", false},
+		{"ChatGPT only", "{'allowedLoginMethods': ['chatgpt']}", false},
+		{"no methods", "{'allowedLoginMethods': []}", false},
+		{"unknown method", "{'allowedLoginMethods': ['api', 'chatgpt', 'future']}", false},
+		{"duplicate method", "{'allowedLoginMethods': ['api', 'api']}", false},
+		{"malformed methods", "{'allowedLoginMethods': 'api,chatgpt'}", false},
+		{"both with routing restriction", "{'allowedLoginMethods': ['api', 'chatgpt'], 'modelProvider': 'openai'}", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			bundle, capture := desktopFixture(t, "normal")
+			engine := filepath.Join(bundle, "Contents/Resources/codex")
+			script, err := os.ReadFile(engine)
+			if err != nil {
+				t.Fatal(err)
+			}
+			script = []byte(strings.ReplaceAll(string(script), "{'modelProvider': 'openai'} if MODE == 'managed' else None", test.requirements))
+			if err := os.WriteFile(engine, script, 0700); err != nil {
+				t.Fatal(err)
+			}
+			app, _ := adapterFixture(t, nil, nil)
+			err = app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+			if test.allowed {
+				if err != nil {
+					t.Fatalf("desktop refused policy allowing both login methods: %v", err)
+				}
+				if _, err := os.Stat(capture); err != nil {
+					t.Fatalf("desktop did not start: %v", err)
+				}
+			} else {
+				if err == nil || !strings.Contains(err.Error(), "managed") {
+					t.Fatalf("managed restriction not enforced: %v", err)
+				}
+				if _, err := os.Stat(capture); !os.IsNotExist(err) {
+					t.Fatal("desktop launched despite conflicting policy")
+				}
+			}
+		})
 	}
 }
 
@@ -1011,8 +1083,9 @@ func TestDesktopBundledEngineOverridesAtAppServerBoundary(t *testing.T) {
 }
 
 type capturedDesktop struct {
-	Env map[string]string
-	Cwd string
+	CatalogPath string `json:"catalog_path"`
+	Env         map[string]string
+	Cwd         string
 }
 
 func liveDesktopFixture(t *testing.T, app *tofa.App, bundle, capture string) (capturedDesktop, func()) {
@@ -1199,6 +1272,35 @@ func TestDesktopEngineExitStopsOwnedApp(t *testing.T) {
 	err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 	if err == nil || !strings.Contains(err.Error(), "app-server exited") {
 		t.Fatalf("engine loss not detected: %v", err)
+	}
+	assertDesktopWorkerStopped(t, capture)
+}
+
+func TestDesktopAllowsEngineFirstGracefulShutdown(t *testing.T) {
+	bundle, capture := desktopFixture(t, "graceful-engine-first")
+	app, _ := adapterFixture(t, nil, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+	if err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
+		t.Fatalf("graceful desktop shutdown was interrupted: %v", err)
+	}
+	if _, err := os.Stat(capture + ".graceful-exit"); err != nil {
+		t.Fatalf("desktop did not finish its own shutdown: %v", err)
+	}
+	assertDesktopWorkerStopped(t, capture)
+}
+
+func TestDesktopPreservesEngineFirstShutdownFailure(t *testing.T) {
+	bundle, capture := desktopFixture(t, "engine-first-failure")
+	app, _ := adapterFixture(t, nil, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+	err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+	if err == nil || !strings.Contains(err.Error(), "exit status 23") {
+		t.Fatalf("desktop shutdown failure was not preserved: %v", err)
+	}
+	if _, err := os.Stat(capture + ".graceful-exit"); err != nil {
+		t.Fatalf("desktop did not finish its own shutdown: %v", err)
 	}
 	assertDesktopWorkerStopped(t, capture)
 }

@@ -1,0 +1,68 @@
+{
+  "scope": "launch_and_quit_diagnostic_only",
+  "candidate": {
+    "source_commit": "fd221828e61dcc231973b6e3846f7dc1513c8395",
+    "candidate_version": "v0.0.0-qualification.50.fd22182",
+    "candidate_sha256": "46362c39507f0c9e23c2aef9718f6fd192d5a53d3c72aeae9c1c41f10b07f676",
+    "app_version": "26.917.71314",
+    "app_build": "10954",
+    "bundle_id": "com.openai.codex",
+    "engine_version": "codex-cli 0.155.0-alpha.16.4",
+    "platform": {
+      "os": "macOS",
+      "version": "26.6.2",
+      "build": "25G83",
+      "arch": "arm64"
+    },
+    "app_sha256": {
+      "Contents/Resources/app.asar": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
+      "Contents/Resources/codex": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+      "Contents/MacOS/ChatGPT": "381cff21b027c5dd76391eae427125117b8ccf9ef565f66d1470a3bbcf755af7",
+      "Contents/Frameworks/Codex Framework.framework/Versions/153.0.8010.53/Codex Framework": "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2"
+    }
+  },
+  "human_observations": {
+    "UI_READY": "pass",
+    "QUIT_METHOD": "cmd_q"
+  },
+  "events": {
+    "startup": {
+      "passed": true,
+      "boundary": "production startup announcement; not UI",
+      "checked_utc": "2026-09-24T14:24:13.853238+00:00"
+    },
+    "native_launch1": {
+      "chatgpt_login": true,
+      "export_success_without_diagnostics": true,
+      "bundled_success_without_diagnostics": true,
+      "cache_fresh": true,
+      "cache_has_identity": true,
+      "cache_version_matches": true,
+      "export_matches_cache": true,
+      "export_differs_from_bundled": true,
+      "nonempty_catalog": true,
+      "passed": true,
+      "descriptor_count": 9,
+      "boundary": "authorized ordinary-account engine API; not UI or inference",
+      "checked_utc": "2026-09-24T14:24:09.816050+00:00"
+    },
+    "launcher_exit": {
+      "passed": true,
+      "exit_code": 0,
+      "child_reaped": true,
+      "checked_utc": "2026-09-24T14:24:28.653573+00:00"
+    },
+    "identity_launch": {
+      "candidate_hash_matches": true,
+      "app_identity_matches": true,
+      "app_hashes_match": true,
+      "os_matches": true,
+      "architecture_matches": true,
+      "passed": true,
+      "boundary": "binary/app/platform identity",
+      "checked_utc": "2026-09-24T14:24:09.269617+00:00"
+    }
+  },
+  "clean_launcher_exit_observed": true,
+  "end_to_end_qualified": false
+}

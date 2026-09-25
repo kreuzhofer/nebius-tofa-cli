@@ -1,5 +1,15 @@
 # Local prerelease qualification
 
+These runners qualify the **Codex CLI** release lifecycle. They do not qualify the
+shared desktop UI or ordinary desktop account continuity. The separate
+[#50 shared-history qualification](desktop-shared-history-final-2026-09-24.md) records
+the source candidate, passing desktop workflow checks and retained limitations
+for [desktop prerelease tracking #35](https://github.com/kreuzhofer/nebius-tofa-cli/issues/35).
+The subsequent [#52 automatic-title qualification](../research/desktop-shared-title-generation.md)
+records current-client generation, failed attempts and ordinary/tofa title
+persistence. It supplements #50's original `not_observed` result without changing
+that provenance or completing the broader #35 release qualification.
+
 The macOS and Windows runners qualify the downloaded candidate in your **normal account**.
 It installs the selected release, prompts for real login, checks Codex with
 `moonshotai/Kimi-K3`, uninstalls preserving login, reinstalls and proves saved-login
