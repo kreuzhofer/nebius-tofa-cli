@@ -209,6 +209,27 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 ./tofa auth logout
 ```
 
+Omitting `--model` in a terminal opens the same Codex CLI main-model picker for
+`tofa`, `tofa --allow-unverified`, and `tofa launch codex [OPTIONS]`. Up/Down moves
+between eligible models (wrapping at either end); Enter confirms, and Escape or
+Ctrl-C cancels without starting Codex. The catalog stays in scrollback and the
+current selection appears on the last line. Terminal settings are restored on
+selection, cancellation and errors. Guardian uses its default or explicit override
+without another prompt.
+
+Normal choices require support for the exact route and Guardian. With the current
+experimental records, bare `tofa` explains that `--allow-unverified` is needed.
+That flag shows the selected project's entire catalog, including unknown IDs;
+entries without compatible bundled metadata remain disabled with reasons. Empty
+catalogs, failed discovery and unavailable Guardians stop the launch.
+
+**Script migration:** always pass `--model ID`, for example
+`tofa launch codex --model moonshotai/Kimi-K3 --allow-unverified`. An omitted model
+in noninteractive use now fails with these instructions, even if `config.yml`
+contains a saved `model`. Saved preferences never bypass the picker. Selection
+does not change saved preferences or credentials; explicit `--model` bypasses the
+picker in both terminal and scripted use.
+
 For the tested macOS desktop application, source builds offer:
 
 ```sh
@@ -323,8 +344,7 @@ require `--allow-unverified`: the [historical CLI campaign](docs/evaluation/sele
 explicitly retained experimental status, and does not promote launcher or desktop
 support. Changing a role or route does not inherit another combination's support.
 Evaluation tools retain their explicit same-model default and the internal flag.
-This explicit CLI selection change does not introduce the upcoming interactive
-picker or desktop model selection.
+The CLI picker does not change desktop model selection.
 See [the metadata research](https://github.com/kreuzhofer/nebius-tofa-cli/blob/03d47a502c09debc36a2072c3aa3a929beb6c38d/docs/research/kimi-provider-metadata.md)
 for the provider snapshot and remaining gaps.
 
@@ -382,6 +402,7 @@ python3 scripts/install_test.py
 python3 scripts/lifecycle_test.py dist v0.0.0-prototype -v
 # Unix only, against a compiled local binary:
 python3 scripts/terminal_test.py ./tofa
+python3 scripts/picker_test.py -v
 # Optional: installed Codex, scratch config, synthetic local responses only:
 TOFA_TEST_CODEX="$(command -v codex)" go test ./internal/tofa -run TestInstalledCodex -v
 # Unix only, offline validation of the live-test harness:
@@ -391,6 +412,15 @@ python3 scripts/trace_codex_test.py -v
 ```
 
 Python is a **development test tool**, not a runtime or installer dependency.
+The picker checks compile the public launcher with a loopback provider and a fake
+Codex process, then send actual keys through a pseudo-terminal. They verify the
+upstream model identity, route/Guardian support filtering using test-only records,
+blocked entries, cancellation, errors, terminal restoration and unchanged saved
+credentials. These checks have run locally on macOS ARM64 and are wired into
+macOS/Linux CI; Linux execution still needs a CI result. Windows console/ConPTY
+key handling and restoration have no native picker coverage yet. Cross-building
+does not establish that coverage, and these offline fixtures do not qualify live
+Codex/model combinations.
 The build tests require Go and run on macOS/Linux. They inspect all six targets'
 embedded versions and build metadata, execute the native binary, verify every
 checksum and bundled notice, and install from a controlled local release source.

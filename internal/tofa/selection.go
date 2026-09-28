@@ -10,6 +10,42 @@ import (
 //go:embed assets/model-verification.json
 var verificationSnapshot []byte
 
+var errUnverifiedCombination = errors.New("unverified combination")
+
+type modelChoice struct {
+	identity string
+	status   string
+	disabled string
+}
+
+func mainModelChoices(models []Model, route, guardian string, allow bool) ([]modelChoice, error) {
+	if len(models) == 0 {
+		return nil, errors.New("no models available in this project's catalog")
+	}
+	choices := []modelChoice{}
+	for _, model := range models {
+		status, err := selectionStatus("codex", route, model.ID, guardian, allow)
+		if errors.Is(err, errUnverifiedCombination) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		choice := modelChoice{identity: model.ID, status: status}
+		if _, err := metadataFor(model.ID); err != nil {
+			if !allow {
+				continue
+			}
+			choice.disabled = err.Error()
+		}
+		choices = append(choices, choice)
+	}
+	if len(choices) == 0 {
+		return nil, errors.New("no supported main models for this target, route and Guardian; use --allow-unverified to inspect the available catalog for experimental selection")
+	}
+	return choices, nil
+}
+
 func validateAvailableRole(models []Model, role, identity string) error {
 	found := false
 	for _, model := range models {
@@ -45,7 +81,7 @@ func selectionStatus(target, route, main, guardian string, allow bool) (string, 
 		}
 	}
 	if !allow {
-		return "", fmt.Errorf("unverified %s %s combination (main %s, Guardian %s); experimental selection requires --allow-unverified", target, route, main, guardian)
+		return "", fmt.Errorf("%w for %s %s (main %s, Guardian %s); experimental selection requires --allow-unverified", errUnverifiedCombination, target, route, main, guardian)
 	}
 	return "experimental (unverified)", nil
 }

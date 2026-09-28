@@ -47,6 +47,9 @@ jobs:
           cp "dist/tofa_${VERSION}_$(go env GOOS)_$(go env GOARCH)" tofa
           chmod +x tofa
           python3 scripts/terminal_test.py ./tofa
+      - name: Compiled launcher model picker terminal checks
+        if: runner.os != 'Windows'
+        run: python3 scripts/picker_test.py -v
       - name: Offline live-harness qualification checks
         if: runner.os != 'Windows'
         run: python3 scripts/live_compat_test.py -f

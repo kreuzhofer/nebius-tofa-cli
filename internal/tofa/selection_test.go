@@ -7,10 +7,32 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 )
+
+func TestOmittedMainRequiresExplicitModelWithoutTerminal(t *testing.T) {
+	for _, args := range [][]string{nil, {"--allow-unverified"}, {"launch", "codex", "--allow-unverified"}} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			app, _ := adapterFixture(t, nil, nil)
+			path := filepath.Join(app.Dir, "config.yml")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			data = append(data, []byte("model: moonshotai/Kimi-K3\n")...)
+			if err := os.WriteFile(path, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			app.RunClient = func([]string, []string) error { t.Fatal("saved model bypassed selection"); return nil }
+			if err := app.Run(args); err == nil || !strings.Contains(err.Error(), "--model") {
+				t.Fatalf("want scripted migration instructions, got %v", err)
+			}
+		})
+	}
+}
 
 func TestExplicitLaunchDefaultsToGLMGuardian(t *testing.T) {
 	app, out := adapterFixture(t, nil, nil)
