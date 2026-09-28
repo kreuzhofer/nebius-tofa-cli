@@ -19,8 +19,6 @@ import (
 	"time"
 )
 
-const desktopModel = "moonshotai/Kimi-K3"
-
 type desktopBundle struct{ executable, engine string }
 
 type desktopOutput struct {
@@ -115,6 +113,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	a = &launch
 	fs := flags("launch codex-desktop")
 	model := fs.String("model", "", "")
+	guardian := fs.String("guardian-model", "zai-org/GLM-5.3-Flash", "")
 	path := fs.String("app-bundle", "", "")
 	project := fs.String("project-id", "", "")
 	allow := fs.Bool("allow-unverified", false, "")
@@ -124,11 +123,35 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if fs.NArg() != 0 {
 		return errors.New("codex-desktop does not accept client arguments or routing overrides")
 	}
-	if !*allow {
-		return errors.New("experimental desktop/model combination requires --allow-unverified")
+	if !validText(*model, 512) {
+		return errors.New("codex-desktop requires explicit --model ID; use --allow-unverified for experimental selection")
 	}
-	if *model != desktopModel {
-		return errors.New("codex-desktop requires explicit --model moonshotai/Kimi-K3; other desktop combinations have not been tested")
+	if !validText(*guardian, 512) {
+		return errors.New("Guardian requires a valid model ID")
+	}
+	c, key, err := s.Credentials()
+	if err != nil {
+		return err
+	}
+	if *project != "" {
+		c.ProjectID = *project
+	}
+	if !validText(c.ProjectID, 256) {
+		return errors.New("invalid project ID")
+	}
+	models, err := a.models(c.ProjectID, key)
+	if err != nil {
+		return err
+	}
+	if err := validateAvailableRole(models, "main", *model); err != nil {
+		return err
+	}
+	if err := validateAvailableRole(models, "Guardian", *guardian); err != nil {
+		return err
+	}
+	status, err := selectionStatus("codex-desktop", "adapted", *model, *guardian, *allow)
+	if err != nil {
+		return err
 	}
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -155,29 +178,6 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if err != nil {
 		return err
 	}
-	c, key, err := s.Credentials()
-	if err != nil {
-		return err
-	}
-	if *project != "" {
-		c.ProjectID = *project
-	}
-	if !validText(c.ProjectID, 256) {
-		return errors.New("invalid project ID")
-	}
-	models, err := a.models(c.ProjectID, key)
-	if err != nil {
-		return err
-	}
-	found := false
-	for _, candidate := range models {
-		if candidate.ID == *model {
-			found = true
-		}
-	}
-	if !found {
-		return errors.New("selected model is not available in this project's catalog")
-	}
 	home, err := desktopHome(ctx)
 	if err != nil {
 		return err
@@ -199,7 +199,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if err := integrateDesktopProvider(ctx, bundle.engine, home, profile, workspace, root, 0); err != nil {
 		return err
 	}
-	adapter, err := a.startAdapter(ctx, c.ProjectID, key, *model)
+	adapter, err := a.startAdapter(ctx, c.ProjectID, key, *model, *guardian)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	}
 	env := append(desktopEnv(home, profile, adapter.token), "ZDOTDIR="+shellDir, "CODEX_CLI_PATH="+bridge, "TOFA_DESKTOP_CONTEXT="+adapter.endpoint)
 	owned := func(ownerContext context.Context, pid int) error {
-		catalog, err := prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, *model, root)
+		catalog, err := prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, *model, *guardian, root)
 		if err != nil {
 			return err
 		}
@@ -242,8 +242,8 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		}
 		close(route.ready)
 		fmt.Fprintln(a.Out, "Native model catalog resolved and merged for this launch. Relaunch after account or catalog changes; only the announced automatic-title contract has an auxiliary route through Token Factory.")
-		fmt.Fprintf(a.Out, "Automatic review for %s conversations uses %s through Token Factory. The engine retains approval decisions, policy and execution gates; native reviewers are unchanged.\n", *model, *model)
-		fmt.Fprintf(a.Out, "Launching Codex desktop with %s (unverified), using ordinary history and profile.\nToken Factory history remains readable after exit; relaunch through tofa with --model moonshotai/Kimi-K3 to continue. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; other auxiliary requests and compaction remain unsupported. Keep this terminal open.\n", *model)
+		fmt.Fprintf(a.Out, "Automatic review for %s conversations uses %s through Token Factory. The engine retains approval decisions, policy and execution gates; native reviewers are unchanged.\n", *model, *guardian)
+		fmt.Fprintf(a.Out, "Launching Codex desktop using ordinary history and profile.\nMain: %s\nGuardian: %s\nRoute: adapted Token Factory connection.\nStatus: %s\nToken Factory history retains its recorded main and provider; relaunch through tofa with its original --model ID --allow-unverified to continue. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; other auxiliary requests and compaction remain unsupported. Keep this terminal open.\n", *model, *guardian, status)
 		fmt.Fprintln(a.Out, "Desktop environment probe isolated; coding commands retain normal shell startup.")
 		return nil
 	}

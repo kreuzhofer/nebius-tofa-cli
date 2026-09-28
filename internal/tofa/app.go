@@ -41,7 +41,7 @@ const help = `tofa — Token Factory launcher (prototype)
   tofa auth logout                          Remove locally saved credentials
   tofa models [--project-id ID]              List available models
   tofa launch codex [--model ID] [--guardian-model ID] [--project-id ID] [--allow-unverified] [--direct] [-- ARGS]
-  tofa launch codex-desktop --model ID --allow-unverified [--app-bundle PATH]
+  tofa launch codex-desktop --model ID [--guardian-model ID] [--project-id ID] --allow-unverified [--app-bundle PATH]
   tofa doctor                               Check local prerequisites; no inference
   tofa uninstall [--purge]                   Remove installation; optionally saved data
   tofa --version
@@ -51,7 +51,7 @@ required for experimental launches. Models in the catalog are not certified.
 Omit --model in a terminal to choose with Up/Down and Enter; Escape/Ctrl-C cancels.
 Scripts must supply --model ID. Saved model preferences never bypass the picker.
 Both selected roles must be available in the project and have compatible model metadata.
-Adapted CLI launches default to Guardian zai-org/GLM-5.3-Flash; --guardian-model
+Adapted Codex CLI and desktop launches default to Guardian zai-org/GLM-5.3-Flash; --guardian-model
 selects an override, with no Guardian prompt or substitution if unavailable.
 Launch uses a per-launch Responses request adapter. --direct bypasses it explicitly,
 preserves native reviewer selection, and rejects --guardian-model.
@@ -421,7 +421,7 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		fmt.Fprintln(a.Out, "Route: direct Token Factory connection (--direct); no request adaptation.")
 		return run(ctx, child, childEnv(key))
 	}
-	adapter, err := a.startAdapter(ctx, c.ProjectID, key, "")
+	adapter, err := a.startAdapter(ctx, c.ProjectID, key, "", "")
 	if err != nil {
 		return err
 	}

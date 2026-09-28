@@ -1,0 +1,31 @@
+{
+  "command": "TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex go test -race -json ./...",
+  "passed_tests_and_subtests": 398,
+  "skipped_tests": [
+    "TestInstalledCodexToolAndContinuationThroughAdapter",
+    "TestInstalledCodexApprovalReviewThroughAdapter",
+    "TestDesktopInstalledAppShellIsolation"
+  ],
+  "packages": [
+    {
+      "package": "github.com/kreuzhofer/nebius-tofa-cli/scripts",
+      "elapsed_seconds": 1.7309999999999999
+    },
+    {
+      "package": "github.com/kreuzhofer/nebius-tofa-cli/internal/tofa",
+      "elapsed_seconds": 428.231
+    }
+  ],
+  "additional_passed_checks": [
+    "go vet ./...",
+    "git diff --check",
+    "python3 scripts/install_test.py (2 tests)",
+    "python3 scripts/qualify_macos_test.py -v (18 tests)",
+    "GOOS=linux GOARCH=amd64 go build -buildvcs=false ./cmd/tofa",
+    "GOOS=windows GOARCH=amd64 go build -buildvcs=false ./cmd/tofa"
+  ],
+  "reviews": {
+    "standards_unresolved": 0,
+    "spec_unresolved": 0
+  }
+}

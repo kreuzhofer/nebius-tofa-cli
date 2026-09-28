@@ -250,8 +250,10 @@ For the tested macOS desktop application, source builds offer:
 Quit Codex first. This launches ChatGPT desktop **Codex** with ordinary history
 and profile state. Keep the terminal open; Ctrl-C stops that instance. Token Factory
 history stays readable in ordinary mode; relaunch through tofa to continue it.
-Automatic titles use an announced title-only Kimi route for the captured desktop
-contract; unsupported shapes still fail explicitly. See
+Desktop launches default to GLM-5.3-Flash Guardian; `--guardian-model ID` overrides
+it. Other metadata-compatible mains can be selected experimentally, including
+`deepseek-ai/DeepSeek-V4.1-Flash`. Automatic titles retain the captured Kimi-main
+route; other mains report unsupported naming explicitly. See
 [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
 The [shared-history qualification](docs/releases/desktop-shared-history-final-2026-09-24.md)
 records passing live workflow, shutdown and preservation checks for the pinned

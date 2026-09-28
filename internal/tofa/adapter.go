@@ -34,7 +34,7 @@ type requestAdapter struct {
 	desktop  atomic.Pointer[desktopRoute]
 }
 
-func (a *App) startAdapter(ctx context.Context, project, key, selectedModel string) (*requestAdapter, error) {
+func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, guardian string) (*requestAdapter, error) {
 	endpoint := a.Endpoint
 	if endpoint == "" {
 		endpoint = Endpoint
@@ -187,11 +187,31 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 					Model          string          `json:"model"`
 					ClientMetadata json.RawMessage `json:"client_metadata"`
 				}
-				if json.Unmarshal(body, &payload) != nil || payload.Model != selectedModel {
-					message := "unsupported model; request was not sent upstream"
+				if err := json.Unmarshal(body, &payload); err != nil {
+					notice("invalid model request; request was not sent upstream")
+					http.Error(writer, "request adapter: invalid model request", http.StatusBadRequest)
+					return
+				}
+				var review map[string]json.RawMessage
+				json.Unmarshal(body, &review)
+				_, _, _, isReview := approvalReviewFormat(review)
+				message := ""
+				if isDesktopTitle(payload.ClientMetadata) && selectedModel != "moonshotai/Kimi-K3" {
+					message = "automatic title generation is unavailable for main " + selectedModel + "; request was not sent upstream"
+				} else if !isReview && isApprovalReviewCandidate(review) {
+					message = "unsupported desktop approval review contract; request was not sent upstream"
+				} else if isReview && payload.Model != guardian {
+					message = "unsupported Guardian model; relaunch with the configured --guardian-model; request was not sent upstream"
+				} else if payload.Model != selectedModel && !(payload.Model == guardian && isReview) {
+					message = "unsupported model; request was not sent upstream"
+					if _, err := metadataFor(payload.Model); err == nil {
+						message += "; to continue this Token Factory conversation relaunch with --model " + payload.Model + " --allow-unverified"
+					}
 					if isDesktopTitle(payload.ClientMetadata) {
 						message = "automatic title generation is unavailable: the desktop requested an unsupported model; request was not sent upstream"
 					}
+				}
+				if message != "" {
 					notice(message)
 					http.Error(writer, "request adapter: "+message, http.StatusBadRequest)
 					return
@@ -236,6 +256,9 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel stri
 		fmt.Fprintln(a.Out, "Automatic title routing: gpt-5.6-luna -> moonshotai/Kimi-K3 (captured thread_title contract only; other auxiliary requests remain unsupported).")
 		fmt.Fprintln(a.Out, "Automatic title routing: gpt-6-luna -> moonshotai/Kimi-K3 (same verified thread_title contract).")
 		fmt.Fprintln(a.Out, "Automatic title adaptation: code-mode tools relocated intact; title schema moved to final-answer instructions; desktop still validates the title.")
+	}
+	if selectedModel != "" && selectedModel != "moonshotai/Kimi-K3" {
+		fmt.Fprintf(a.Out, "Automatic title generation is unsupported for main %s; no naming model fallback.\n", selectedModel)
 	}
 	go func() {
 		err := adapter.server.Serve(listener)
@@ -334,59 +357,14 @@ func adaptApprovalReview(body []byte) ([]byte, bool, error) {
 	if choice == "none" {
 		return body, false, nil
 	}
-	var toolDefinitions []map[string]json.RawMessage
 	var tools []json.RawMessage
 	if len(payload["tools"]) == 0 || string(payload["tools"]) == "null" || (json.Unmarshal(payload["tools"], &tools) == nil && len(tools) == 0) {
 		return body, false, nil
 	}
 
-	unsupported := errors.New("Kimi-K3 tools with json_schema are unsupported except the recognized non-strict Codex approval review; request was not sent upstream")
-	if json.Unmarshal(payload["tools"], &toolDefinitions) != nil {
-		return nil, false, unsupported
-	}
-	for field := range format {
-		switch field {
-		case "type", "schema", "strict":
-		case "name":
-			var name *string
-			if json.Unmarshal(format[field], &name) != nil || name == nil {
-				return nil, false, unsupported
-			}
-		default:
-			return nil, false, unsupported
-		}
-	}
-	var strict *bool
-	if json.Unmarshal(format["strict"], &strict) != nil || strict == nil || *strict {
-		return nil, false, unsupported
-	}
-	var schema, expected any
-	if json.Unmarshal(format["schema"], &schema) != nil {
-		return nil, false, unsupported
-	}
-	json.Unmarshal([]byte(guardianOutputSchema), &expected)
-	if !reflect.DeepEqual(schema, expected) {
-		return nil, false, unsupported
-	}
-	if choice != "auto" {
-		return nil, false, unsupported
-	}
-	allowed := map[string]bool{"exec_command": true, "write_stdin": true, "view_image": true}
-	if len(toolDefinitions) != len(allowed) {
-		return nil, false, unsupported
-	}
-	for _, tool := range toolDefinitions {
-		var name, kind string
-		json.Unmarshal(tool["name"], &name)
-		json.Unmarshal(tool["type"], &kind)
-		if kind != "function" || !allowed[name] {
-			return nil, false, unsupported
-		}
-		delete(allowed, name)
-	}
-	var instructions *string
-	if json.Unmarshal(payload["instructions"], &instructions) != nil || instructions == nil {
-		return nil, false, unsupported
+	textOptions, format, instructions, valid := approvalReviewFormat(payload)
+	if !valid {
+		return nil, false, errors.New("Kimi-K3 tools with json_schema are unsupported except the recognized non-strict Codex approval review; request was not sent upstream")
 	}
 	*instructions += "\n\nWhen you are ready to give your final answer, return JSON matching this schema:\n" + string(format["schema"])
 	payload["instructions"], _ = json.Marshal(instructions)
@@ -394,4 +372,93 @@ func adaptApprovalReview(body []byte) ([]byte, bool, error) {
 	payload["text"], _ = json.Marshal(textOptions)
 	result, err := json.Marshal(payload)
 	return result, true, err
+}
+
+// Recognize only the existing native non-strict approval contract. This allows
+// a distinct desktop Guardian without allowing its ordinary conversation lane.
+func approvalReviewFormat(payload map[string]json.RawMessage) (map[string]json.RawMessage, map[string]json.RawMessage, *string, bool) {
+	var textOptions, format map[string]json.RawMessage
+	if json.Unmarshal(payload["text"], &textOptions) != nil || json.Unmarshal(textOptions["format"], &format) != nil || string(format["type"]) != `"json_schema"` {
+		return nil, nil, nil, false
+	}
+	var choice string
+	json.Unmarshal(payload["tool_choice"], &choice)
+	var toolDefinitions []map[string]json.RawMessage
+	if json.Unmarshal(payload["tools"], &toolDefinitions) != nil {
+		return nil, nil, nil, false
+	}
+	for field := range format {
+		switch field {
+		case "type", "schema", "strict":
+		case "name":
+			var name *string
+			if json.Unmarshal(format[field], &name) != nil || name == nil {
+				return nil, nil, nil, false
+			}
+		default:
+			return nil, nil, nil, false
+		}
+	}
+	var strict *bool
+	if json.Unmarshal(format["strict"], &strict) != nil || strict == nil || *strict {
+		return nil, nil, nil, false
+	}
+	var schema, expected any
+	if json.Unmarshal(format["schema"], &schema) != nil {
+		return nil, nil, nil, false
+	}
+	json.Unmarshal([]byte(guardianOutputSchema), &expected)
+	if !reflect.DeepEqual(schema, expected) {
+		return nil, nil, nil, false
+	}
+	if choice != "auto" {
+		return nil, nil, nil, false
+	}
+	allowed := map[string]bool{"exec_command": true, "write_stdin": true, "view_image": true}
+	if len(toolDefinitions) != len(allowed) {
+		return nil, nil, nil, false
+	}
+	for _, tool := range toolDefinitions {
+		var name, kind string
+		json.Unmarshal(tool["name"], &name)
+		json.Unmarshal(tool["type"], &kind)
+		if kind != "function" || !allowed[name] {
+			return nil, nil, nil, false
+		}
+		delete(allowed, name)
+	}
+	var instructions *string
+	if json.Unmarshal(payload["instructions"], &instructions) != nil || instructions == nil {
+		return nil, nil, nil, false
+	}
+	return textOptions, format, instructions, true
+}
+
+// The pinned engine sends no role metadata with review requests. Recognize
+// either its assessment fields or its inspection-tool inventory before admitting
+// an ordinary main request, so a changed review cannot bypass the role gate.
+func isApprovalReviewCandidate(payload map[string]json.RawMessage) bool {
+	var text struct {
+		Format struct {
+			Schema struct{ Properties map[string]json.RawMessage }
+		}
+	}
+	if json.Unmarshal(payload["text"], &text) == nil {
+		properties := text.Format.Schema.Properties
+		if properties["outcome"] != nil && (properties["risk_level"] != nil || properties["user_authorization"] != nil) {
+			return true
+		}
+	}
+	var tools []struct{ Name string }
+	if json.Unmarshal(payload["tools"], &tools) != nil || len(tools) != 3 {
+		return false
+	}
+	names := map[string]bool{"exec_command": true, "write_stdin": true, "view_image": true}
+	for _, tool := range tools {
+		if !names[tool.Name] {
+			return false
+		}
+		delete(names, tool.Name)
+	}
+	return true
 }
