@@ -36,19 +36,25 @@ type App struct {
 
 const help = `tofa — Token Factory launcher (prototype)
 
-  tofa                                      Interactive launcher
+  tofa [--allow-unverified]                  Choose a Codex CLI main model
   tofa auth login [--storage keyring|file]   Save API key and project ID
   tofa auth logout                          Remove locally saved credentials
   tofa models [--project-id ID]              List available models
-  tofa launch codex --model ID [--project-id ID] [--allow-unverified] [--direct] [-- ARGS]
-  tofa launch codex-desktop --model ID --allow-unverified [--app-bundle PATH]
+  tofa launch codex [--model ID] [--guardian-model ID] [--project-id ID] [--allow-unverified] [--direct] [-- ARGS]
+  tofa launch codex-desktop --model ID [--guardian-model ID] [--project-id ID] --allow-unverified [--app-bundle PATH]
   tofa doctor                               Check local prerequisites; no inference
   tofa uninstall [--purge]                   Remove installation; optionally saved data
   tofa --version
 
 No model/client combination is verified yet. Explicit --allow-unverified is
 required for experimental launches. Models in the catalog are not certified.
-Launch uses a per-launch Responses request adapter. --direct bypasses it explicitly.
+Omit --model in a terminal to choose with Up/Down and Enter; Escape/Ctrl-C cancels.
+Scripts must supply --model ID. Saved model preferences never bypass the picker.
+Both selected roles must be available in the project and have compatible model metadata.
+Adapted Codex CLI and desktop launches default to Guardian zai-org/GLM-5.3-Flash; --guardian-model
+selects an override, with no Guardian prompt or substitution if unavailable.
+Launch uses a per-launch Responses request adapter. --direct bypasses it explicitly,
+preserves native reviewer selection, and rejects --guardian-model.
 
 Login reuses a saved storage choice. Fresh logins prefer the native credential vault.
 Only an absent or unsupported vault facility selects an unencrypted credentials file
@@ -89,8 +95,8 @@ func (a *App) RunContext(ctx context.Context, args []string) error {
 		}
 	}
 	s := Store{Dir: a.Dir, Vault: a.Vault}
-	if len(args) == 0 {
-		return a.interactive(ctx, s)
+	if len(args) == 0 || strings.HasPrefix(args[0], "--") {
+		return a.launch(ctx, s, append([]string{"codex"}, args...))
 	}
 	switch args[0] {
 	case "desktop-lifecycle":
@@ -287,7 +293,8 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 	}
 	fs := flags("launch codex")
 	model := fs.String("model", "", "")
-	guardian := fs.String("evaluation-guardian-model", "", "")
+	guardian := fs.String("guardian-model", "", "")
+	fs.StringVar(guardian, "evaluation-guardian-model", "", "")
 	project := fs.String("project-id", "", "")
 	allow := fs.Bool("allow-unverified", false, "")
 	direct := fs.Bool("direct", false, "")
@@ -295,29 +302,37 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		return err
 	}
 	extra := fs.Args()
+	modelSelected := false
 	guardianSelected := false
+	guardianFlags := 0
 	fs.Visit(func(f *flag.Flag) {
-		if f.Name == "evaluation-guardian-model" {
+		modelSelected = modelSelected || f.Name == "model"
+		if f.Name == "evaluation-guardian-model" || f.Name == "guardian-model" {
 			guardianSelected = true
+			guardianFlags++
 		}
 	})
-	if guardianSelected && (!validText(*guardian, 512) || *direct) {
-		return errors.New("evaluation Guardian requires a valid model ID and the adapted connection")
+	if guardianFlags > 1 {
+		return errors.New("use only one of --guardian-model and --evaluation-guardian-model")
 	}
-	if !*allow {
-		return errors.New("no verified Codex/model combinations yet; experimental testing requires --allow-unverified")
+	if guardianSelected && (!validText(*guardian, 512) || *direct) {
+		return errors.New("Guardian requires a valid model ID and the adapted connection")
+	}
+	if !*direct && !guardianSelected {
+		*guardian = "zai-org/GLM-5.3-Flash"
+	}
+
+	if !modelSelected && !term.IsTerminal(int(os.Stdin.Fd())) {
+		return errors.New("noninteractive launch requires --model ID; use tofa launch codex --model ID (and --allow-unverified for experimental selection)")
 	}
 	c, key, err := s.Credentials()
 	if err != nil {
 		return err
 	}
-	if *model == "" {
-		*model = c.Model
-	}
 	if *project != "" {
 		c.ProjectID = *project
 	}
-	if !validText(*model, 512) {
+	if modelSelected && !validText(*model, 512) {
 		return errors.New("specify a valid --model ID; see tofa models")
 	}
 	if !validText(c.ProjectID, 256) {
@@ -337,26 +352,38 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 	if err != nil {
 		return err
 	}
-	found := false
-	for _, m := range models {
-		if m.ID == *model {
-			found = true
-			break
+	if len(models) == 0 {
+		return errors.New("no models available in this project's catalog")
+	}
+	if *guardian != "" {
+		if err := validateAvailableRole(models, "Guardian", *guardian); err != nil {
+			return err
 		}
 	}
-	if !found {
-		return errors.New("selected model is not available in this project's catalog")
+	route := "adapted"
+	if *direct {
+		route = "direct"
 	}
-	if guardianSelected {
-		found := false
-		for _, m := range models {
-			if m.ID == *guardian {
-				found = true
-			}
+	if !modelSelected {
+		choices, err := mainModelChoices(models, route, *guardian, *allow)
+		if err != nil {
+			return err
 		}
-		if !found {
-			return errors.New("selected Guardian model is not available in this project catalog")
+		*model, err = a.pickMainModel(ctx, choices, route, *guardian)
+		if err != nil {
+			return err
 		}
+	}
+	if err := validateAvailableRole(models, "main", *model); err != nil {
+		return err
+	}
+	child, err = childArgs(*model, c.ProjectID, Endpoint, extra)
+	if err != nil {
+		return err
+	}
+	status, err := selectionStatus("codex", route, *model, *guardian, *allow)
+	if err != nil {
+		return err
 	}
 	catalog, err := prepareModelCatalog(*model, *guardian)
 	if err != nil {
@@ -382,14 +409,19 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		}
 		return runner(args, env)
 	}
-	fmt.Fprintf(a.Out, "Launching Codex with %s (unverified), project %s.\n", *model, c.ProjectID)
+	fmt.Fprintf(a.Out, "Launching Codex, project %s.\nMain: %s\nStatus: %s\n", c.ProjectID, *model, status)
+	if *direct {
+		fmt.Fprintln(a.Out, "Guardian: native reviewer selection (Codex client).")
+	} else {
+		fmt.Fprintf(a.Out, "Guardian: %s\nRoute: adapted Token Factory connection.\n", *guardian)
+	}
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if *direct {
 		fmt.Fprintln(a.Out, "Route: direct Token Factory connection (--direct); no request adaptation.")
 		return run(ctx, child, childEnv(key))
 	}
-	adapter, err := a.startAdapter(ctx, c.ProjectID, key, "")
+	adapter, err := a.startAdapter(ctx, c.ProjectID, key, "", "")
 	if err != nil {
 		return err
 	}
@@ -411,42 +443,6 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		return ctx.Err()
 	}
 	return err
-}
-func (a *App) interactive(ctx context.Context, s Store) error {
-	if a.Prompt == nil && !term.IsTerminal(int(os.Stdin.Fd())) {
-		return errors.New("choose a command for noninteractive use; run tofa --help")
-	}
-	c, key, err := s.Credentials()
-	if err != nil {
-		return err
-	}
-	fmt.Fprintln(a.Out, "Target client: Codex CLI\nNo verified models yet. Experimental launch is available explicitly.")
-	answer, err := a.ask("List unverified models for experimental testing? [y/N]", false)
-	if err != nil {
-		return err
-	}
-	if strings.ToLower(answer) != "y" {
-		return nil
-	}
-	models, err := a.models(c.ProjectID, key)
-	if err != nil {
-		return err
-	}
-	if len(models) == 0 {
-		return errors.New("no models available")
-	}
-	for i, m := range models {
-		fmt.Fprintf(a.Out, "%d. %s [unverified]\n", i+1, m.ID)
-	}
-	answer, err = a.ask("Model number", false)
-	if err != nil {
-		return err
-	}
-	n, err := strconv.Atoi(answer)
-	if err != nil || n < 1 || n > len(models) {
-		return errors.New("invalid model selection")
-	}
-	return a.launch(ctx, s, []string{"codex", "--model", models[n-1].ID, "--allow-unverified"})
 }
 
 // Intercept cancellation while terminal echo is disabled, restoring state before

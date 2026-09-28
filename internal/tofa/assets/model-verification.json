@@ -1,0 +1,23 @@
+{
+  "policy": "Historical qualification does not promote launcher support. Each supported entry requires a reviewed verification record for the exact target, route and main/Guardian combination.",
+  "records": [
+    {
+      "target": "codex",
+      "route": "adapted",
+      "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "guardian": "zai-org/GLM-5.3-Flash",
+      "status": "experimental",
+      "evidence": "docs/evaluation/selected-pairs-2026-09-23.md",
+      "reason": "The recorded CLI campaign explicitly retained --allow-unverified; no launcher support promotion was approved."
+    },
+    {
+      "target": "codex",
+      "route": "adapted",
+      "main": "zai-org/GLM-5.3",
+      "guardian": "zai-org/GLM-5.3-Flash",
+      "status": "experimental",
+      "evidence": "docs/evaluation/evidence/selected-pairs-2026-09-23/2-glm-5.3.json",
+      "reason": "The paired main lane was incomplete."
+    }
+  ]
+}

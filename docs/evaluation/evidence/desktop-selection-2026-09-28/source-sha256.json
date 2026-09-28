@@ -1,0 +1,15 @@
+{
+  "base_commit": "5957ff06216ccf4904199d350506cd8872152add",
+  "sha256": {
+    "internal/tofa/adapter.go": "49c32b9d8631aaa9f44e577af495ad1332a82977e81c1de1c6bf8fe7522d8bfe",
+    "internal/tofa/adapter_test.go": "317de4428853089e29684081c879187cf10c1c120aa5a418a5d57f236f6ac761",
+    "internal/tofa/app.go": "cd6a8af67415a8e72950df3283a096d5f0ed3705ebd424551ea1ecb8387598ec",
+    "internal/tofa/desktop_approval_darwin_test.go": "b3a367ac7a42ebabfeec936ac6a372e101ef2f10acf5c347eb51be9ada7a86fe",
+    "internal/tofa/desktop_catalog_darwin.go": "0a331fb2f3120374bf1096fe1645db938d30dd55eda2d47a908530c1d9d8d74a",
+    "internal/tofa/desktop_catalog_darwin_test.go": "ebd978077860b7516c2a15b9e9b72dbd0e2049c4c3225db019c7ed60656b35fb",
+    "internal/tofa/desktop_darwin.go": "4108016e5c7e9d98cbf93524604e8997c04e0f75ffd6101723da984dec52869b",
+    "internal/tofa/desktop_darwin_test.go": "9ba2bfa4b10385b95ea2a9c62000b3f6a7e014a10f95963cd6074126896c7f53",
+    "internal/tofa/desktop_profile_darwin.go": "1ff2b300a2a6280a16699fabdf84c174e0c102b35d9a0f19fc8b8b6afd51fc60",
+    "internal/tofa/desktop_selection_darwin_test.go": "38ccef552102e1354a210b140c75ac13d0f1d5e3702e74d037a2fda951020935"
+  }
+}

@@ -35,7 +35,21 @@ whose lifetime is tied to that launch.
 A model listed in the selected Token Factory project's catalog. Availability
 alone does not establish compatibility with a target client.
 
+**Main model**:
+The model selected to conduct the user's conversation and propose tool actions
+in a target client.
+
+**Guardian model**:
+The model selected to assess automatic approval requests for proposed actions.
+The target client enforces execution according to its approval policy and the
+assessment result.
+
 **Supported model**:
 An available model verified with a particular target client to handle streaming,
 tool calls, and continued conversation. Support applies to the tested combination.
 _Avoid_: Available model as a synonym for supported model
+
+**Experimental selection**:
+An explicit opt-in to use an available model in a target-client role whose
+compatibility has not yet been verified. Selection requires sufficient model
+metadata and a compatible client contract; it does not establish support.

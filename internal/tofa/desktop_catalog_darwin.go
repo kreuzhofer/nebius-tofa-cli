@@ -17,7 +17,7 @@ import (
 // Export before applying Token Factory overrides. The engine owns native auth,
 // policy, cache freshness and descriptor resolution; model/list is a lossy
 // picker projection and cannot be used to reconstruct these descriptors.
-func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspace, model, runtimeDir string) (string, error) {
+func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspace, model, guardian, runtimeDir string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, engine, "debug", "models")
@@ -38,12 +38,15 @@ func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspac
 	seen := make(map[string]bool)
 	for _, raw := range native.Models {
 		var descriptor struct{ Slug string }
-		if json.Unmarshal(raw, &descriptor) != nil || !validText(descriptor.Slug, 256) || seen[descriptor.Slug] || descriptor.Slug == model {
+		if json.Unmarshal(raw, &descriptor) != nil || !validText(descriptor.Slug, 256) || seen[descriptor.Slug] || (descriptor.Slug == model || descriptor.Slug == guardian) {
 			return "", errors.New("native model catalog contains an invalid, duplicate or conflicting model identity; launch cancelled")
 		}
 		seen[descriptor.Slug] = true
 	}
-	catalog, err := prepareModelCatalogInDir(model, "", runtimeDir)
+	// The shared catalog includes the native reviewer. Bind only the added
+	// Token Factory model's reviewer to its supported route; native descriptors
+	// and the engine's approval policy, assessment parser and gates stay intact.
+	catalog, err := prepareModelCatalogInDir(model, guardian, runtimeDir)
 	if err != nil {
 		return "", err
 	}
@@ -51,7 +54,7 @@ func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspac
 		return "", errors.New("desktop launch requires verified bundled model metadata")
 	}
 	// This file is private and launch-owned. Preserve every native descriptor,
-	// including fields this launcher does not understand, and append only Kimi.
+	// including fields this launcher does not understand, and append only the selected Token Factory roles.
 	data, err = os.ReadFile(catalog)
 	var added struct {
 		Models []json.RawMessage `json:"models"`

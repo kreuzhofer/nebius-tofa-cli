@@ -1,0 +1,240 @@
+{
+  "model": "gpt-6-luna",
+  "text": {
+    "format": {
+      "name": "codex_output_schema",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 36,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ],
+        "type": "object"
+      },
+      "strict": true,
+      "type": "json_schema"
+    },
+    "verbosity": "low"
+  },
+  "tool_choice": "auto",
+  "stream": true,
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "low"
+  },
+  "input": [
+    {
+      "id": "at_fixture",
+      "role": "developer",
+      "tools": [
+        {
+          "type": "namespace",
+          "name": "functions",
+          "description": "Synthetic tool description.",
+          "tools": [
+            {
+              "type": "custom",
+              "name": "exec",
+              "description": "Synthetic tool description.",
+              "format": {
+                "type": "grammar",
+                "syntax": "lark",
+                "definition": "start: /[\\s\\S]+/"
+              }
+            },
+            {
+              "type": "function",
+              "name": "wait",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            },
+            {
+              "type": "function",
+              "name": "request_user_input",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            },
+            {
+              "type": "function",
+              "name": "request_user_input_async",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            }
+          ]
+        },
+        {
+          "type": "namespace",
+          "name": "clock",
+          "description": "Synthetic tool description.",
+          "tools": [
+            {
+              "type": "function",
+              "name": "sleep",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            }
+          ]
+        },
+        {
+          "type": "namespace",
+          "name": "collaboration",
+          "description": "Synthetic tool description.",
+          "tools": [
+            {
+              "type": "function",
+              "name": "followup_task",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            },
+            {
+              "type": "function",
+              "name": "interrupt_agent",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            },
+            {
+              "type": "function",
+              "name": "list_agents",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            },
+            {
+              "type": "function",
+              "name": "send_message",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            },
+            {
+              "type": "function",
+              "name": "spawn_agent",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            },
+            {
+              "type": "function",
+              "name": "wait_agent",
+              "description": "Synthetic tool description.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "fixture_argument": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "strict": false
+            }
+          ]
+        }
+      ],
+      "type": "additional_tools"
+    },
+    {
+      "type": "message",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Return a title and description for explaining Python integer addition."
+        }
+      ]
+    }
+  ],
+  "client_metadata": {
+    "x-codex-turn-metadata": "{\"thread_source\": \"thread_title\", \"turn_trigger\": \"thread_title\"}"
+  }
+}

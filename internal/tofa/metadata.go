@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"slices"
 )
 
 //go:embed assets/codex-prompt.md
@@ -13,38 +14,50 @@ var codexPrompt string
 //go:embed assets/evaluation-candidates.json
 var candidateSnapshot []byte
 
+type modelMetadata struct {
+	DisplayName string   `json:"display_name"`
+	Context     int      `json:"context_window"`
+	Modalities  []string `json:"input_modalities"`
+	Responses   bool     `json:"responses_api"`
+	Tools       bool     `json:"function_calling"`
+}
+
+func metadataFor(identity string) (modelMetadata, error) {
+	var snapshot struct {
+		Models map[string]modelMetadata `json:"models"`
+	}
+	if err := json.Unmarshal(candidateSnapshot, &snapshot); err != nil {
+		return modelMetadata{}, errors.New("invalid bundled model metadata")
+	}
+	candidate, known := snapshot.Models[identity]
+	if !known {
+		return candidate, errors.New("missing bundled model metadata")
+	}
+	if candidate.DisplayName == "" || candidate.Context <= 4096 || !slices.Contains(candidate.Modalities, "text") || !candidate.Responses || !candidate.Tools {
+		return candidate, errors.New("incompatible model metadata: Codex requires text input, Responses, function calling and a context window above 4096")
+	}
+	for _, modality := range candidate.Modalities {
+		if modality != "text" && modality != "image" {
+			return candidate, errors.New("incompatible model input modality")
+		}
+	}
+	return candidate, nil
+}
+
 func prepareModelCatalog(model, guardian string) (string, error) {
 	return prepareModelCatalogInDir(model, guardian, "")
 }
 
 func prepareModelCatalogInDir(model, guardian, dir string) (string, error) {
-	var snapshot struct {
-		Models map[string]struct {
-			DisplayName string   `json:"display_name"`
-			Context     int      `json:"context_window"`
-			Modalities  []string `json:"input_modalities"`
-			Responses   bool     `json:"responses_api"`
-			Tools       bool     `json:"function_calling"`
-		} `json:"models"`
-	}
-	if err := json.Unmarshal(candidateSnapshot, &snapshot); err != nil {
-		return "", errors.New("invalid bundled model metadata")
-	}
 	identities := []string{model}
 	if guardian != "" && guardian != model {
 		identities = append(identities, guardian)
 	}
 	entries := []any{}
 	for _, identity := range identities {
-		candidate, known := snapshot.Models[identity]
-		if !known {
-			if guardian != "" {
-				return "", errors.New("evaluation roles require bundled model metadata")
-			}
-			return "", nil
-		}
-		if candidate.Context <= 4096 || len(candidate.Modalities) == 0 || !candidate.Responses || !candidate.Tools {
-			return "", errors.New("unresolved candidate model metadata")
+		candidate, err := metadataFor(identity)
+		if err != nil {
+			return "", err
 		}
 		entry := map[string]any{
 			"slug":                                 identity,

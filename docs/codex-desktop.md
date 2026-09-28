@@ -20,13 +20,34 @@ go build -o tofa ./cmd/tofa
 Use an existing `tofa auth login`. The model must be explicitly selected and
 available in the saved project's catalog. `--project-id ID` overrides that project.
 Availability and bundled provider metadata do not certify a supported combination;
-the unverified gate remains mandatory.
+the unverified gate remains mandatory. The default Guardian is
+`zai-org/GLM-5.3-Flash`; override it with `--guardian-model ID`. Both roles must be
+available in the selected project and have compatible bundled metadata. There is
+no Guardian picker or automatic substitution. The launcher displays the exact
+main/Guardian pair, adapted route and experimental status before use.
+
+For example, select DeepSeek with the default GLM Flash Guardian:
+
+```sh
+./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash --allow-unverified
+# Explicit alternative Guardian:
+./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash --guardian-model moonshotai/Kimi-K3 --allow-unverified
+```
+
+All metadata-compatible pairs among `zai-org/GLM-5.3-Flash`,
+`deepseek-ai/DeepSeek-V4.1-Flash`, `zai-org/GLM-5.3`, `moonshotai/Kimi-K3`, and
+`nvidia/Nemotron-3-Ultra-550b-a55b` are experimentally selectable. Each descriptor
+uses its own dated provider metadata; text-only candidates do not inherit Kimi's
+image capability. Offline routing tests do not qualify live model behavior.
+Naming is separately supported only for the recognized Kimi-main contract;
+other mains explicitly report unavailable naming, with no hidden Kimi dependency.
+See the [offline selection evidence](evaluation/desktop-selection-2026-09-28.md).
 
 ### Switching launch modes and recovering a conversation
 
 1. Quit the ordinary desktop, then run the command above from your workspace.
    Keep that terminal open for the entire Token Factory session. Existing native
-   conversations keep their provider; new default conversations use Kimi-K3.
+   conversations keep their provider; new default conversations use the launch main.
 2. Quit the owned app and wait for the launcher to exit before opening the app
    normally. Both modes use the same history; no import or synchronization is
    needed. Opening the app while the launcher is active does not change modes.
@@ -35,7 +56,7 @@ the unverified gate remains mandatory.
    a fresh tofa launch. Changing the picker to GPT/Astra does not migrate the
    conversation to OpenAI.
 4. Quit the ordinary app, rerun the launch command, reopen the **same conversation**
-   and select `Kimi-K3 (Token Factory)` if its model was changed. Continue there;
+   using that conversation's original `--model ID`. Continue there;
    creating a replacement conversation is not the recovery procedure.
 
 After an abrupt launcher exit, quit any surviving desktop manually before retrying.
@@ -43,6 +64,43 @@ Do not delete history, provider metadata, bridge directories or native lock file
 to recover. For ownership conflicts or damaged artifacts, follow
 [failure recovery](#failure-recovery-48) and
 [installed lifecycle instructions](#installed-lifecycle-and-retained-history).
+
+#### Matching-main example
+
+For a conversation recorded with `deepseek-ai/DeepSeek-V4.1-Flash`, quit the desktop,
+run this from its workspace, and reopen that same conversation:
+
+```sh
+tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash --allow-unverified
+```
+
+The conversation keeps its main, provider, title, workspace association and tool
+history. This launch displays `Guardian: zai-org/GLM-5.3-Flash`; that effective
+Guardian also applies to resumed Token Factory conversations. An explicit
+`--guardian-model ID` changes the Guardian for this launch. Native conversations
+keep native routing and reviewer descriptors.
+
+#### Wrong-main example
+
+If a conversation recorded with `zai-org/GLM-5.3-Flash` is opened during the
+DeepSeek launch above, sending fails before provider inference with:
+
+```text
+Token Factory conversation main zai-org/GLM-5.3-Flash differs from launch main deepseek-ai/DeepSeek-V4.1-Flash; request was not sent upstream. Quit the desktop, relaunch with --model zai-org/GLM-5.3-Flash --allow-unverified, then reopen the same conversation.
+```
+
+Quit and wait for the launcher to exit, then recover with:
+
+```sh
+tofa launch codex-desktop --model zai-org/GLM-5.3-Flash --allow-unverified
+```
+
+Reopen the original conversation. Having its main available as the previous
+launch's Guardian did not authorize it as a conversation route. Deliberate changes
+to a conversation's main remain a separate follow-up in
+[#55](https://github.com/kreuzhofer/nebius-tofa-cli/issues/55).
+See the [controlled recovery checks](evaluation/desktop-recovery-2026-09-28.md)
+for tested model/failure combinations and coverage limits.
 
 ### Compatibility
 
@@ -109,8 +167,10 @@ The durable `model_providers.nebius-tofa` entry contains a display name, Respons
 wire format, loopback port zero and the deliberately absent
 `TOFA_DESKTOP_INACTIVE` credential variable. It contains no live adapter address
 or credential. Ordinary mode can hydrate recorded Token Factory history; sending
-fails with guidance to relaunch through tofa using
-`--model moonshotai/Kimi-K3 --allow-unverified`. The ordinary bridge removes both
+fails with guidance to relaunch through tofa using the conversation's original
+`--model ID --allow-unverified`. Existing owned entries from older launches remain
+accepted unchanged and may still show their historical Kimi-specific hint;
+use the conversation's recorded main. The ordinary bridge removes both
 stale launch and inactive credential variables. Even a directly invoked engine
 with an artificially populated inactive variable cannot reach either inference
 provider, although its port-zero connection failure may keep retrying until
@@ -121,8 +181,8 @@ interrupted. Choosing GPT does not migrate a conversation's provider.
 Each launch asks the qualified bundled engine for `debug models` **before**
 applying Token Factory overrides, in the target engine home and workspace. The
 launcher preserves complete native descriptors, including account-dependent
-availability, reasoning choices, instructions and unknown fields. It appends only
-`moonshotai/Kimi-K3`, displayed as `Kimi-K3 (Token Factory)`; it neither reconstructs
+availability, reasoning choices, instructions and unknown fields. It appends the selected main and, when different, Guardian descriptors,
+displayed with a `(Token Factory)` suffix; it neither reconstructs
 descriptors from the
 lossy `model/list` picker response nor ships a frozen native snapshot. Empty,
 malformed, duplicate or conflicting model identities cancel the launch.
@@ -162,16 +222,30 @@ account files and native provider settings remain the engine's responsibility.
 
 Cold resume with null model/provider retains the recorded identity. A native Astra
 thread continues through its native provider during a tofa launch; a new default
-thread identifies `nebius-tofa` / `moonshotai/Kimi-K3`. The picker changes a model,
-not its provider: selecting Astra inside a Token Factory thread fails explicitly
-at the adapter, without native migration or Kimi substitution. Selecting Kimi again
-allows the same thread to continue while the launcher is active.
+thread identifies `nebius-tofa` and the selected main. A Token Factory conversation
+with a different recorded main fails with an explicit relaunch command, including
+when that recorded main happens to be the current Guardian. Relaunch using the
+original main to continue the same history. The picker changes a model, not its
+provider; it does not migrate a conversation to OpenAI.
 
-The merged catalog also exposes native auxiliary choices such as
-`codex-auto-review`. They remain unsupported on the Token Factory route, with an
-HTTP error and terminal notice. The recognized Kimi title and non-strict review
-adaptations, schema/tool restrictions, and compaction rejection are unchanged.
-Catalog visibility does not expand supported Token Factory models.
+The added main descriptor selects the launch Guardian via
+`auto_review_model_override`. A distinct Guardian is admitted at the adapter only
+for the recognized non-strict review schema, tools and request options. It is not
+an additional conversation route. Native descriptors and reviewers are unchanged.
+The launcher does not enable **Approve for me**, change managed policy, fabricate
+assessments, or bypass the engine's decision parser and execution gates. Only Kimi
+review requests receive the existing schema-to-instructions adaptation; other
+Guardians retain the native schema unchanged.
+
+Native auxiliary choices such as `codex-auto-review` remain unsupported on the
+Token Factory route, with an HTTP error and terminal notice. Catalog visibility
+does not expand auxiliary routing. Unknown title shapes and compaction remain
+unsupported; provisional first-message titles are not generated-title success.
+
+The engine retains its own retry and deadline behavior. Controlled tests observe
+three review attempts for an invalid assessment and four for a 503 stream failure;
+the adapter adds no retries, replay, fallback, or deadline extension. These native
+attempts must be counted separately during later paid qualification.
 
 The [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) catalog behavior
 is integrated with the ordinary profile by
@@ -328,19 +402,25 @@ installed lifecycle behavior are described below and above, respectively.
 
 ## Limitations and verification
 
-Automatic titles on the current shared-profile combination use an explicit,
+Automatic titles when the launch main is Kimi use an explicit,
 announced title-only route from the desktop's native Luna request to Kimi. For the
 captured contract, the adapter relocates code-mode tools intact and moves the
 complete title schema to final-answer instructions; the desktop still validates
 the generated title and description. Different models, source markers, schemas
 or tool inventories fail explicitly. App-backed title lookups remain unqualified.
 See the [#52 current contract and live qualification](research/desktop-shared-title-generation.md).
+The observed `gpt-6-luna` selection has a separate verified inventory: four
+`functions` tools, `clock.sleep`, and six `collaboration` tools. The original
+`gpt-5.6-luna` inventory remains three `functions` tools. Both inventories retain
+their complete definitions; they are not interchangeable. The bundled-engine
+replay verifies both. The [#35 correction](releases/desktop-prerelease-routing-2026-09-25.md)
+records the newer model's live failure and the remaining live qualification work.
 The [#33 evidence](research/desktop-title-generation.md) concerns an older client
 and isolated profile; it is not the current shared-profile qualification.
 The recognized non-strict automatic-review workaround remains unchanged. Native
 auxiliary requests outside the captured title contract, compaction endpoints, web search, account-backed services, and
-Chat/Work/voice are not qualified. No `--direct`, Guardian evaluation model, profile,
-or arbitrary desktop argument passthrough is exposed.
+Chat/Work/voice are not qualified. The public `--guardian-model` selects the reviewer. No `--direct`, evaluation-only
+flag alias, profile, or arbitrary desktop argument passthrough is exposed.
 
 Offline executable/HTTP tests cover shared-state preservation, credential separation, selected
 model streaming, auxiliary rejection, managed/effective routing conflicts, startup

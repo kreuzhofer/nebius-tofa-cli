@@ -1,0 +1,9 @@
+{
+  "internal/tofa/adapter.go": "b9fc0a10ce3a3683062a6df5cc49ddc5a3f647f118f8a21b6b796b6a8147ae05",
+  "internal/tofa/desktop_approval_darwin_test.go": "cbf552dc30ce4a881da7d71c3d1dc822c32533d8c42ce98d21349d87e3cb5810",
+  "internal/tofa/desktop_catalog_darwin_test.go": "15c228bc34caebe11c419f7f70a3ff774a5bf24d34efcee91b1f2c0deb717f85",
+  "internal/tofa/desktop_history_darwin_test.go": "f2d2349ffeefa823d90acd2ce7ba3d061a7c20922bcd192cc2a029ec08ff7d95",
+  "internal/tofa/desktop_lifecycle_darwin_test.go": "b4bef365d41b48da4534df0126a0aaeafa71c812cc8dcc03f1c317588f21845b",
+  "internal/tofa/desktop_recovery_darwin_test.go": "aac3db46b2d05c373348b85f1378871dfce4baed4390e6c33a21d5426c7ea4ad",
+  "internal/tofa/desktop_selection_darwin_test.go": "d968333a3b91ba06c3d3913d7a90f2f305f20d730b3e81d43356f7bbacb495f1"
+}

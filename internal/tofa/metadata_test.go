@@ -53,8 +53,8 @@ func TestKimiLaunchUsesScopedProviderMetadata(t *testing.T) {
 				if err := json.Unmarshal(data, &catalog); err != nil {
 					t.Fatal(err)
 				}
-				if len(catalog.Models) != 1 {
-					t.Fatal("catalog must contain selected model only")
+				if len(catalog.Models) != 2 {
+					t.Fatal("catalog must contain the selected main and default Guardian")
 				}
 				model := catalog.Models[0]
 				if model.Slug != "moonshotai/Kimi-K3" || model.Context != 1024000 || model.Maximum != 1024000 {
@@ -79,81 +79,70 @@ func TestKimiLaunchUsesScopedProviderMetadata(t *testing.T) {
 	}
 }
 
-func TestUnknownModelDoesNotReceiveInventedMetadata(t *testing.T) {
-	app, _ := adapterFixture(t, nil, func(string, string) error { return nil })
-	runner := app.RunClient
-	app.RunClient = func(args, env []string) error {
-		for _, arg := range args {
-			if strings.HasPrefix(arg, "model_catalog_json=") {
-				t.Fatal("unknown model received a fabricated catalog")
-			}
-		}
-		return runner(args, env)
-	}
-	runAdapted(t, app)
-}
-
 func TestEvaluationPairUsesScopedMetadataAndCleansUp(t *testing.T) {
-	for _, guardian := range []string{"moonshotai/Kimi-K3", "nvidia/Nemotron-3-Ultra-550b-a55b"} {
-		t.Run(guardian, func(t *testing.T) {
-			app, _ := adapterFixture(t, nil, nil)
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				io.WriteString(w, `{"data":[{"id":"moonshotai/Kimi-K3"},{"id":"nvidia/Nemotron-3-Ultra-550b-a55b"}]}`)
-			}))
-			defer server.Close()
-			app.Endpoint = server.URL
-			var path string
-			clientError := errors.New("fixture exit")
-			app.RunClient = func(args, env []string) error {
-				for _, arg := range args {
-					if value, ok := strings.CutPrefix(arg, "model_catalog_json="); ok {
-						path, _ = strconv.Unquote(value)
+	for _, flag := range []string{"--guardian-model", "--evaluation-guardian-model"} {
+		for _, guardian := range []string{"moonshotai/Kimi-K3", "nvidia/Nemotron-3-Ultra-550b-a55b"} {
+			t.Run(flag+"/"+guardian, func(t *testing.T) {
+				app, _ := adapterFixture(t, nil, nil)
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					io.WriteString(w, `{"data":[{"id":"moonshotai/Kimi-K3"},{"id":"nvidia/Nemotron-3-Ultra-550b-a55b"}]}`)
+				}))
+				defer server.Close()
+				app.Endpoint = server.URL
+				var path string
+				clientError := errors.New("fixture exit")
+				app.RunClient = func(args, env []string) error {
+					for _, arg := range args {
+						if value, ok := strings.CutPrefix(arg, "model_catalog_json="); ok {
+							path, _ = strconv.Unquote(value)
+						}
 					}
-				}
-				data, err := os.ReadFile(path)
-				if err != nil {
-					t.Fatal(err)
-				}
-				var catalog struct {
-					Models []struct {
-						Slug      string `json:"slug"`
-						Guardian  string `json:"auto_review_model_override"`
-						Context   int    `json:"context_window"`
-						Reasoning []any  `json:"supported_reasoning_levels"`
-					} `json:"models"`
-				}
-				if err := json.Unmarshal(data, &catalog); err != nil {
-					t.Fatal(err)
-				}
-				byID := map[string]int{}
-				for _, model := range catalog.Models {
-					byID[model.Slug] = model.Context
-					if len(model.Reasoning) != 0 {
-						t.Fatal("unverified reasoning controls")
+					data, err := os.ReadFile(path)
+					if err != nil {
+						t.Fatal(err)
 					}
-					if model.Slug == "moonshotai/Kimi-K3" && model.Guardian != guardian {
-						t.Fatal("missing explicit Guardian selection")
+					var catalog struct {
+						Models []struct {
+							Slug      string `json:"slug"`
+							Guardian  string `json:"auto_review_model_override"`
+							Context   int    `json:"context_window"`
+							Reasoning []any  `json:"supported_reasoning_levels"`
+						} `json:"models"`
 					}
+					if err := json.Unmarshal(data, &catalog); err != nil {
+						t.Fatal(err)
+					}
+					byID := map[string]int{}
+					for _, model := range catalog.Models {
+						byID[model.Slug] = model.Context
+						if len(model.Reasoning) != 0 {
+							t.Fatal("unverified reasoning controls")
+						}
+						if model.Slug == "moonshotai/Kimi-K3" && model.Guardian != guardian {
+							t.Fatal("missing explicit Guardian selection")
+						}
+					}
+					if byID["moonshotai/Kimi-K3"] != 1024000 {
+						t.Fatal("wrong main metadata")
+					}
+					if guardian != "moonshotai/Kimi-K3" && (len(byID) != 2 || byID[guardian] != 1048576) {
+						t.Fatal("reviewer must use its own metadata")
+					}
+					if len(byID) != len(catalog.Models) {
+						t.Fatal("duplicate catalog entries")
+					}
+					return clientError
 				}
-				if byID["moonshotai/Kimi-K3"] != 1024000 {
-					t.Fatal("wrong main metadata")
+				if err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified", flag, guardian}); !errors.Is(err, clientError) {
+					t.Fatalf("lost client result: %v", err)
 				}
-				if guardian != "moonshotai/Kimi-K3" && (len(byID) != 2 || byID[guardian] != 1048576) {
-					t.Fatal("reviewer must use its own metadata")
+				if _, err := os.Stat(path); !os.IsNotExist(err) {
+					t.Fatal("temporary pair metadata retained")
 				}
-				if len(byID) != len(catalog.Models) {
-					t.Fatal("duplicate catalog entries")
-				}
-				return clientError
-			}
-			if err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified", "--evaluation-guardian-model", guardian}); !errors.Is(err, clientError) {
-				t.Fatalf("lost client result: %v", err)
-			}
-			if _, err := os.Stat(path); !os.IsNotExist(err) {
-				t.Fatal("temporary pair metadata retained")
-			}
-		})
+			})
+		}
 	}
+
 }
 
 func TestKimiCatalogCreationFailurePreventsLaunch(t *testing.T) {
@@ -216,7 +205,7 @@ func TestCandidateLaunchUsesOwnScopedMetadata(t *testing.T) {
 		t.Run(candidate.id, func(t *testing.T) {
 			app, _ := adapterFixture(t, nil, func(string, string) error { return nil })
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				io.WriteString(w, `{"data":[{"id":"`+candidate.id+`"}]}`)
+				io.WriteString(w, `{"data":[{"id":"`+candidate.id+`"},{"id":"zai-org/GLM-5.3-Flash"}]}`)
 			}))
 			defer server.Close()
 			app.Endpoint = server.URL
@@ -244,7 +233,11 @@ func TestCandidateLaunchUsesOwnScopedMetadata(t *testing.T) {
 				if err := json.Unmarshal(data, &catalog); err != nil {
 					t.Fatal(err)
 				}
-				if len(catalog.Models) != 1 || catalog.Models[0].Slug != candidate.id || catalog.Models[0].Context != candidate.context {
+				wantEntries := 2
+				if candidate.id == "zai-org/GLM-5.3-Flash" {
+					wantEntries = 1
+				}
+				if len(catalog.Models) != wantEntries || catalog.Models[0].Slug != candidate.id || catalog.Models[0].Context != candidate.context {
 					t.Fatalf("wrong candidate metadata: %s", data)
 				}
 				images := false

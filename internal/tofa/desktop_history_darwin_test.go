@@ -22,20 +22,36 @@ import (
 )
 
 func TestDesktopHistoryRoundTripRequiresFreshLaunch(t *testing.T) {
-	desktopHistoryRoundTrip(t, "cancellation")
+	for _, model := range []string{
+		"zai-org/GLM-5.3-Flash", "deepseek-ai/DeepSeek-V4.1-Flash", "zai-org/GLM-5.3",
+		"moonshotai/Kimi-K3", "nvidia/Nemotron-3-Ultra-550b-a55b",
+	} {
+		t.Run(model, func(t *testing.T) { desktopHistoryRoundTrip(t, "cancellation", model) })
+	}
 }
 
 func TestDesktopHistoryRecoversFailures(t *testing.T) {
 	for _, failure := range []string{"normal exit", "engine loss", "adapter failure", "startup failure", "abrupt death"} {
-		t.Run(failure, func(t *testing.T) { desktopHistoryRoundTrip(t, failure) })
+		t.Run(failure, func(t *testing.T) { desktopHistoryRoundTrip(t, failure, "moonshotai/Kimi-K3") })
+	}
+	for _, tc := range []struct{ failure, model string }{
+		{"normal exit", "zai-org/GLM-5.3-Flash"},
+		{"engine loss", "nvidia/Nemotron-3-Ultra-550b-a55b"},
+		{"adapter failure", "zai-org/GLM-5.3"},
+		{"startup failure", "deepseek-ai/DeepSeek-V4.1-Flash"},
+		{"abrupt death", "deepseek-ai/DeepSeek-V4.1-Flash"},
+	} {
+		t.Run(tc.failure+"/"+tc.model, func(t *testing.T) { desktopHistoryRoundTrip(t, tc.failure, tc.model) })
 	}
 }
 
 func TestDesktopHistorySurvivesInstalledRemoval(t *testing.T) {
-	desktopHistoryRoundTrip(t, "uninstall")
+	for _, model := range []string{"moonshotai/Kimi-K3", "deepseek-ai/DeepSeek-V4.1-Flash"} {
+		t.Run(model, func(t *testing.T) { desktopHistoryRoundTrip(t, "uninstall", model) })
+	}
 }
 
-func desktopHistoryRoundTrip(t *testing.T, failure string) {
+func desktopHistoryRoundTrip(t *testing.T, failure, model string) {
 	installed := os.Getenv("TOFA_TEST_DESKTOP_ENGINE")
 	if installed == "" {
 		t.Skip("set TOFA_TEST_DESKTOP_ENGINE")
@@ -91,11 +107,17 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 			w.WriteHeader(400)
 			return
 		}
-		if request.Model != "moonshotai/Kimi-K3" {
+		if request.Model != model {
 			t.Error("Token Factory model changed")
 		}
 		tofaCalls.Add(1)
-		for _, item := range request.Input {
+		// Only a tool result from the current user turn completes this response.
+		// Earlier results must not bypass a fresh tool exchange after resume.
+		for index := len(request.Input) - 1; index >= 0; index-- {
+			item := request.Input[index]
+			if item["role"] == "user" {
+				break
+			}
 			if item["type"] == "function_call_output" {
 				if !strings.Contains(fmt.Sprint(item["output"]), "history-tool-result") {
 					t.Error("coding tool result missing from inference history")
@@ -152,9 +174,9 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 	var child capturedDesktop
 	var stop func()
 	if failure == "abrupt death" {
-		child, stop = executableDesktopFixture(t, app, bundle, capture)
+		child, stop = executableDesktopFixture(t, app, bundle, capture, "--model", model)
 	} else {
-		child, stop = liveDesktopFixture(t, app, bundle, capture)
+		child, stop = liveDesktopFixture(t, app, bundle, capture, "--model", model)
 	}
 	firstRoute, firstKey := child.Env["TOFA_DESKTOP_CONTEXT"], child.Env["TOFA_API_KEY"]
 	e = openDesktopEngine(t, child)
@@ -243,7 +265,7 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 			t.Fatal(err)
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+		err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", model, "--allow-unverified"})
 		cancel()
 		if err == nil || !strings.Contains(err.Error(), "exit status 17") {
 			t.Fatalf("startup failure was not surfaced: %v", err)
@@ -318,7 +340,7 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 		e = openDesktopEngine(t, ordinary)
 		check(e)
 		resumed = e.call("thread/resume", map[string]any{"threadId": tofaID, "model": nil, "modelProvider": nil})
-		if resumed["modelProvider"] != "nebius-tofa" || resumed["model"] != "moonshotai/Kimi-K3" {
+		if resumed["modelProvider"] != "nebius-tofa" || resumed["model"] != model {
 			t.Fatal("ordinary hydration changed provider/model")
 		}
 		before := tofaCalls.Load()
@@ -332,16 +354,19 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 			t.Fatal(err)
 		}
 
-		child, stop = liveDesktopFixture(t, app, bundle, capture)
+		child, stop = liveDesktopFixture(t, app, bundle, capture, "--model", model)
 		if child.Env["TOFA_DESKTOP_CONTEXT"] == firstRoute || child.Env["TOFA_API_KEY"] == firstKey {
 			t.Fatal("history recovery reused stale inference access")
 		}
 
 		e = openDesktopEngine(t, child)
 		check(e)
-		e.call("thread/resume", map[string]any{"threadId": tofaID, "model": nil, "modelProvider": nil})
+		resumed = e.call("thread/resume", map[string]any{"threadId": tofaID, "model": nil, "modelProvider": nil})
+		if resumed["model"] != model || resumed["modelProvider"] != "nebius-tofa" || resumed["thread"].(map[string]any)["id"] != tofaID {
+			t.Fatal("relaunch changed recorded identity")
+		}
 		e.turnText(tofaID, "completed", "Continue same thread after relaunch")
-		want = append(want, "user:Continue same thread after relaunch", "assistant:Token Factory history answer")
+		want = append(want, "user:Continue same thread after relaunch", "tool:printf history-tool-result:history-tool-result", "assistant:Token Factory history answer")
 		check(e)
 		e.close()
 		stop()
@@ -349,7 +374,7 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 	e = openDesktopEngine(t, ordinary)
 	check(e)
 	e.close()
-	if nativeCalls.Load() != 2 || tofaCalls.Load() != 4 {
+	if nativeCalls.Load() != 2 || tofaCalls.Load() != 6 {
 		t.Fatalf("unexpected routing counts: native=%d tofa=%d", nativeCalls.Load(), tofaCalls.Load())
 	}
 	if failure == "uninstall" {
@@ -365,7 +390,7 @@ func desktopHistoryRoundTrip(t *testing.T, failure string) {
 			want = append(want, "user:Unavailable after uninstall")
 			check(e)
 			e.close()
-			if nativeCalls.Load() != 2 || tofaCalls.Load() != 4 {
+			if nativeCalls.Load() != 2 || tofaCalls.Load() != 6 {
 				t.Fatal("removed integration retained inference access")
 			}
 		}

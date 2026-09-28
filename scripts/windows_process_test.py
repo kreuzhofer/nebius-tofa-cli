@@ -9,24 +9,37 @@ import sys
 import tempfile
 import shutil
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import windows_process
 
 
 class CodexResolutionTests(unittest.TestCase):
-    def test_architecture_uses_native_os_over_emulated_process_architecture(self):
-        for environment, expected in [
-            ({"PROCESSOR_ARCHITECTURE": "AMD64"}, "amd64"),
-            ({"PROCESSOR_ARCHITECTURE": "ARM64"}, "arm64"),
-            ({"PROCESSOR_ARCHITECTURE": "x86", "PROCESSOR_ARCHITEW6432": "AMD64"}, "amd64"),
-            ({"PROCESSOR_ARCHITECTURE": "AMD64", "PROCESSOR_ARCHITEW6432": "ARM64"}, "arm64"),
-        ]:
-            with self.subTest(environment=environment), patch.dict(os.environ, environment, clear=True):
+    def test_architecture_uses_host_machine_even_when_environment_reports_amd64(self):
+        # Model the OS boundary, including x64-on-ARM64 without ARCHITEW6432.
+        for native_machine, expected in [(0xAA64, "arm64"), (0x8664, "amd64")]:
+            def query(process, process_machine, host_machine):
+                ctypes.cast(process_machine, ctypes.POINTER(ctypes.c_ushort))[0] = 0x8664
+                ctypes.cast(host_machine, ctypes.POINTER(ctypes.c_ushort))[0] = native_machine
+                return True
+            kernel = Mock()
+            kernel.IsWow64Process2.side_effect = query
+            with self.subTest(native_machine=native_machine), \
+                    patch.dict(os.environ, {"PROCESSOR_ARCHITECTURE": "AMD64"}, clear=True), \
+                    patch.object(ctypes, "WinDLL", return_value=kernel, create=True):
                 self.assertEqual(windows_process.architecture(), expected)
-        for environment in [{}, {"PROCESSOR_ARCHITECTURE": "x86"}]:
-            with self.subTest(environment=environment), patch.dict(os.environ, environment, clear=True):
-                with self.assertRaises(ValueError):
+
+    def test_architecture_rejects_unknown_hosts_and_api_failures(self):
+        kernel = Mock()
+        # A successful call with an unrecognized machine must not guess from env.
+        kernel.IsWow64Process2.return_value = True
+        with patch.dict(os.environ, {"PROCESSOR_ARCHITECTURE": "AMD64"}, clear=True), \
+                patch.object(ctypes, "WinDLL", return_value=kernel, create=True):
+            with self.assertRaisesRegex(ValueError, "Unsupported native Windows architecture"):
+                windows_process.architecture()
+            kernel.IsWow64Process2.return_value = False
+            with patch.object(ctypes, "WinError", return_value=OSError("native query failed"), create=True):
+                with self.assertRaisesRegex(OSError, "native query failed"):
                     windows_process.architecture()
 
     def test_resolves_native_executable_and_npm_wrapper_without_a_shell(self):

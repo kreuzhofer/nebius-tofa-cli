@@ -94,7 +94,8 @@ class Fixture {
         self.env["FIXTURE_REFERENCE"] = uuid.uuid4().hex
         for name in ("gh.exe", "codex.exe"):
             shutil.copyfile(self.exe, self.bin / name)
-        self.asset = "tofa_" + VERSION + "_windows_amd64.exe"
+        from windows_process import architecture
+        self.asset = "tofa_" + VERSION + "_windows_" + architecture() + ".exe"
         shutil.copyfile(self.exe, self.assets / self.asset)
         for name in ("install.ps1", "uninstall.ps1"):
             shutil.copyfile(SCRIPTS / name, self.assets / name)
@@ -290,7 +291,7 @@ class Fixture {
     def test_actual_candidate_cli_helper_is_awaited_through_native_supervisor(self):
         import qualify_windows
         import windows_process
-        candidate = SCRIPTS.parent / "dist" / ("tofa_" + os.environ["VERSION"] + "_windows_amd64.exe")
+        candidate = SCRIPTS.parent / "dist" / ("tofa_" + os.environ["VERSION"] + "_windows_" + windows_process.architecture() + ".exe")
         self.assertTrue(candidate.is_file())
         target = self.install / "bin/tofa.exe"
         target.parent.mkdir(parents=True)

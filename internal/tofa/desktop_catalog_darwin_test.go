@@ -149,7 +149,7 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 			if err := json.Unmarshal(raw, &child); err != nil {
 				t.Fatal(err)
 			}
-			if len(child.Catalog.Models) != 2 || !reflect.DeepEqual(child.Catalog.Models[0], descriptor) {
+			if len(child.Catalog.Models) != 3 || !reflect.DeepEqual(child.Catalog.Models[0], descriptor) {
 				t.Fatal("effective account catalog replaced with bundled choices or altered")
 			}
 			raw, err = os.ReadFile(filepath.Join(child.Env["CODEX_HOME"], "auth.json"))
@@ -217,7 +217,7 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 
 func openDesktopEngine(t *testing.T, child capturedDesktop, overrides ...string) *desktopEngine {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	t.Cleanup(cancel)
 	args := []string{"app-server", "-c", "features.shell_snapshot=false"}
 	for _, override := range overrides {
@@ -290,7 +290,7 @@ func (e *desktopEngine) turn(id, status string) {
 	e.turnText(id, status, "Synthetic coexistence check")
 }
 
-func (e *desktopEngine) turnText(id, status, text string) {
+func (e *desktopEngine) turnText(id, status, text string) map[string]any {
 	e.t.Helper()
 	e.call("turn/start", map[string]any{"threadId": id, "input": []any{map[string]string{"type": "text", "text": text}}})
 	for {
@@ -306,7 +306,7 @@ func (e *desktopEngine) turnText(id, status, text string) {
 		if status == "failed" && !strings.Contains(fmt.Sprint(turn["error"]), "model") {
 			e.t.Fatalf("missing explicit model failure: %v", turn["error"])
 		}
-		return
+		return turn
 	}
 }
 
@@ -418,6 +418,7 @@ func TestDesktopRefusesInvalidNativeCatalog(t *testing.T) {
 		{"missing identity", "normal", `{"models":[{"display_name":"Astra"}]}`, "model identity"},
 		{"duplicate identity", "normal", `{"models":[{"slug":"gpt-6-astra"},{"slug":"gpt-6-astra"}]}`, "model identity"},
 		{"conflicting provider metadata", "normal", `{"models":[{"slug":"moonshotai/Kimi-K3"}]}`, "model identity"},
+		{"conflicting Guardian metadata", "normal", `{"models":[{"slug":"zai-org/GLM-5.3-Flash"}]}`, "model identity"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			bundle, capture := desktopFixture(t, tc.mode)

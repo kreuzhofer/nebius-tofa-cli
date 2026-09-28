@@ -6,16 +6,22 @@ $Temp=Join-Path ([IO.Path]::GetTempPath()) ('tofa test '+[Guid]::NewGuid().ToStr
 $OriginalLocal=$env:LOCALAPPDATA
 $OriginalBase=$env:TOFA_RELEASE_BASE_URL
 $OriginalRoot=$env:TOFA_INSTALL_DIR
+$OriginalArch=$env:PROCESSOR_ARCHITECTURE
+$OriginalNativeArch=$env:PROCESSOR_ARCHITEW6432
+# Independent host observation: the download assertion must not repeat the
+# installer's architecture detection or trust the emulated process environment.
+$HostArchitectures=@(Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Architecture -Unique)
+if($HostArchitectures.Count -ne 1){throw 'Expected one native processor architecture'}
+$HostArch=switch($HostArchitectures[0]) {9 {'amd64'} 12 {'arm64'} default {throw 'Unsupported test host architecture'}}
 function Assert($Condition,[string]$Message){if(!$Condition){throw $Message}}
 New-Item -ItemType Directory -Path $Temp | Out-Null
 $global:TofaFixtureBytes=[Text.Encoding]::UTF8.GetBytes('fixture executable')
 $global:TofaFixtureCorrupt=$false
 $global:TofaFixtureChecksum='valid'
+$global:TofaFixtureAsset="tofa_v0.0.0-test_windows_${HostArch}.exe"
 function global:Invoke-WebRequest {
  param([switch]$UseBasicParsing,[string]$Uri,[string]$OutFile)
- $Arch=if($env:PROCESSOR_ARCHITEW6432){$env:PROCESSOR_ARCHITEW6432}else{$env:PROCESSOR_ARCHITECTURE}
- $Arch=if($Arch -eq 'ARM64'){'arm64'}else{'amd64'}
- $Asset="tofa_v0.0.0-test_windows_$Arch.exe"
+ $Asset=$global:TofaFixtureAsset
  if ($Uri -notin @("$env:TOFA_RELEASE_BASE_URL/$Asset", "$env:TOFA_RELEASE_BASE_URL/SHA256SUMS")) {throw "Unexpected download: $Uri"}
  if($Uri.EndsWith('/SHA256SUMS')){
   $Hash=[Security.Cryptography.SHA256]::Create()
@@ -37,6 +43,10 @@ function global:Invoke-WebRequest {
  }
 }
 try {
+ # Reproduce missing ARCHITEW6432 under emulation; misleading env cannot select
+ # a foreign asset, including on AMD64 CI exercising the inverse case.
+ $env:PROCESSOR_ARCHITECTURE=if($HostArch -eq 'arm64'){'AMD64'}else{'ARM64'}
+ $env:PROCESSOR_ARCHITEW6432=$null
  $env:LOCALAPPDATA=$Temp;$env:TOFA_INSTALL_DIR=$null;$env:TOFA_RELEASE_BASE_URL='https://fixture.invalid/releases/download/v0.0.0-test'
  & (Join-Path $Scripts 'install.ps1') -Version v0.0.0-test -NoModifyPath
  $Binary=Join-Path $Temp 'tofa\install\bin\tofa.exe'
@@ -83,7 +93,8 @@ try {
  Write-Host 'Offline Windows installer lifecycle passed.'
 }finally{
  Remove-Item Function:\Invoke-WebRequest
- Remove-Variable TofaFixtureBytes,TofaFixtureCorrupt,TofaFixtureChecksum -Scope Global
+ Remove-Variable TofaFixtureBytes,TofaFixtureCorrupt,TofaFixtureChecksum,TofaFixtureAsset -Scope Global
+ $env:PROCESSOR_ARCHITECTURE=$OriginalArch;$env:PROCESSOR_ARCHITEW6432=$OriginalNativeArch
  $env:LOCALAPPDATA=$OriginalLocal;$env:TOFA_RELEASE_BASE_URL=$OriginalBase;$env:TOFA_INSTALL_DIR=$OriginalRoot
  Remove-Item -LiteralPath $Temp -Recurse -Force
 }

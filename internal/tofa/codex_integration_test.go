@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -92,11 +93,11 @@ func TestInstalledCodexToolAndContinuationThroughAdapter(t *testing.T) {
 			for _, tool := range payload.Tools {
 				switch tool.Name {
 				case "exec_command":
-					name, arguments = tool.Name, `{"cmd":"printf tofa-fixture-tool","max_output_tokens":100}`
+					name, arguments = tool.Name, `{"cmd":"echo tofa-fixture-tool","max_output_tokens":100}`
 				case "shell_command":
-					name, arguments = tool.Name, `{"command":"printf tofa-fixture-tool"}`
+					name, arguments = tool.Name, `{"command":"echo tofa-fixture-tool"}`
 				case "shell":
-					name, arguments = tool.Name, `{"command":["sh","-c","printf tofa-fixture-tool"]}`
+					name, arguments = tool.Name, `{"command":["sh","-c","echo tofa-fixture-tool"]}`
 				}
 				if name != "" {
 					break
@@ -146,6 +147,11 @@ func TestInstalledCodexToolAndContinuationThroughAdapter(t *testing.T) {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 		defer cancel()
+		// Isolated Windows homes have no configured sandbox backend. Enable the
+		// restricted-token backend so read-only tools remain sandboxed.
+		if runtime.GOOS == "windows" {
+			args = append([]string{"-c", `windows.sandbox="unelevated"`}, args...)
+		}
 		command := exec.CommandContext(ctx, clientPath, args...)
 		command.Dir, command.Env = root, isolated
 		output, err := command.CombinedOutput()
@@ -195,24 +201,30 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 	t.Log(strings.TrimSpace(string(version)))
 	for _, test := range []struct {
 		name, assessment string
+		guardian         string
 		allow            bool
 		status           int
 	}{
-		{"allow", `{"outcome":"allow"}`, true, 200},
-		{"allow after tool check", `{"outcome":"allow"}`, true, 200},
-		{"deny", `{"outcome":"deny"}`, false, 200},
-		{"invalid JSON", `not an assessment`, false, 200},
-		{"missing outcome", `{"risk_level":"low"}`, false, 200},
-		{"invalid outcome", `{"outcome":"maybe"}`, false, 200},
-		{"invalid risk", `{"outcome":"allow","risk_level":"safe"}`, false, 200},
-		{"upstream error", "", false, 500},
-		{"cancelled review", "", false, -1},
+		{"allow", `{"outcome":"allow"}`, "", true, 200},
+		{"allow after tool check", `{"outcome":"allow"}`, "", true, 200},
+		{"deny", `{"outcome":"deny"}`, "", false, 200},
+		{"same-model allow", `{"outcome":"allow"}`, "moonshotai/Kimi-K3", true, 200},
+		{"same-model deny", `{"outcome":"deny"}`, "moonshotai/Kimi-K3", false, 200},
+		{"explicit distinct allow", `{"outcome":"allow"}`, "zai-org/GLM-5.3-Flash", true, 200},
+		{"explicit distinct deny", `{"outcome":"deny"}`, "zai-org/GLM-5.3-Flash", false, 200},
+		{"invalid JSON", `not an assessment`, "", false, 200},
+		{"missing outcome", `{"risk_level":"low"}`, "", false, 200},
+		{"invalid outcome", `{"outcome":"maybe"}`, "", false, 200},
+		{"invalid risk", `{"outcome":"allow","risk_level":"safe"}`, "", false, 200},
+		{"upstream error", "", "", false, 500},
+		{"cancelled review", "", "", false, -1},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var mainRequests, reviewRequests, executions atomic.Int32
 			reviewStarted := make(chan struct{}, 1)
 			upstream := func(writer http.ResponseWriter, request *http.Request) {
 				var payload struct {
+					Model        string                     `json:"model"`
 					Instructions string                     `json:"instructions"`
 					Text         map[string]json.RawMessage `json:"text"`
 					Input        []struct {
@@ -231,18 +243,45 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 					return
 				}
 				reviewer := len(payload.Tools) == 3
+				wantModel := "moonshotai/Kimi-K3"
+				if reviewer {
+					wantModel = test.guardian
+					if wantModel == "" {
+						wantModel = "zai-org/GLM-5.3-Flash"
+					}
+				}
+				if payload.Model != wantModel {
+					t.Errorf("upstream model = %s, want %s (review=%v)", payload.Model, wantModel, reviewer)
+					writer.WriteHeader(400)
+					return
+				}
 				var item map[string]any
 				if reviewer {
 					reviewCount := reviewRequests.Add(1)
-					if _, exists := payload.Text["format"]; exists {
-						t.Error("review schema still constrains tool generation")
-						writer.WriteHeader(400)
-						return
-					}
-					if !strings.Contains(payload.Instructions, "When you are ready to give your final answer, return JSON matching this schema:") || !strings.Contains(payload.Instructions, `"required":["outcome"]`) {
-						t.Error("complete final-answer schema missing from real reviewer instructions")
-						writer.WriteHeader(400)
-						return
+					if payload.Model == "moonshotai/Kimi-K3" {
+						if _, exists := payload.Text["format"]; exists {
+							t.Error("review schema still constrains tool generation")
+							writer.WriteHeader(400)
+							return
+						}
+						if !strings.Contains(payload.Instructions, "When you are ready to give your final answer, return JSON matching this schema:") || !strings.Contains(payload.Instructions, `"required":["outcome"]`) {
+							t.Error("complete final-answer schema missing from real reviewer instructions")
+							writer.WriteHeader(400)
+							return
+						}
+					} else {
+						var format struct {
+							Type   string          `json:"type"`
+							Schema json.RawMessage `json:"schema"`
+						}
+						if json.Unmarshal(payload.Text["format"], &format) != nil || format.Type != "json_schema" || !strings.Contains(string(format.Schema), `"outcome"`) {
+							t.Error("native Guardian schema lost for non-Kimi model")
+							writer.WriteHeader(400)
+							return
+						}
+						if strings.Contains(payload.Instructions, "When you are ready to give your final answer, return JSON matching this schema:") {
+							t.Error("Kimi adaptation applied to another model")
+						}
 					}
 					names := map[string]bool{"exec_command": true, "write_stdin": true, "view_image": true}
 					for _, tool := range payload.Tools {
@@ -264,7 +303,7 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 						return
 					}
 					if test.name == "allow after tool check" && reviewCount == 1 {
-						item = map[string]any{"id": "fc_inspection", "type": "function_call", "call_id": "call_inspection", "name": "exec_command", "arguments": `{"cmd":"printf tofa-review-inspection","max_output_tokens":100}`, "status": "completed"}
+						item = map[string]any{"id": "fc_inspection", "type": "function_call", "call_id": "call_inspection", "name": "exec_command", "arguments": `{"cmd":"echo tofa-review-inspection","max_output_tokens":100}`, "status": "completed"}
 					} else {
 						if test.name == "allow after tool check" {
 							found := false
@@ -292,7 +331,7 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 						}
 					}
 					if count == 1 {
-						item = map[string]any{"id": "fc_review_fixture", "type": "function_call", "call_id": "call_review_fixture", "name": "exec_command", "arguments": `{"cmd":"printf tofa-review-gated-action","sandbox_permissions":"require_escalated","justification":"Run the user-authorized harmless approval fixture.","max_output_tokens":100}`, "status": "completed"}
+						item = map[string]any{"id": "fc_review_fixture", "type": "function_call", "call_id": "call_review_fixture", "name": "exec_command", "arguments": `{"cmd":"echo tofa-review-gated-action","sandbox_permissions":"require_escalated","justification":"Run the user-authorized harmless approval fixture.","max_output_tokens":100}`, "status": "completed"}
 					} else {
 						item = fixtureMessage("Fixture complete.")
 					}
@@ -331,13 +370,23 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 						}
 					}()
 				}
+				// Isolated Windows homes have no configured sandbox backend. Enable the
+				// restricted-token backend so read-only tools remain sandboxed.
+				if runtime.GOOS == "windows" {
+					args = append([]string{"-c", `windows.sandbox="unelevated"`}, args...)
+				}
 				command := exec.CommandContext(ctx, clientPath, args...)
 				command.Dir, command.Env = root, isolated
 				var err error
 				clientOutput, err = command.CombinedOutput()
 				return err
 			}
-			err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified", "--", "--sandbox", "read-only", "exec", "--skip-git-repo-check", "--ignore-rules", "--json", "Run the harmless fixture command once. If review fails, stop without bypassing review or retrying."})
+			args := []string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"}
+			if test.guardian != "" {
+				args = append(args, "--guardian-model", test.guardian)
+			}
+			args = append(args, "--", "--sandbox", "read-only", "exec", "--skip-git-repo-check", "--ignore-rules", "--json", "Run the harmless fixture command once. If review fails, stop without bypassing review or retrying.")
+			err := app.Run(args)
 			if err != nil && test.status != -1 {
 				t.Fatalf("Codex failed: %v\n%s", err, clientOutput)
 			}
@@ -357,7 +406,21 @@ func TestInstalledCodexApprovalReviewThroughAdapter(t *testing.T) {
 				t.Fatalf("execution gate: executions=%d want allow=%v\n%s", got, test.allow, clientOutput)
 			}
 			// The JSON event stream is an independent observation of actual command execution.
-			completed := strings.Contains(string(clientOutput), `"aggregated_output":"tofa-review-gated-action"`)
+			completed := false
+			for _, line := range strings.Split(string(clientOutput), "\n") {
+				var event struct {
+					Type string `json:"type"`
+					Item struct {
+						Type     string `json:"type"`
+						Output   string `json:"aggregated_output"`
+						ExitCode *int   `json:"exit_code"`
+						Status   string `json:"status"`
+					} `json:"item"`
+				}
+				if json.Unmarshal([]byte(line), &event) == nil && event.Type == "item.completed" && event.Item.Type == "command_execution" && event.Item.Status == "completed" && event.Item.ExitCode != nil && *event.Item.ExitCode == 0 && strings.TrimSpace(event.Item.Output) == "tofa-review-gated-action" {
+					completed = true
+				}
+			}
 			if completed != test.allow {
 				t.Fatalf("command execution events disagree: allow=%v\n%s", test.allow, clientOutput)
 			}

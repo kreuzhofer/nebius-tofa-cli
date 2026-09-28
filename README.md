@@ -54,6 +54,9 @@ Rerun the installer to upgrade; saved preferences and credentials are retained.
 
 ### Windows PowerShell
 
+Requires Windows 10 version 1709 or later. The installer detects the native
+AMD64 or ARM64 host, including when PowerShell runs under emulation.
+
 ```powershell
 $Version = 'v0.1.0-rc.2'
 $Installer = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/install.ps1" -ErrorAction Stop
@@ -206,6 +209,38 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 ./tofa auth logout
 ```
 
+Omitting `--model` in a terminal opens the same Codex CLI main-model picker for
+`tofa`, `tofa --allow-unverified`, and `tofa launch codex [OPTIONS]`. A dedicated
+screen highlights the current model, with its exact ID, compatibility status and
+Guardian below. Up/Down moves between ready models; Enter launches. Type to filter
+by model name or provider, Backspace edits, and Ctrl-U clears the filter. Page
+Up/Down and Home/End navigate longer lists.
+
+Tab switches between **Ready** and **Unavailable** models, retaining your filter.
+Unavailable models can be inspected but never launched. Press **?** for complete
+model details and disabled reasons; arrows or Page Up/Down scroll long details.
+Press **?** again to return. Escape or Ctrl-C cancels without starting Codex.
+
+The picker resizes with your terminal, retains the highlighted choice and restores
+the previous shell screen, cursor and terminal settings on exit. It requires at
+least 40 columns and 18 rows; smaller terminals receive instructions to enlarge
+the window or use `--model ID`. `NO_COLOR=1` disables styling while retaining the
+leading selection indicator. Guardian uses its default or explicit override
+without another prompt.
+
+Normal choices require support for the exact route and Guardian. With the current
+experimental records, bare `tofa` explains that `--allow-unverified` is needed.
+That flag shows the selected project's entire catalog, including unknown IDs;
+entries without compatible bundled metadata remain disabled with reasons. Empty
+catalogs, failed discovery and unavailable Guardians stop the launch.
+
+**Script migration:** always pass `--model ID`, for example
+`tofa launch codex --model moonshotai/Kimi-K3 --allow-unverified`. An omitted model
+in noninteractive use now fails with these instructions, even if `config.yml`
+contains a saved `model`. Saved preferences never bypass the picker. Selection
+does not change saved preferences or credentials; explicit `--model` bypasses the
+picker in both terminal and scripted use.
+
 For the tested macOS desktop application, source builds offer:
 
 ```sh
@@ -215,8 +250,10 @@ For the tested macOS desktop application, source builds offer:
 Quit Codex first. This launches ChatGPT desktop **Codex** with ordinary history
 and profile state. Keep the terminal open; Ctrl-C stops that instance. Token Factory
 history stays readable in ordinary mode; relaunch through tofa to continue it.
-Automatic titles use an announced title-only Kimi route for the captured desktop
-contract; unsupported shapes still fail explicitly. See
+Desktop launches default to GLM-5.3-Flash Guardian; `--guardian-model ID` overrides
+it. Other metadata-compatible mains can be selected experimentally, including
+`deepseek-ai/DeepSeek-V4.1-Flash`. Automatic titles retain the captured Kimi-main
+route; other mains report unsupported naming explicitly. See
 [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
 The [shared-history qualification](docs/releases/desktop-shared-history-final-2026-09-24.md)
 records passing live workflow, shutdown and preservation checks for the pinned
@@ -293,7 +330,34 @@ input modalities, alongside the pinned Codex coding prompt. Optional Responses
 reasoning effort, summary and verbosity controls are omitted until their contracts
 are established. Catalog files are removed after launch; forced termination can
 leave a `tofa-model-catalog-*.json` file in the OS temporary directory. Unknown
-model IDs retain existing metadata behavior. All models require `--allow-unverified`.
+model IDs without bundled model-specific metadata now fail explicitly, even with
+`--allow-unverified`. Both roles must appear in the current selected project's catalog.
+The bundled metadata remains the dated 2026-09-23 snapshot; availability is refreshed
+on every launch.
+
+Adapted Codex CLI launches default to `zai-org/GLM-5.3-Flash` as Guardian, without a
+second prompt. Override it explicitly when needed:
+
+```sh
+./tofa launch codex --model deepseek-ai/DeepSeek-V4.1-Flash --allow-unverified
+./tofa launch codex --model moonshotai/Kimi-K3 --guardian-model moonshotai/Kimi-K3 --allow-unverified
+```
+
+An unavailable or incompatible main or Guardian is an error, including the default
+Guardian. Nothing is substituted. The launcher displays the effective main,
+Guardian, route and experimental status before starting the client. The diagnostic
+`--direct` route preserves native reviewer selection, announces that exception and
+rejects `--guardian-model` (including the retained internal
+`--evaluation-guardian-model` alias). Passing both aliases is an error. Native
+approval policies and routing-override protections still apply.
+
+Support decisions use [recorded combination statuses](internal/tofa/assets/model-verification.json)
+for the exact target, route and main/Guardian roles. All current combinations still
+require `--allow-unverified`: the [historical CLI campaign](docs/evaluation/selected-pairs-2026-09-23.md)
+explicitly retained experimental status, and does not promote launcher or desktop
+support. Changing a role or route does not inherit another combination's support.
+Evaluation tools retain their explicit same-model default and the internal flag.
+The CLI picker does not change desktop model selection.
 See [the metadata research](https://github.com/kreuzhofer/nebius-tofa-cli/blob/03d47a502c09debc36a2072c3aa3a929beb6c38d/docs/research/kimi-provider-metadata.md)
 for the provider snapshot and remaining gaps.
 
@@ -351,6 +415,7 @@ python3 scripts/install_test.py
 python3 scripts/lifecycle_test.py dist v0.0.0-prototype -v
 # Unix only, against a compiled local binary:
 python3 scripts/terminal_test.py ./tofa
+python3 scripts/picker_test.py -v
 # Optional: installed Codex, scratch config, synthetic local responses only:
 TOFA_TEST_CODEX="$(command -v codex)" go test ./internal/tofa -run TestInstalledCodex -v
 # Unix only, offline validation of the live-test harness:
@@ -360,6 +425,15 @@ python3 scripts/trace_codex_test.py -v
 ```
 
 Python is a **development test tool**, not a runtime or installer dependency.
+The picker checks compile the public launcher with a loopback provider and a fake
+Codex process, then send actual keys through a pseudo-terminal. They verify the
+upstream model identity, route/Guardian support filtering using test-only records,
+blocked entries, cancellation, errors, terminal restoration and unchanged saved
+credentials. These checks have run locally on macOS ARM64 and are wired into
+macOS/Linux CI; Linux execution still needs a CI result. Windows console/ConPTY
+key handling and restoration have no native picker coverage yet. Cross-building
+does not establish that coverage, and these offline fixtures do not qualify live
+Codex/model combinations.
 The build tests require Go and run on macOS/Linux. They inspect all six targets'
 embedded versions and build metadata, execute the native binary, verify every
 checksum and bundled notice, and install from a controlled local release source.

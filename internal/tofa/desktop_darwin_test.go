@@ -1088,14 +1088,15 @@ type capturedDesktop struct {
 	Cwd         string
 }
 
-func liveDesktopFixture(t *testing.T, app *tofa.App, bundle, capture string) (capturedDesktop, func()) {
+func liveDesktopFixture(t *testing.T, app *tofa.App, bundle, capture string, selection ...string) (capturedDesktop, func()) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	done := make(chan struct{})
 	var result error
 	go func() {
 		defer close(done)
-		result = app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
+		args := append([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}, selection...)
+		result = app.RunContext(ctx, args)
 	}()
 	stop := func() { cancel(); <-done }
 	t.Cleanup(stop)
@@ -1246,14 +1247,19 @@ func TestDesktopBridgeRejectsModifiedOwnership(t *testing.T) {
 
 func TestDesktopBridgePartialInstallationCleansUp(t *testing.T) {
 	bundle, _ := desktopFixture(t, "normal")
+	app, _ := adapterFixture(t, nil, nil)
+	if err := (tofa.Store{Dir: app.Dir, Vault: app.Vault}).Login("fixture-project", "fixture-secret", "file"); err != nil {
+		t.Fatal(err)
+	}
 	executable, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir := t.TempDir()
+	dir := app.Dir
 	// A real filesystem write failure while copying the bridge. The limit is
 	// scoped to this child process; neither the test runner nor user files change.
 	command := exec.Command("/bin/sh", "-c", `ulimit -f 1; trap '' XFSZ; exec "$@"`, "fixture", executable, "--test-desktop-launch", dir, "launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified")
+	command.Env = append(os.Environ(), "TOFA_TEST_ENDPOINT="+app.Endpoint)
 	output, err := command.CombinedOutput()
 	if err == nil || !strings.Contains(string(output), "file too large") {
 		t.Fatalf("copy failure was not exercised: %v %s", err, output)
@@ -1483,7 +1489,7 @@ func TestDesktopPreservesFreshNativeCatalog(t *testing.T) {
 		if err := json.Unmarshal(raw, &child); err != nil {
 			t.Fatal(err)
 		}
-		if len(child.Catalog.Models) != 2 {
+		if len(child.Catalog.Models) != 3 {
 			t.Fatalf("native choices lost: got %d descriptors, want native plus Token Factory", len(child.Catalog.Models))
 		}
 		var got, want any

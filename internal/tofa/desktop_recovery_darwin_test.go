@@ -19,7 +19,7 @@ import (
 
 // Kill the actual launcher process: cancelling an in-process context cannot
 // demonstrate what survives when deferred cleanup never runs.
-func executableDesktopFixture(t *testing.T, app *tofa.App, bundle, capture string) (capturedDesktop, func()) {
+func executableDesktopFixture(t *testing.T, app *tofa.App, bundle, capture string, selection ...string) (capturedDesktop, func()) {
 	t.Helper()
 	store := tofa.Store{Dir: app.Dir, Vault: app.Vault}
 	if err := store.Login("fixture-project", "fixture-secret", "file"); err != nil {
@@ -29,7 +29,8 @@ func executableDesktopFixture(t *testing.T, app *tofa.App, bundle, capture strin
 	if err != nil {
 		t.Fatal(err)
 	}
-	command := exec.Command(executable, "--test-desktop-launch", app.Dir, "launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified")
+	args := append([]string{"--test-desktop-launch", app.Dir, "launch", "codex-desktop", "--app-bundle", bundle, "--model", "moonshotai/Kimi-K3", "--allow-unverified"}, selection...)
+	command := exec.Command(executable, args...)
 	command.Env = append(os.Environ(), "TOFA_TEST_ENDPOINT="+app.Endpoint)
 	log, err := os.CreateTemp(t.TempDir(), "launcher-output-")
 	if err != nil {

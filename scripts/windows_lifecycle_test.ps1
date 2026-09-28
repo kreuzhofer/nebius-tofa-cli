@@ -10,8 +10,10 @@ if ([Environment]::OSVersion.Platform -ne 'Win32NT') {throw 'Native Windows is r
 if ($env:GITHUB_ACTIONS -ne 'true') {throw 'Run on a disposable GitHub Actions Windows runner; this check temporarily changes user PATH'}
 if ($Version -notmatch '^[A-Za-z0-9._-]+$' -or $Version -eq 'latest') {throw 'An explicit candidate version is required'}
 $Dist=(Resolve-Path -LiteralPath $Dist).Path
-$Arch=if($env:PROCESSOR_ARCHITEW6432){$env:PROCESSOR_ARCHITEW6432}else{$env:PROCESSOR_ARCHITECTURE}
-$Arch=switch($Arch){'AMD64' {'amd64'} 'ARM64' {'arm64'} default {throw "Unsupported architecture: $Arch"}}
+# Independent expected artifact for the actual-host lifecycle assertion.
+$HostArchitectures=@(Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Architecture -Unique)
+if($HostArchitectures.Count -ne 1){throw 'Expected one native processor architecture'}
+$Arch=switch($HostArchitectures[0]) {9 {'amd64'} 12 {'arm64'} default {throw 'Unsupported test host architecture'}}
 $Asset="tofa_${Version}_windows_${Arch}.exe"
 foreach($Name in @($Asset,'SHA256SUMS','install.ps1','uninstall.ps1')) {
  if(!(Test-Path -LiteralPath (Join-Path $Dist $Name) -PathType Leaf)){throw "Missing candidate file: $Name"}

@@ -27,7 +27,7 @@ func adapterFixture(t *testing.T, upstream http.HandlerFunc, client func(string,
 			t.Error("upstream credentials or project changed")
 		}
 		if request.URL.Path == "/models" {
-			io.WriteString(writer, `{"data":[{"id":"fixture-model"},{"id":"moonshotai/Kimi-K3"}]}`)
+			io.WriteString(writer, `{"data":[{"id":"fixture-model"},{"id":"moonshotai/Kimi-K3"},{"id":"zai-org/GLM-5.3-Flash"},{"id":"deepseek-ai/DeepSeek-V4.1-Flash"},{"id":"zai-org/GLM-5.3"},{"id":"nvidia/Nemotron-3-Ultra-550b-a55b"}]}`)
 			return
 		}
 		upstream(writer, request)
@@ -89,7 +89,7 @@ func adapterRequest(t *testing.T, endpoint, token, body string) *http.Response {
 
 func runAdapted(t *testing.T, app *tofa.App) {
 	t.Helper()
-	if err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"}); err != nil {
+	if err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -173,7 +173,7 @@ func TestAdapterStopsAfterClientExitOrStartupFailure(t *testing.T) {
 				address = endpoint
 				return clientError
 			})
-			err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"})
+			err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 			if !errors.Is(err, clientError) {
 				t.Fatalf("lost client result: %v", err)
 			}
@@ -294,7 +294,7 @@ func TestLaunchCancellationStopsActiveUpstream(t *testing.T) {
 		}
 		return nil
 	})
-	err := app.RunContext(ctx, []string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"})
+	err := app.RunContext(ctx, []string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("lost launch cancellation: %v", err)
 	}
@@ -303,7 +303,7 @@ func TestLaunchCancellationStopsActiveUpstream(t *testing.T) {
 func TestAdapterListenerFailureIsReported(t *testing.T) {
 	app, _ := adapterFixture(t, func(http.ResponseWriter, *http.Request) { t.Error("unexpected upstream request") }, func(string, string) error { t.Error("client started without listener"); return nil })
 	app.Listen = func(string, string) (net.Listener, error) { return nil, errors.New("fixture listen failure") }
-	err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"})
+	err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 	if err == nil || !strings.Contains(err.Error(), "adapter") {
 		t.Fatalf("missing adapter startup failure: %v", err)
 	}
@@ -334,7 +334,7 @@ func TestAdapterReportsUnexpectedListenerExitAndCancelsStream(t *testing.T) {
 		listener, err = net.Listen(network, address)
 		return listener, err
 	}
-	err := app.Run([]string{"launch", "codex", "--model", "fixture-model", "--allow-unverified"})
+	err := app.Run([]string{"launch", "codex", "--model", "moonshotai/Kimi-K3", "--allow-unverified"})
 	if err == nil || !strings.Contains(err.Error(), "adapter stopped unexpectedly") {
 		t.Fatalf("missing runtime failure: %v", err)
 	}

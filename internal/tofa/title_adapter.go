@@ -32,7 +32,7 @@ func routeDesktopTitle(body []byte) ([]byte, bool, error) {
 	}
 	var model string
 	json.Unmarshal(payload["model"], &model)
-	if model != "gpt-5.6-luna" || !isDesktopTitle(payload["client_metadata"]) {
+	if (model != "gpt-5.6-luna" && model != "gpt-6-luna") || !isDesktopTitle(payload["client_metadata"]) {
 		return body, false, nil
 	}
 	textOptions, schema, valid := desktopTitleFormat(payload)
@@ -51,7 +51,7 @@ func routeDesktopTitle(body []byte) ([]byte, bool, error) {
 		Tools json.RawMessage `json:"tools"`
 	}
 	var fields map[string]json.RawMessage
-	if json.Unmarshal(input[0], &additional) != nil || json.Unmarshal(input[0], &fields) != nil || len(fields) != 4 || additional.Type != "additional_tools" || additional.Role != "developer" || additional.ID == "" || !desktopTitleCodeTools(additional.Tools) {
+	if json.Unmarshal(input[0], &additional) != nil || json.Unmarshal(input[0], &fields) != nil || len(fields) != 4 || additional.Type != "additional_tools" || additional.Role != "developer" || additional.ID == "" || !desktopTitleCodeTools(additional.Tools, model) {
 		return nil, false, unsupported
 	}
 	for _, item := range input[1:] {
@@ -74,7 +74,7 @@ func routeDesktopTitle(body []byte) ([]byte, bool, error) {
 	return result, true, err
 }
 
-func desktopTitleCodeTools(raw json.RawMessage) bool {
+func desktopTitleCodeTools(raw json.RawMessage, model string) bool {
 	var namespaces []struct {
 		Type  string `json:"type"`
 		Name  string `json:"name"`
@@ -83,19 +83,33 @@ func desktopTitleCodeTools(raw json.RawMessage) bool {
 			Name string `json:"name"`
 		} `json:"tools"`
 	}
-	if json.Unmarshal(raw, &namespaces) != nil || len(namespaces) != 1 || namespaces[0].Type != "namespace" || namespaces[0].Name != "functions" {
+	allowed := map[string]map[string]string{
+		"functions": {"exec": "custom", "wait": "function", "request_user_input": "function"},
+	}
+	if model == "gpt-6-luna" {
+		allowed["functions"]["request_user_input_async"] = "function"
+		allowed["clock"] = map[string]string{"sleep": "function"}
+		allowed["collaboration"] = map[string]string{
+			"followup_task": "function", "interrupt_agent": "function", "list_agents": "function",
+			"send_message": "function", "spawn_agent": "function", "wait_agent": "function",
+		}
+	}
+	if json.Unmarshal(raw, &namespaces) != nil || len(namespaces) != len(allowed) {
 		return false
 	}
-	allowed := map[string]string{"exec": "custom", "wait": "function", "request_user_input": "function"}
-	if len(namespaces[0].Tools) != len(allowed) {
-		return false
-	}
-	for _, tool := range namespaces[0].Tools {
-		kind, found := allowed[tool.Name]
-		if !found || tool.Type != kind {
+	for _, namespace := range namespaces {
+		tools, found := allowed[namespace.Name]
+		if !found || namespace.Type != "namespace" || len(namespace.Tools) != len(tools) {
 			return false
 		}
-		delete(allowed, tool.Name)
+		for _, tool := range namespace.Tools {
+			kind, found := tools[tool.Name]
+			if !found || tool.Type != kind {
+				return false
+			}
+			delete(tools, tool.Name)
+		}
+		delete(allowed, namespace.Name)
 	}
 	return true
 }
