@@ -212,8 +212,9 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 Omitting `--model` in a terminal opens the same Codex CLI main-model picker for
 `tofa`, `tofa --allow-unverified`, and `tofa launch codex [OPTIONS]`. Up/Down moves
 between eligible models (wrapping at either end); Enter confirms, and Escape or
-Ctrl-C cancels without starting Codex. The catalog stays in scrollback and the
-current selection appears on the last line. Terminal settings are restored on
+Ctrl-C cancels without starting Codex. A leading `>` moves beside the selected
+model in the list. Long lists scroll with selection; press **L** to print the full catalog and unabridged disabled
+reasons into scrollback. Terminal settings are restored on
 selection, cancellation and errors. Guardian uses its default or explicit override
 without another prompt.
 

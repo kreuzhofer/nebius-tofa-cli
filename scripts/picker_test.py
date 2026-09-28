@@ -1,10 +1,13 @@
 """Compiled launcher PTY checks; only synthetic credentials and loopback inference."""
 import http.server
+import fcntl
 import json
 import os
 import pathlib
 import pty
 import select
+import re
+import struct
 import signal
 import subprocess
 import sys
@@ -105,6 +108,7 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
 
     def start(self, args, binary=None):
         self.master, self.slave = pty.openpty()
+        fcntl.ioctl(self.slave, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 120, 0, 0))
         self.before = termios.tcgetattr(self.slave)
         self.process = subprocess.Popen([str(binary or self.binary), *args], stdin=self.slave, stdout=self.slave, stderr=self.slave, env=self.env)
         self.output = b''
@@ -127,7 +131,17 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
         return self.output.decode()
 
     def finish(self, code=0):
-        self.assertEqual(self.process.wait(timeout=5), code)
+        # Drain terminal output while waiting: a full catalog can fill the PTY
+        # buffer and otherwise block the process before it reads cancellation.
+        end = time.monotonic() + 5
+        while self.process.poll() is None and time.monotonic() < end:
+            if select.select([self.master], [], [], .05)[0]:
+                self.output += os.read(self.master, 65536)
+        self.assertEqual(self.process.wait(timeout=1), code)
+        while select.select([self.master], [], [], 0)[0]:
+            self.output += os.read(self.master, 65536)
+        if b'\x1b[?25l' in self.output:
+            self.assertGreater(self.output.rfind(b'\x1b[?25h'), self.output.rfind(b'\x1b[?25l'))
         restored = termios.tcgetattr(self.slave)
         # macOS sets this transient kernel flag when tcsetattr re-enables ICANON.
         # It is not a changed terminal setting; compare every other flag and cc.
@@ -148,6 +162,68 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
         self.assertEqual(self.requests[-1][2]['model'], KIMI)
         self.assertEqual(self.requests[-1][1], 'Bearer synthetic-key')
         self.assertIn('ai_project_id=synthetic-project', self.requests[-1][0])
+
+    def screen_lines(self):
+        # Interpret the terminal's cursor/erase operations to assert the visible
+        # list, rather than binding the test to a particular redraw sequence.
+        lines = [[]]
+        row = col = 0
+        for token in re.findall(r'\x1b\[[0-9;?]*[A-Za-z]|[^\x1b]', self.output.decode()):
+            if token.startswith('\x1b['):
+                args, command = token[2:-1], token[-1]
+                count = int(args or '1') if not args.startswith('?') else 0
+                if command == 'A':
+                    row = max(0, row - count)
+                elif command == 'K':
+                    if count == 2:
+                        lines[row] = []
+                    else:
+                        lines[row] = lines[row][:col]
+                elif command == 'J':
+                    lines[row] = lines[row][:col]
+                    lines = lines[:row + 1]
+                continue
+            if token == '\r':
+                col = 0
+            elif token == '\n':
+                row += 1
+                while len(lines) <= row:
+                    lines.append([])
+            else:
+                while len(lines[row]) <= col:
+                    lines[row].append(' ')
+                lines[row][col] = token
+                col += 1
+        return [''.join(line).rstrip() for line in lines]
+
+    def test_indicator_moves_in_presented_list(self):
+        self.start(['--allow-unverified'])
+        self.read_until('Enter confirms')
+        self.assertEqual([line for line in self.screen_lines() if line.startswith('> ')],
+                         ['> ' + DEEPSEEK + ' [experimental (unverified)]'])
+        os.write(self.master, b'\x1b[B')
+        self.read_until('> ' + KIMI + ' [experimental (unverified)]')
+        lines = self.screen_lines()
+        self.assertEqual([line for line in lines if line.startswith('> ')],
+                         ['> ' + KIMI + ' [experimental (unverified)]'])
+        self.assertEqual(sum(DEEPSEEK in line for line in lines), 1)
+        self.assertEqual(sum(KIMI in line for line in lines), 1)
+        self.assertIn('  mid/unknown-model [disabled: missing bundled model metadata]', lines)
+        os.write(self.master, b'\r')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
+
+    def test_full_catalog_reveals_offscreen_and_truncated_disabled_reasons(self):
+        long_id = 'unknown/' + 'x' * 180
+        self.models = [DEEPSEEK] + [f'unknown/model-{i:02}' for i in range(30)] + [long_id]
+        self.start(['--direct', '--allow-unverified'])
+        self.read_until('Enter confirms')
+        os.write(self.master, b'l')
+        self.read_until(long_id + ' [disabled: missing bundled model metadata]')
+        self.assertIn(b'unknown/model-29 [disabled: missing bundled model metadata]', self.output)
+        os.write(self.master, b'\x03')
+        self.finish(1)
+        self.assertFalse(self.marker.exists())
 
     def test_empty_catalog_does_not_open_picker(self):
         self.models = []
