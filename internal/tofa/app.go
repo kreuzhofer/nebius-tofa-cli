@@ -369,7 +369,7 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		if err != nil {
 			return err
 		}
-		*model, err = a.pickMainModel(ctx, choices)
+		*model, err = a.pickMainModel(ctx, choices, route, *guardian)
 		if err != nil {
 			return err
 		}

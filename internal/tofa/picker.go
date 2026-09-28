@@ -15,11 +15,8 @@ import (
 
 // Redraw the visible list with a leading indicator beside the selected model.
 // Read exactly one byte on demand so confirming never consumes client input.
-func (a *App) pickMainModel(ctx context.Context, choices []modelChoice) (identity string, result error) {
+func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, route, guardian string) (identity string, result error) {
 	eligible := []int{}
-	if _, err := fmt.Fprintln(a.Out, "Target client: Codex CLI\nAvailable main models:"); err != nil {
-		return "", err
-	}
 	for i, choice := range choices {
 		if choice.disabled == "" {
 			eligible = append(eligible, i)
@@ -35,109 +32,117 @@ func (a *App) pickMainModel(ctx context.Context, choices []modelChoice) (identit
 	}
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	restoreOutput, err := preparePickerOutput()
+	if err != nil {
+		return "", fmt.Errorf("cannot prepare model picker output: %w", err)
+	}
+	defer func() { result = errors.Join(result, restoreOutput()) }()
 	fd := int(os.Stdin.Fd())
 	state, err := term.MakeRaw(fd)
 	if err != nil {
 		return "", fmt.Errorf("cannot prepare model picker terminal: %w", err)
 	}
 	defer func() {
-		_, cursorErr := fmt.Fprint(a.Out, "\x1b[?25h")
+		_, cursorErr := fmt.Fprint(a.Out, "\x1b[0m\x1b[?25h\x1b[?1049l")
 		result = errors.Join(result, term.Restore(fd, state), cursorErr)
 	}()
-	if _, err := fmt.Fprint(a.Out, "\x1b[?25l"); err != nil {
+	if _, err := fmt.Fprint(a.Out, "\x1b[?1049h\x1b[?25l"); err != nil {
 		return "", err
 	}
 	type input struct {
 		b   byte
 		err error
 	}
+	var pending chan input
+	var width, height int
+	resize := time.NewTicker(150 * time.Millisecond)
+	defer resize.Stop()
+	resized := errors.New("picker resized")
 	read := func(timeout <-chan time.Time) (byte, error) {
-		done := make(chan input, 1)
-		go func() {
-			var b [1]byte
-			_, err := os.Stdin.Read(b[:])
-			done <- input{b[0], err}
-		}()
-		select {
-		case value := <-done:
-			return value.b, value.err
-		case <-ctx.Done():
-			return 0, ctx.Err()
-		case <-timeout:
-			return 0, errors.New("model selection cancelled")
+		if pending == nil {
+			pending = make(chan input, 1)
+			done := pending
+			go func() {
+				var b [1]byte
+				_, err := os.Stdin.Read(b[:])
+				done <- input{b[0], err}
+			}()
+		}
+		for {
+			select {
+			case value := <-pending:
+				pending = nil
+				return value.b, value.err
+			case <-ctx.Done():
+				return 0, ctx.Err()
+			case <-timeout:
+				return 0, errors.New("model selection cancelled")
+			case <-resize.C:
+				if timeout == nil {
+					w, h, err := term.GetSize(int(os.Stdout.Fd()))
+					if err != nil || w != width || h != height {
+						return 0, resized
+					}
+				}
+			}
 		}
 	}
-	selected, first, rendered := 0, 0, 0
+	view := pickerView{choices: choices}
+	color := os.Getenv("NO_COLOR") == "" && os.Getenv("TERM") != "dumb"
 	for {
-		width, height, err := term.GetSize(int(os.Stdout.Fd()))
-		if err != nil || width < 10 || height < 6 {
-			return "", errors.New("model picker requires a terminal at least 10 columns wide and 6 rows tall")
+		width, height, err = term.GetSize(int(os.Stdout.Fd()))
+		if err != nil || width < 40 || height < 18 {
+			return "", errors.New("model picker requires a terminal at least 40 columns wide and 18 rows tall; enlarge it or supply --model ID")
 		}
-		// Leave space for the heading, navigation help and cursor. Each displayed
-		// entry occupies one physical line so cursor movement survives long IDs.
-		pageSize := height - 5
-		row := eligible[selected]
-		if row < first {
-			first = row
-		}
-		if row >= first+pageSize {
-			first = row - pageSize + 1
-		}
-		last := min(first+pageSize, len(choices))
+		lines := view.frame(width, height, route, guardian, color)
 		var frame strings.Builder
-		if rendered > 0 {
-			fmt.Fprintf(&frame, "\x1b[%dA", rendered)
-		}
-		frame.WriteString("\r\x1b[2K\x1b[J")
-		line := func(value string) {
-			if len(value) >= width {
-				value = value[:width-4] + "..."
-			}
-			frame.WriteString(value + "\r\n")
-		}
-		for i := first; i < last; i++ {
-			choice := choices[i]
-			indicator, label := "  ", choice.status
-			if i == row {
-				indicator = "> "
-			}
-			if choice.disabled != "" {
-				label = "disabled: " + choice.disabled
-			}
-			line(indicator + choice.identity + " [" + label + "]")
-		}
-		line("L: full catalog and disabled reasons.")
-		help := "Up/Down selects; Enter confirms; Escape/Ctrl-C cancels."
-		if len(choices) > pageSize {
-			help += fmt.Sprintf(" (%d-%d of %d)", first+1, last, len(choices))
-		}
-		line(help)
+		frame.WriteString("\x1b[H\r\x1b[2K\x1b[J")
+		frame.WriteString(strings.Join(lines, "\r\n") + "\r\n")
 		if _, err := fmt.Fprint(a.Out, frame.String()); err != nil {
 			return "", err
 		}
-		rendered = last - first + 2
 		b, err := read(nil)
+		if errors.Is(err, resized) {
+			continue
+		}
 		if err != nil {
 			return "", err
 		}
 		switch b {
-		case 'l', 'L':
-			// Preserve an unabridged catalog in scrollback, including disabled
-			// rows beyond the viewport and explanations clipped by its width.
-			for _, choice := range choices {
-				label := choice.status
-				if choice.disabled != "" {
-					label = "disabled: " + choice.disabled
-				}
-				if _, err := fmt.Fprintf(a.Out, "  %s [%s]\r\n", choice.identity, label); err != nil {
-					return "", err
-				}
-			}
-			rendered = 0
 		case 3, 4:
 			return "", errors.New("model selection cancelled")
 		case '\r', '\n':
-			return choices[eligible[selected]].identity, nil
+			matches := view.matches()
+			if len(matches) == 0 {
+				view.notice = "Choose a matching model before launching."
+				continue
+			}
+			if matches[view.cursor].disabled != "" {
+				view.notice = "This model cannot be launched. Tab returns to ready models."
+				continue
+			}
+			return matches[view.cursor].identity, nil
+		case '\t':
+			view.unavailable = !view.unavailable
+			view.details = false
+			view.resetFilter()
+		case '?':
+			view.details = !view.details
+			view.detailOffset = 0
+		case 8, 127:
+			if view.details {
+				continue
+			}
+			if len(view.query) > 0 {
+				view.query = view.query[:len(view.query)-1]
+			}
+			view.resetFilter()
+		case 21:
+			if view.details {
+				continue
+			}
+			view.query = ""
+			view.resetFilter()
 		case 27:
 			// A lone Escape cancels; CSI and application-mode arrows are accepted.
 			timer := time.NewTimer(150 * time.Millisecond)
@@ -150,16 +155,50 @@ func (a *App) pickMainModel(ctx context.Context, choices []modelChoice) (identit
 				timer.Stop()
 				return "", errors.New("model selection cancelled")
 			}
-			key, err := read(timer.C)
-			timer.Stop()
-			if err != nil {
-				return "", err
+			var sequence strings.Builder
+			for sequence.Len() < 16 {
+				key, err := read(timer.C)
+				if err != nil {
+					timer.Stop()
+					return "", err
+				}
+				sequence.WriteByte(key)
+				if key >= 0x40 && key <= 0x7e {
+					break
+				}
 			}
-			switch key {
-			case 'A':
-				selected = (selected + len(eligible) - 1) % len(eligible)
-			case 'B':
-				selected = (selected + 1) % len(eligible)
+			timer.Stop()
+			page := min(8, height-16)
+			if view.details {
+				page = height - 11
+			}
+			switch sequence.String() {
+			case "A":
+				view.move(-1)
+			case "B":
+				view.move(1)
+			case "5~":
+				view.move(-page)
+			case "6~":
+				view.move(page)
+			case "H", "1~", "7~":
+				if view.details {
+					view.detailOffset = 0
+				} else {
+					view.cursor = 0
+				}
+			case "F", "4~", "8~":
+				if view.details {
+					view.detailOffset = 1024
+				} else {
+					view.cursor = max(0, len(view.matches())-1)
+				}
+			}
+
+		default:
+			if b >= 32 && b <= 126 && len(view.query) < 512 && !view.details {
+				view.query += string(b)
+				view.resetFilter()
 			}
 		}
 	}

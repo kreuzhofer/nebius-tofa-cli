@@ -16,7 +16,7 @@ import (
 type failingTerminal struct{}
 
 func (failingTerminal) Write(p []byte) (int, error) {
-	if bytes.HasPrefix(p, []byte("\r\x1b[2K")) {
+	if bytes.Contains(p, []byte("\r\x1b[2K")) {
 		return 0, errors.New("synthetic terminal output failure")
 	}
 	return os.Stdout.Write(p)

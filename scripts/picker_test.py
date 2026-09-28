@@ -106,10 +106,12 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
                         FIXTURE_ENDPOINT=f'http://127.0.0.1:{self.server.server_port}',
                         FIXTURE_DIR=str(self.store), FIXTURE_MARKER=str(self.marker))
 
-    def start(self, args, binary=None):
+    def start(self, args, binary=None, width=120, height=24, prelude=b''):
         self.master, self.slave = pty.openpty()
-        fcntl.ioctl(self.slave, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 120, 0, 0))
+        fcntl.ioctl(self.slave, termios.TIOCSWINSZ, struct.pack('HHHH', height, width, 0, 0))
         self.before = termios.tcgetattr(self.slave)
+        if prelude:
+            os.write(self.slave, prelude)
         self.process = subprocess.Popen([str(binary or self.binary), *args], stdin=self.slave, stdout=self.slave, stderr=self.slave, env=self.env)
         self.output = b''
         process, master, slave = self.process, self.master, self.slave
@@ -128,7 +130,17 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
             if select.select([self.master], [], [], .05)[0]:
                 self.output += os.read(self.master, 65536)
         self.assertIn(target, self.output)
-        return self.output.decode()
+        return self.output.decode(errors='replace')
+
+    def wait_for_screen(self, predicate):
+        end = time.monotonic() + 5
+        while time.monotonic() < end:
+            lines = self.screen_lines()
+            if predicate(lines):
+                return lines
+            if select.select([self.master], [], [], .05)[0]:
+                self.output += os.read(self.master, 65536)
+        self.fail('Expected terminal view was not rendered:\n' + '\n'.join(self.screen_lines()))
 
     def finish(self, code=0):
         # Drain terminal output while waiting: a full catalog can fill the PTY
@@ -154,8 +166,8 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
     def test_arrows_skip_blocked_rows_and_launch_selected_upstream(self):
         self.start(['--allow-unverified'])
         output = self.read_until('Enter confirms')
-        self.assertIn('mid/unknown-model [disabled: missing bundled model metadata]', output)
-        self.assertIn('Target client: Codex CLI', output)
+        self.assertIn('Unavailable 1', output)
+        self.assertIn('Codex CLI', output)
         os.write(self.master, b'\x1b[B\r')
         self.finish()
         self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
@@ -168,11 +180,21 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
         # list, rather than binding the test to a particular redraw sequence.
         lines = [[]]
         row = col = 0
-        for token in re.findall(r'\x1b\[[0-9;?]*[A-Za-z]|[^\x1b]', self.output.decode()):
+        saved = None
+        for token in re.findall(r'\x1b\[[0-9;?]*[A-Za-z]|[^\x1b]', self.output.decode(errors='replace')):
             if token.startswith('\x1b['):
                 args, command = token[2:-1], token[-1]
-                count = int(args or '1') if not args.startswith('?') else 0
-                if command == 'A':
+                count = int(args or '1') if command in ('A', 'K', 'J') else 0
+                if args == '?1049' and command == 'h':
+                    saved = (lines, row, col)
+                    lines, row, col = [[]], 0, 0
+                elif args == '?1049' and command == 'l':
+                    if saved is not None:
+                        lines, row, col = saved
+                        saved = None
+                elif command == 'H':
+                    row = col = 0
+                elif command == 'A':
                     row = max(0, row - count)
                 elif command == 'K':
                     if count == 2:
@@ -198,32 +220,98 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
 
     def test_indicator_moves_in_presented_list(self):
         self.start(['--allow-unverified'])
-        self.read_until('Enter confirms')
-        self.assertEqual([line for line in self.screen_lines() if line.startswith('> ')],
-                         ['> ' + DEEPSEEK + ' [experimental (unverified)]'])
+        self.read_until('Type to filter')
+        rows = [line.strip() for line in self.screen_lines() if line.strip().startswith('> ')]
+        self.assertEqual(len(rows), 1)
+        self.assertIn('DeepSeek', rows[0])
         os.write(self.master, b'\x1b[B')
-        self.read_until('> ' + KIMI + ' [experimental (unverified)]')
-        lines = self.screen_lines()
-        self.assertEqual([line for line in lines if line.startswith('> ')],
-                         ['> ' + KIMI + ' [experimental (unverified)]'])
-        self.assertEqual(sum(DEEPSEEK in line for line in lines), 1)
-        self.assertEqual(sum(KIMI in line for line in lines), 1)
-        self.assertIn('  mid/unknown-model [disabled: missing bundled model metadata]', lines)
+        self.read_until(KIMI)
+        rows = [line.strip() for line in self.screen_lines() if line.strip().startswith('> ')]
+        self.assertEqual(len(rows), 1)
+        self.assertIn('Kimi', rows[0])
         os.write(self.master, b'\r')
         self.finish()
         self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
 
-    def test_full_catalog_reveals_offscreen_and_truncated_disabled_reasons(self):
+    def test_unavailable_view_explains_offscreen_models_without_launch(self):
         long_id = 'unknown/' + 'x' * 180
         self.models = [DEEPSEEK] + [f'unknown/model-{i:02}' for i in range(30)] + [long_id]
         self.start(['--direct', '--allow-unverified'])
-        self.read_until('Enter confirms')
-        os.write(self.master, b'l')
-        self.read_until(long_id + ' [disabled: missing bundled model metadata]')
-        self.assertIn(b'unknown/model-29 [disabled: missing bundled model metadata]', self.output)
+        self.read_until('Type to filter')
+        os.write(self.master, b'\txxxx?')
+        lines = self.wait_for_screen(lambda lines: long_id in ''.join(line.strip() for line in lines) and any('Up/Down scroll' in line for line in lines))
+        visible = ''.join(line.strip() for line in lines)
+        self.assertIn(long_id, visible)
+        os.write(self.master, b'\r')
+        time.sleep(.05)
+        self.assertIsNone(self.process.poll())
+        self.assertFalse(self.marker.exists())
         os.write(self.master, b'\x03')
         self.finish(1)
+
+    def test_filter_finds_model_and_launches_without_catalog_noise(self):
+        self.start(['--allow-unverified'])
+        self.read_until('Type to filter')
+        self.assertIn('Choose a main model', self.output.decode(errors='replace'))
+        os.write(self.master, b'kimi')
+        self.read_until('Filter: kimi')
+        lines = self.screen_lines()
+        self.assertTrue(any('Kimi' in line and line.lstrip().startswith('>') for line in lines), lines)
+        self.assertFalse(any('DeepSeek' in line for line in lines), lines)
+        self.assertIn('1 match', '\n'.join(lines))
+        os.write(self.master, b'\r')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
+
+    def test_cancel_returns_to_original_shell_screen(self):
+        self.start(['--allow-unverified'], prelude=b'Previous shell output\r\n')
+        self.read_until('Type to filter')
+        self.assertNotIn('Previous shell output', '\n'.join(self.screen_lines()))
+        os.write(self.master, b'\x03')
+        self.finish(1)
+        screen = '\n'.join(self.screen_lines())
+        self.assertIn('Previous shell output', screen)
+        self.assertNotIn('Choose a main model', screen)
         self.assertFalse(self.marker.exists())
+
+    def test_resize_reflows_without_key_input_or_selection_loss(self):
+        self.start(['--allow-unverified'])
+        self.read_until('Type to filter')
+        os.write(self.master, b'\x1b[B')
+        self.wait_for_screen(lambda lines: any(KIMI in line for line in lines))
+        fcntl.ioctl(self.slave, termios.TIOCSWINSZ, struct.pack('HHHH', 18, 40, 0, 0))
+        lines = self.wait_for_screen(lambda lines: any('Tab views' in line for line in lines))
+        self.assertLessEqual(len(lines), 18)
+        self.assertTrue(all(len(line) < 40 for line in lines), lines)
+        self.assertTrue(any('Kimi' in line and line.strip().startswith('>') for line in lines))
+        os.write(self.master, b'\r')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
+
+    def test_page_navigation_and_empty_search_are_recoverable(self):
+        self.models += [f'unknown/model-{i:02}' for i in range(20)]
+        self.start(['--allow-unverified'])
+        self.read_until('Type to filter')
+        os.write(self.master, b'\t\x1b[6~')
+        lines = self.wait_for_screen(lambda lines: any('unknown/model-07' in line for line in lines))
+        self.assertTrue(any('Unavailable:' in line for line in lines))
+        os.write(self.master, b'\tno-such-model\r')
+        self.wait_for_screen(lambda lines: any('Choose a matching model' in line for line in lines))
+        self.assertFalse(self.marker.exists())
+        os.write(self.master, b'\x15kimiX\x7f')
+        self.wait_for_screen(lambda lines: any('Filter: kimi' in line for line in lines) and any(KIMI in line for line in lines))
+        os.write(self.master, b'\r')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
+
+    def test_detail_navigation_never_changes_selected_model(self):
+        self.start(['--allow-unverified'])
+        self.read_until('Type to filter')
+        os.write(self.master, b'\x1b[B?')
+        self.read_until('Up/Down scroll')
+        os.write(self.master, b'\x1b[F\x1b[H\x15\x7f?\r')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
 
     def test_empty_catalog_does_not_open_picker(self):
         self.models = []
@@ -245,9 +333,9 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
     def test_supported_bare_picker_ignores_saved_model(self):
         self.start([], self.supported)
         output = self.read_until('Enter confirms')
-        self.assertIn(KIMI + ' [supported]', output)
+        self.assertIn(KIMI, output)
+        self.assertIn('Supported', output)
         self.assertNotIn(DEEPSEEK.encode(), self.output)
-        self.assertNotIn(GLM.encode(), self.output)
         os.write(self.master, b'\r')
         self.finish()
         self.read_until('Guardian: ' + GLM)
@@ -256,8 +344,8 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
     def test_supported_choices_follow_guardian_override(self):
         self.start(['launch', 'codex', '--guardian-model', KIMI], self.supported)
         output = self.read_until('Enter confirms')
-        self.assertIn(DEEPSEEK + ' [supported]', output)
-        self.assertNotIn(KIMI.encode(), self.output)
+        self.assertIn(DEEPSEEK, output)
+        self.assertIn('Supported', output)
         os.write(self.master, b'\r')
         self.finish()
         self.read_until('Guardian: ' + KIMI)
@@ -266,7 +354,8 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
     def test_direct_picker_uses_route_support_and_native_reviewer(self):
         self.start(['launch', 'codex', '--direct'], self.supported)
         output = self.read_until('Enter confirms')
-        self.assertIn(DEEPSEEK + ' [supported]', output)
+        self.assertIn(DEEPSEEK, output)
+        self.assertIn('Supported', output)
         self.assertNotIn(KIMI.encode(), self.output)
         os.write(self.master, b'\r')
         self.finish()

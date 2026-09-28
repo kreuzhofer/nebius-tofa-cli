@@ -210,12 +210,22 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 ```
 
 Omitting `--model` in a terminal opens the same Codex CLI main-model picker for
-`tofa`, `tofa --allow-unverified`, and `tofa launch codex [OPTIONS]`. Up/Down moves
-between eligible models (wrapping at either end); Enter confirms, and Escape or
-Ctrl-C cancels without starting Codex. A leading `>` moves beside the selected
-model in the list. Long lists scroll with selection; press **L** to print the full catalog and unabridged disabled
-reasons into scrollback. Terminal settings are restored on
-selection, cancellation and errors. Guardian uses its default or explicit override
+`tofa`, `tofa --allow-unverified`, and `tofa launch codex [OPTIONS]`. A dedicated
+screen highlights the current model, with its exact ID, compatibility status and
+Guardian below. Up/Down moves between ready models; Enter launches. Type to filter
+by model name or provider, Backspace edits, and Ctrl-U clears the filter. Page
+Up/Down and Home/End navigate longer lists.
+
+Tab switches between **Ready** and **Unavailable** models, retaining your filter.
+Unavailable models can be inspected but never launched. Press **?** for complete
+model details and disabled reasons; arrows or Page Up/Down scroll long details.
+Press **?** again to return. Escape or Ctrl-C cancels without starting Codex.
+
+The picker resizes with your terminal, retains the highlighted choice and restores
+the previous shell screen, cursor and terminal settings on exit. It requires at
+least 40 columns and 18 rows; smaller terminals receive instructions to enlarge
+the window or use `--model ID`. `NO_COLOR=1` disables styling while retaining the
+leading selection indicator. Guardian uses its default or explicit override
 without another prompt.
 
 Normal choices require support for the exact route and Guardian. With the current
