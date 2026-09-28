@@ -65,6 +65,43 @@ to recover. For ownership conflicts or damaged artifacts, follow
 [failure recovery](#failure-recovery-48) and
 [installed lifecycle instructions](#installed-lifecycle-and-retained-history).
 
+#### Matching-main example
+
+For a conversation recorded with `deepseek-ai/DeepSeek-V4.1-Flash`, quit the desktop,
+run this from its workspace, and reopen that same conversation:
+
+```sh
+tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash --allow-unverified
+```
+
+The conversation keeps its main, provider, title, workspace association and tool
+history. This launch displays `Guardian: zai-org/GLM-5.3-Flash`; that effective
+Guardian also applies to resumed Token Factory conversations. An explicit
+`--guardian-model ID` changes the Guardian for this launch. Native conversations
+keep native routing and reviewer descriptors.
+
+#### Wrong-main example
+
+If a conversation recorded with `zai-org/GLM-5.3-Flash` is opened during the
+DeepSeek launch above, sending fails before provider inference with:
+
+```text
+Token Factory conversation main zai-org/GLM-5.3-Flash differs from launch main deepseek-ai/DeepSeek-V4.1-Flash; request was not sent upstream. Quit the desktop, relaunch with --model zai-org/GLM-5.3-Flash --allow-unverified, then reopen the same conversation.
+```
+
+Quit and wait for the launcher to exit, then recover with:
+
+```sh
+tofa launch codex-desktop --model zai-org/GLM-5.3-Flash --allow-unverified
+```
+
+Reopen the original conversation. Having its main available as the previous
+launch's Guardian did not authorize it as a conversation route. Deliberate changes
+to a conversation's main remain a separate follow-up in
+[#55](https://github.com/kreuzhofer/nebius-tofa-cli/issues/55).
+See the [controlled recovery checks](evaluation/desktop-recovery-2026-09-28.md)
+for tested model/failure combinations and coverage limits.
+
 ### Compatibility
 
 The gate accepts macOS **26.6.2 arm64**, ChatGPT **26.917.71314 (10954)**,

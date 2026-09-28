@@ -185,7 +185,7 @@ func TestDesktopInstalledUpgradeAndStandalonePurge(t *testing.T) {
 	if err := store.Login("fixture-project", "fixture-secret", "file"); err != nil {
 		t.Fatal(err)
 	}
-	child, stop := liveDesktopFixture(t, app, bundle, capture)
+	child, stop := liveDesktopFixture(t, app, bundle, capture, "--model", "deepseek-ai/DeepSeek-V4.1-Flash")
 	stop()
 	bridge := child.Env["CODEX_CLI_PATH"]
 	preserved := map[string][]byte{}

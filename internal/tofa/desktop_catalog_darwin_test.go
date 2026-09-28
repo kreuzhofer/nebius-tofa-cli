@@ -290,7 +290,7 @@ func (e *desktopEngine) turn(id, status string) {
 	e.turnText(id, status, "Synthetic coexistence check")
 }
 
-func (e *desktopEngine) turnText(id, status, text string) {
+func (e *desktopEngine) turnText(id, status, text string) map[string]any {
 	e.t.Helper()
 	e.call("turn/start", map[string]any{"threadId": id, "input": []any{map[string]string{"type": "text", "text": text}}})
 	for {
@@ -306,7 +306,7 @@ func (e *desktopEngine) turnText(id, status, text string) {
 		if status == "failed" && !strings.Contains(fmt.Sprint(turn["error"]), "model") {
 			e.t.Fatalf("missing explicit model failure: %v", turn["error"])
 		}
-		return
+		return turn
 	}
 }
 

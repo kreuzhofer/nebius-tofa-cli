@@ -2,6 +2,7 @@ package tofa_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -178,7 +179,38 @@ func TestDesktopMainStructuredOutcomeRemainsAnOrdinaryRequest(t *testing.T) {
 	}
 }
 
+func TestDesktopWrongMainExplainsRecovery(t *testing.T) {
+	bundle, capture := desktopFixture(t, "ignore")
+	var calls atomic.Int32
+	app, output := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) { calls.Add(1) }, nil)
+	child, stop := liveDesktopFixture(t, app, bundle, capture, "--model", "deepseek-ai/DeepSeek-V4.1-Flash")
+	response := adapterRequest(t, child.Env["TOFA_DESKTOP_CONTEXT"], child.Env["TOFA_API_KEY"], `{"model":"zai-org/GLM-5.3-Flash","input":[]}`)
+	body, err := io.ReadAll(response.Body)
+	response.Body.Close()
+	stop()
+	if err != nil || response.StatusCode != http.StatusBadRequest || calls.Load() != 0 {
+		t.Fatalf("wrong-main request was not refused: status=%d calls=%d error=%v", response.StatusCode, calls.Load(), err)
+	}
+	for _, want := range []string{
+		"conversation main zai-org/GLM-5.3-Flash differs from launch main deepseek-ai/DeepSeek-V4.1-Flash",
+		"Quit the desktop",
+		"relaunch with --model zai-org/GLM-5.3-Flash --allow-unverified",
+		"reopen the same conversation",
+	} {
+		if !strings.Contains(string(body), want) || !strings.Contains(output.String(), want) {
+			t.Errorf("missing recovery instruction %q: response=%s output=%s", want, body, output.String())
+		}
+	}
+}
+
 func TestDesktopBundledEngineRequiresRecordedMainOnRelaunch(t *testing.T) {
+	// Cover both a recorded main present as Guardian and one absent from the launch catalog.
+	for _, recorded := range []string{"zai-org/GLM-5.3-Flash", "zai-org/GLM-5.3"} {
+		t.Run(recorded, func(t *testing.T) { desktopWrongMainRoundTrip(t, recorded) })
+	}
+}
+
+func desktopWrongMainRoundTrip(t *testing.T, recorded string) {
 	installed := os.Getenv("TOFA_TEST_DESKTOP_ENGINE")
 	if installed == "" {
 		t.Skip("set TOFA_TEST_DESKTOP_ENGINE")
@@ -194,14 +226,14 @@ func TestDesktopBundledEngineRequiresRecordedMainOnRelaunch(t *testing.T) {
 	var calls atomic.Int32
 	app, output := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
 		var request struct{ Model string }
-		if json.NewDecoder(r.Body).Decode(&request) != nil || request.Model != "zai-org/GLM-5.3-Flash" {
+		if json.NewDecoder(r.Body).Decode(&request) != nil || request.Model != recorded {
 			t.Error("conversation identity changed")
 		}
 		calls.Add(1)
 		emitFixtureResponse(w, fixtureMessage("Retained conversation."))
 	}, nil)
 	var id string
-	for index, main := range []string{"zai-org/GLM-5.3-Flash", "deepseek-ai/DeepSeek-V4.1-Flash", "zai-org/GLM-5.3-Flash"} {
+	for index, main := range []string{recorded, "deepseek-ai/DeepSeek-V4.1-Flash", recorded} {
 		child, stop := liveDesktopFixture(t, app, bundle, capture, "--model", main)
 		e := openDesktopEngine(t, child)
 		var thread map[string]any
@@ -211,21 +243,32 @@ func TestDesktopBundledEngineRequiresRecordedMainOnRelaunch(t *testing.T) {
 		} else {
 			thread = e.call("thread/resume", map[string]any{"threadId": id, "model": nil, "modelProvider": nil})
 		}
-		if thread["model"] != "zai-org/GLM-5.3-Flash" || thread["modelProvider"] != "nebius-tofa" {
+		if thread["model"] != recorded || thread["modelProvider"] != "nebius-tofa" {
 			t.Fatal("resume changed recorded identity")
 		}
 		status := "completed"
 		if index == 1 {
 			status = "failed"
 		}
-		e.turn(id, status)
+		before := calls.Load()
+		turn := e.turnText(id, status, "Continue the recorded conversation")
+		if index == 1 && (calls.Load() != before || !strings.Contains(fmt.Sprint(turn["error"]), "relaunch with --model "+recorded+" --allow-unverified")) {
+			t.Fatalf("wrong-main recovery did not reach engine error: %v", turn["error"])
+		}
+		if index == 0 {
+			e.call("thread/name/set", map[string]string{"threadId": id, "name": "Retained title"})
+		}
+		saved := e.call("thread/read", map[string]any{"threadId": id, "includeTurns": true})["thread"].(map[string]any)
+		if saved["id"] != id || saved["name"] != "Retained title" || saved["cwd"] != child.Cwd || saved["modelProvider"] != "nebius-tofa" {
+			t.Fatalf("wrong-main recovery changed conversation metadata: %v", saved)
+		}
 		e.close()
 		stop()
 		if err := os.Remove(capture); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if calls.Load() != 2 || !strings.Contains(output.String(), "relaunch with --model zai-org/GLM-5.3-Flash --allow-unverified") {
+	if calls.Load() != 2 || !strings.Contains(output.String(), "relaunch with --model "+recorded+" --allow-unverified") {
 		t.Fatalf("missing refusal/recovery: calls=%d output=%s", calls.Load(), output.String())
 	}
 }

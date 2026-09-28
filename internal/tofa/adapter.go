@@ -205,7 +205,7 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 				} else if payload.Model != selectedModel && !(payload.Model == guardian && isReview) {
 					message = "unsupported model; request was not sent upstream"
 					if _, err := metadataFor(payload.Model); err == nil {
-						message += "; to continue this Token Factory conversation relaunch with --model " + payload.Model + " --allow-unverified"
+						message = "Token Factory conversation main " + payload.Model + " differs from launch main " + selectedModel + "; request was not sent upstream. Quit the desktop, relaunch with --model " + payload.Model + " --allow-unverified, then reopen the same conversation."
 					}
 					if isDesktopTitle(payload.ClientMetadata) {
 						message = "automatic title generation is unavailable: the desktop requested an unsupported model; request was not sent upstream"

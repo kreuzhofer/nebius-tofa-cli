@@ -196,7 +196,7 @@ func TestDesktopBundledEngineResumeUsesLaunchGuardian(t *testing.T) {
 	}
 	var guardian atomic.Value
 	var mainCalls, reviews atomic.Int32
-	app, _ := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
+	app, output := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
 		var request struct {
 			Model string
 			Tools []json.RawMessage
@@ -252,6 +252,9 @@ func TestDesktopBundledEngineResumeUsesLaunchGuardian(t *testing.T) {
 		}
 		e.close()
 		stop()
+		if !strings.Contains(output.String(), "Guardian: "+selected) {
+			t.Fatal("effective resume Guardian was not displayed")
+		}
 		if !executed {
 			t.Fatal("launch Guardian did not approve resumed execution")
 		}
