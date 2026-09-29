@@ -1,0 +1,18 @@
+{
+  "campaign": "desktop-five-main-glm-guardian-v1",
+  "task": "summary-and-continuation-v1",
+  "mains": ["deepseek-ai/DeepSeek-V4.1-Flash", "zai-org/GLM-5.3-Flash", "zai-org/GLM-5.3", "moonshotai/Kimi-K3", "nvidia/Nemotron-3-Ultra-550b-a55b"],
+  "guardian": "zai-org/GLM-5.3-Flash",
+  "sessions": 3,
+  "turns_per_session": 2,
+  "relaunch_between_turns": true,
+  "allow_deny_pairs": 3,
+  "engine_version": "codex-cli 0.155.0-alpha.16.4",
+  "desktop_version": "26.917.71314 (10954)",
+  "platform": {"os": "Darwin", "arch": "arm64", "os_version": "26.6.2"},
+  "limits": {"request_bytes": 1048576, "output_tokens": 4096, "response_bytes": 8388608, "sse_event_bytes": 262144,
+             "coding_request_seconds": 180, "coding_turn_seconds": 180, "approval_turn_seconds": 120, "native_review_seconds": 90},
+  "request_quota": null,
+  "spending_cap": null,
+  "naming_qualification_gate": false
+}

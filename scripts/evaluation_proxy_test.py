@@ -17,6 +17,43 @@ ASSESSMENT = {'required': ['outcome'], 'properties': {'outcome': {'type': 'strin
 
 
 class ProxyTests(unittest.TestCase):
+    def test_unlimited_observations_survive_restart_without_replacing_attempts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / 'observations.json'
+            # Failed native attempts are retained too; there is no total quota.
+            for _ in range(2):
+                with EvaluationProxy('http://127.0.0.1:1', 'fixture-token', report,
+                                     None, 'coding', 1) as proxy:
+                    for _ in range(26):
+                        request = urllib.request.Request(proxy.url + '/responses',
+                            data=b'{"model":"moonshotai/Kimi-K3","stream":true,"input":[]}',
+                            headers={'Authorization': 'Bearer fixture-token'})
+                        try:
+                            urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request).read()
+                        except (urllib.error.URLError, OSError):
+                            pass
+            records = json.loads(report.read_text())
+            self.assertEqual(len(records), 52)
+            self.assertEqual(len({r['request_id'] for r in records}), 52)
+            self.assertTrue(all(r['failure'] == 'transport_failure' for r in records))
+
+    def test_unrecognized_auxiliary_traffic_is_counted_and_sanitized(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'requests.json'
+            with EvaluationProxy('http://127.0.0.1:1', 'fixture-token', output, None, 'coding', 1) as proxy:
+                request = urllib.request.Request(proxy.url + '/responses',
+                    data=json.dumps({'model': 'private-title-model', 'stream': True, 'input': [],
+                        'text': {'format': {'type': 'json_schema', 'schema': {'title': 'PRIVATE'}}}}).encode(),
+                    headers={'Authorization': 'Bearer fixture-token'})
+                with self.assertRaises(urllib.error.HTTPError):
+                    urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request)
+            records = json.loads(output.read_text())
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0]['role'], 'auxiliary')
+            self.assertFalse(records[0]['paid_inference'])
+            self.assertNotIn('private-title-model', output.read_text())
+            self.assertNotIn('PRIVATE', output.read_text())
+
     def test_selected_pair_rejects_swapped_and_unexpected_roles_before_inference(self):
         main, guardian = 'moonshotai/Kimi-K3', 'zai-org/GLM-5.3-Flash'
         with tempfile.TemporaryDirectory() as directory:
