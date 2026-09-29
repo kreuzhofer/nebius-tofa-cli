@@ -12,7 +12,9 @@ jobs:
     needs: [artifacts]
     env:
       VERSION: ${{ needs.artifacts.outputs.version }}
-    timeout-minutes: 10
+    # The full macOS race and offline lifecycle sequence exceeds ten minutes.
+    # This is the CI job budget; client request deadlines remain unchanged.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:

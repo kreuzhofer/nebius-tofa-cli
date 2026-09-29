@@ -1,6 +1,9 @@
 # Desktop rc.5 qualification preparation — 2026-09-29
 
-**Status: awaiting the maintainer's real-account desktop UI run.** This resumes
+**Status: superseded before live qualification.** Both source-CI attempts hit the
+native macOS job's ten-minute limit. The CI budget fix requires a fresh rc.6
+candidate; do not run this rc.5 procedure. This document retains the preparation
+record and original helper hashes, which predate review fixes. This resumes
 [#35](https://github.com/kreuzhofer/tofa-launcher/issues/35) after
 [#41](https://github.com/kreuzhofer/tofa-launcher/issues/41). There is no published
 rc.5 release and #35 is not complete. The existing rc.3/rc.4 attempts and model
@@ -47,8 +50,9 @@ The final packaging/static/offline results are retained in the evidence JSON.
 The earlier PR #70 checks passed, but the first merge-commit CI attempt
 [36603469532](https://github.com/kreuzhofer/tofa-launcher/actions/runs/36603469532)
 exceeded the native macOS job's ten-minute limit during its final offline
-qualification step. Artifacts, Linux and Windows passed. One rerun was requested;
-the original cancellation is not relabelled as success. This CI job budget is
+qualification step. Artifacts, Linux and Windows passed. The one rerun also ended cancelled at the ten-minute job limit;
+its final offline suite printed 18 passing tests, but the job did not succeed.
+Neither cancellation is relabelled as success. This CI job budget is
 separate from native Guardian/title deadlines, which were not changed.
 
 Computer Use explicitly refused access to `com.openai.codex`. Consequently the

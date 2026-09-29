@@ -1,5 +1,5 @@
 {
-  "status": "automated_preflight_passed_ui_pending",
+  "status": "superseded_before_live_qualification",
   "recorded_utc": "2026-09-29T17:43:43.675259+00:00",
   "candidate": {
     "source_commit": "4f3b1430b5f3ab7517d76fcd7e79da539388a447",
@@ -232,7 +232,8 @@
       "check_recorder.py": "9e7ef7667bfdfbd7e35b0842f6e857484c9228a04673d479d5c3f2b5664611ad"
     },
     "real_wizard_run": false,
-    "computer_use": "access to com.openai.codex refused"
+    "computer_use": "access to com.openai.codex refused",
+    "helper_hash_note": "Historical hashes from initial preparation; local helpers subsequently revised after review. New rc.6 evidence will record revised hashes."
   },
   "ci": {
     "run": "https://github.com/kreuzhofer/tofa-launcher/actions/runs/36603469532",
@@ -243,12 +244,14 @@
       "macos": "cancelled: job exceeded maximum execution time of 10m0s during final offline qualification step"
     },
     "rerun_requested": true,
-    "tag_ci": "not_started"
+    "tag_ci": "not_started",
+    "second_attempt": "cancelled at ten-minute native macOS job limit after final offline suite printed 18 passing tests"
   },
   "live_inference_performed": false,
   "normal_account_installation_performed": false,
   "published": false,
   "remaining": [
+    "fresh rc.6 candidate containing CI budget fix",
     "maintainer real-account UI and installed-lifecycle report",
     "exact-source CI completion",
     "final review of qualification evidence",
