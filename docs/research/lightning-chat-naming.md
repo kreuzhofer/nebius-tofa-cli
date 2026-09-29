@@ -135,9 +135,32 @@ failed six top-level desktop tests before capture: explicit main/Guardian metada
 lane scoping, routed title preservation, both native title rejection inventories,
 and bundled-engine Kimi title replay. Each was stopped by the incumbent-desktop
 process guard. The CLI title non-routing test in that attempt passed. The ordinary
-running app was not closed and the guard was not bypassed. Historical #52 runtime
-evidence remains dated; no fresh engine replay, delayed-main experiment, title UI
-persistence check or live Lightning inference succeeded in this continuation.
+running app was not closed by the agent and the guard was not bypassed.
+
+After the maintainer closed the desktop, the same seven-test selection passed on
+2026-09-29 with `-count=1 -v` in **39.843 seconds**, against documentation revision
+`29abf6d6fdac11e875e2ececeb2ced430ec9898f` (production source unchanged):
+
+- `TestDesktopExplicitMainAndGuardianMetadata`
+- `TestDesktopNamingAndGuardianLanesRemainScoped`
+- `TestDesktopPreservesRoutedTitleContractAndFailures`
+- `TestDesktopRejectsChangedNativeTitleContracts`
+- `TestDesktopRejectsChangedLuna6TitleContracts`
+- `TestDesktopBundledEngineRoutesAutomaticTitleToKimi`
+- `TestCLIDoesNotRouteNativeDesktopTitle`
+
+The installed-engine opt-in remained enabled. Its version was reconfirmed as
+`0.155.0-alpha.16.4`, SHA-256
+`93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5`.
+The engine replay passed for both `gpt-5.6-luna` and `gpt-6-luna`: thread startup
+retained the requested model with provider `nebius-tofa`, while the recognized
+title request reached the synthetic upstream as Kimi and returned the fixture
+title unchanged. This is fresh bundled-engine/adapter boundary evidence with a
+fixture desktop executable, temporary profiles and dummy credentials. It does not
+exercise automatic Electron title dispatch or UI persistence and does not qualify
+Lightning. The delayed-main experiment and live Lightning inference remain
+unexecuted. The earlier blocked attempt is retained above rather than counted as
+a runtime pass.
 
 Read-only checks refreshed installed versions/hashes, first-party pinned source,
 official configuration documentation and installed desktop member locators. No

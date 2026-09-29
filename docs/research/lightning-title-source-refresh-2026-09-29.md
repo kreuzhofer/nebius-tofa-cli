@@ -165,13 +165,19 @@ title thread creation, requested/resolved model IDs, both title markers and exac
 serialization. Complete main and title responses separately, then exercise title
 timeout/failure and manual-title preservation. This would distinguish independent
 title dispatch from a title inferred only after main completion, and would measure
-the actual UI lifecycle around the source's narrower timer. It remains a proposal:
-the current session's installed-engine/desktop checks were blocked by the existing
-incumbent-desktop ownership guard. The ordinary running app was not closed and the
-guard was not bypassed; no new engine-runtime success is claimed here.
+the actual UI lifecycle around the source's narrower timer. This delayed-main/UI
+experiment remains a proposal. The initial installed-engine/desktop checks were
+blocked by the incumbent-desktop ownership guard. After the maintainer closed the
+app, all six previously blocked checks and the CLI title non-routing control passed
+in 39.843 seconds. The installed-engine replay retained each requested Luna model
+and routed its recognized title request to the synthetic Kimi upstream. This
+replayed public engine calls using a fixture desktop executable, not automatic
+Electron title dispatch. The guard was not bypassed. See the [rerun evidence and
+exact test names](lightning-chat-naming.md#checks-performed-and-unavailable-coverage).
 
 No Lightning inference or compatibility test was run for this source artifact.
 Verification consisted of current bundle metadata, engine version, fresh hashes,
 direct member extraction and inspection of the cited source paths. Main-agent
-portable boundary-test results belong to the accompanying issue continuation, not
-to this read-only inspection.
+portable and installed-engine boundary-test results are recorded separately in the
+accompanying issue continuation; they do not turn source inspection into UI or
+Lightning qualification.
