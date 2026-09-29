@@ -1,0 +1,92 @@
+# Desktop rc.6 qualification preparation — 2026-09-29
+
+**Status: local automated checks and exact-source CI passed; maintainer UI run pending.**
+This is a checkpoint for [#35](https://github.com/kreuzhofer/tofa-launcher/issues/35),
+not a completed qualification or published release.
+
+The [rc.5 preparation](desktop-rc5-preflight-2026-09-29.md) is retained. Its two
+source-CI attempts exceeded the ten-minute native macOS job limit, so the job
+budget is now twenty minutes. Client request deadlines and checks are unchanged.
+That source change requires a fresh candidate; rc.5 assets were not replaced.
+
+## Candidate and checks
+
+- Source: `5f4793f0865192e3f30c0f612784da66483e2075`.
+- Version: `v0.1.0-rc.6`, reserved locally; tag not pushed.
+- macOS ARM64 SHA-256:
+  `bb3a3e337fda0d3cbcedb4f7b0acdd4091622cccf0d80f7062e28a7815348530`.
+- ChatGPT 26.917.71314 (10954), bundled engine 0.155.0-alpha.16.4,
+  macOS 26.6.2 ARM64.
+- Main `deepseek-ai/DeepSeek-V4.1-Flash`; Guardian `zai-org/GLM-5.3-Flash`.
+- Capsule: `.qualification/desktop-rc6-2026-09-29/`.
+
+The [evidence JSON](evidence/desktop-rc6-preflight-2026-09-29.json) records all 18
+asset hashes, exact app/engine hashes, helper hashes and check results. Embedded
+build information confirms Go 1.27.1, the rc.6 module version, source revision and
+`vcs.modified=false`.
+
+The full installed-engine/desktop race run passed 423 tests/subtests. Its two
+optional standalone CLI inference tests were skipped. Its source code and test
+files are byte-identical to rc.6: only workflow budget and preparation documents
+changed. The fifteen earlier static/packaging/offline checks remain applicable;
+rc.6's build, installed lifecycle and terminal checks also passed separately.
+An initial build-test invocation lacked Go in PATH; the corrected explicit-toolchain
+invocation passed all six tests. No live inference or ordinary-account installation
+has been performed during this preparation.
+
+[Exact-source CI](https://github.com/kreuzhofer/tofa-launcher/actions/runs/36608209151)
+passed artifacts, Linux, macOS and Windows. Publication was correctly skipped
+because the release tag has not been pushed. The earlier cancellations remain
+recorded separately.
+
+## Maintainer UI procedure
+
+Computer Use refused access to `com.openai.codex`; the visible real-account checks
+therefore require the maintainer. Run from the repository root:
+
+```sh
+python3 .qualification/desktop-rc6-2026-09-29/observe.py run
+```
+
+The one-run wizard covers ordinary baseline; upgrade and streaming/tools/continued
+conversation; actual automatic approval, cancellation and clean exit; ordinary
+return and same-conversation relaunch; uninstall without purge; reinstall with
+saved login; final preservation. It asks for fixed pass/fail observations only.
+Use its synthetic workspace and prompts. Three owned launcher sessions have
+15-minute outer limits; two short native-account replies are also requested.
+There is no currency cap. Stop at the first failure and retain that attempt.
+
+The recorder rejects inherited routing/install overrides and shell-selected
+alternate `CODEX_HOME`. It supports default-home installations, with either no
+managed activation or one standard final zsh PATH block. Uninstall removes that
+block; reinstall restores it through the ordinary installer. Startup content and
+activation metadata are compared against the original or the exact expected
+installer result (one additional separating newline). Nonstandard activation
+requires inspection before running; no unrelated settings are rewritten.
+
+Settings and credential-file fingerprints stay in memory; only equality booleans
+are reported. Native Keychain values are not read. Saved-login reuse is a visible
+observation, not an independent vault comparison. SIGTERM and interruption stop
+the owned wizard and launcher through bounded cleanup. Each run saves a separate
+private `ui-*/report.json`; failures remain incomplete. Private launcher logs require
+sanitization before publication. No credentials, private titles or conversation
+content should be copied into evidence. No snapshots are restored to hide drift.
+
+The helper passed six synthetic process checks, including shell-only home overrides,
+termination cleanup and actual install/uninstall PATH recovery in a temporary home.
+Standards and Spec re-review each have zero remaining findings. These checks do not
+qualify the real UI.
+
+## Remaining release gate
+
+Keep #35 open until the UI report passes, final evidence
+is reviewed, release notes/install instructions identify the qualified boundary,
+and tag CI publishes and verifies the immutable candidate. Compare published bytes
+against these hashes; any mismatch or further source change requires investigation
+and a new candidate. The helper never publishes or pushes tags.
+
+DeepSeek automatic naming is explicitly unsupported; verify the announced limitation
+and usable provisional title. No Lightning route, live compaction or additional
+auxiliary behavior is qualified. Windows desktop remains unqualified. GLM Flash and
+Kimi main remain experimental. The five-model campaign is not repeated. Published
+candidate real-computer acceptance remains the separate #23 task.

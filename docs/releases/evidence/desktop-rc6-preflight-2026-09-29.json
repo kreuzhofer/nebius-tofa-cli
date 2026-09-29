@@ -1,0 +1,323 @@
+{
+  "status": "automated_preflight_and_source_ci_passed_ui_pending",
+  "recorded_utc": "2026-09-29T17:57:26.315854+00:00",
+  "candidate": {
+    "source_commit": "5f4793f0865192e3f30c0f612784da66483e2075",
+    "version": "v0.1.0-rc.6",
+    "created_utc": "2026-09-29T17:55:35.120766+00:00",
+    "build": "git archive of pinned commit staged under clean tagged checkout; Go 1.27.1; scripts/build.sh; CGO_ENABLED=0; -trimpath; version ldflag; VCS revision and local v0.1.0-rc.6 tag embedded",
+    "platform": {
+      "os": "26.6.2",
+      "arch": "arm64"
+    },
+    "desktop": {
+      "version": "26.917.71314",
+      "build": "10954",
+      "engine_sha256": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+      "asar_sha256": "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804"
+    },
+    "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "guardian": "zai-org/GLM-5.3-Flash",
+    "assets_sha256": {
+      "LICENSE": "796a0cd7abc80802b9d2692b7b5a606f14babdd4fed054903af045b56d7997f6",
+      "LICENSE-CODEX.txt": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+      "LICENSE-GO.txt": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "NOTICE-CODEX.txt": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+      "PATENTS-GO.txt": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+      "README.md": "901999059b89cc4efe18f8f94a712687a94e13c0aea256ddde60414d01b6d841",
+      "SHA256SUMS": "1bc7537969dd053783a1f0008aa3807e963200a8527b9b3e525cbeb10038582e",
+      "THIRD_PARTY_NOTICES.txt": "d7363be8553d50fa823aabba6fa4c990d24f58f13ee429db9b9262200ff71a98",
+      "install.ps1": "950b62b3266ef2d1dc4dc395f21c5e2140b14b5eaa48a7a0b9ca689a2ea81c9b",
+      "install.sh": "1a288a20700dfbb7e57272e94730ae1f08ee73641eb3b5854d95ed7f481fc724",
+      "tofa_v0.1.0-rc.6_darwin_amd64": "0941794928eb34dea2759231cf51ed5d63960886cb7dc0db1f70547d925e94e0",
+      "tofa_v0.1.0-rc.6_darwin_arm64": "bb3a3e337fda0d3cbcedb4f7b0acdd4091622cccf0d80f7062e28a7815348530",
+      "tofa_v0.1.0-rc.6_linux_amd64": "9a0613aadaa2bd541a3e703abdcc7f4feaf81115460bba14c186410069a04bdf",
+      "tofa_v0.1.0-rc.6_linux_arm64": "bf0d5f8d99fbf8646bc70b8fa36d8c0d32e16a18b02951414163107f864c5741",
+      "tofa_v0.1.0-rc.6_windows_amd64.exe": "125c09504ac9e0c1682773aaa2edcf90050abe2b3efd62c675975a982aa83aaa",
+      "tofa_v0.1.0-rc.6_windows_arm64.exe": "08a28a99c7bdfadda5f82330aa7e8e7247a60b275c7bdc211e846a8387c0dc84",
+      "uninstall.ps1": "0b0a63484262720ecd8f38e748c9fac9913c8cf2d39ac945729e9c66c846a82b",
+      "uninstall.sh": "692fd1469d5d03d9fb1bbefbb829cb0b4c3bb2437be67feb87d2ec4745d00089"
+    },
+    "published": false,
+    "preparatory_build": "Supersedes rc.5 before live qualification: only CI job budget and preparation docs changed. Earlier capsules retained."
+  },
+  "prior_evidence": "desktop-rc5-preflight-2026-09-29.json",
+  "go_race": {
+    "command": "TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex TOFA_TEST_DESKTOP_APP=/Applications/ChatGPT.app go test -race -json ./... -count=1 -timeout=12m",
+    "passed_tests_and_subtests": 423,
+    "failures": [],
+    "skipped_tests": [
+      "TestInstalledCodexToolAndContinuationThroughAdapter",
+      "TestInstalledCodexApprovalReviewThroughAdapter"
+    ],
+    "packages": [
+      {
+        "package": "github.com/kreuzhofer/tofa-launcher/scripts",
+        "elapsed_seconds": 1.661
+      },
+      {
+        "package": "github.com/kreuzhofer/tofa-launcher/internal/tofa",
+        "elapsed_seconds": 622.161
+      }
+    ],
+    "tested_source_matches_final_capsule": true,
+    "reuse_basis": "git diff 4f3b143 5f4793f -- cmd internal scripts go.mod go.sum is empty; only workflow budget and preparation documentation changed"
+  },
+  "prior_static_packaging_offline": [
+    {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.5
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/build_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 10.228,
+      "tests_run": 6
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/release_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.223,
+      "tests_run": 6
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/install_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.981,
+      "tests_run": 2
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/lifecycle_test.py",
+        "dist",
+        "v0.1.0-rc.5",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.48,
+      "tests_run": 4
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/terminal_test.py",
+        "dist/tofa_v0.1.0-rc.5_darwin_arm64"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.177,
+      "tests_run": 2
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/picker_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 22.415,
+      "tests_run": 27
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/live_compat_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 74.814,
+      "tests_run": 19
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/trace_codex_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.413,
+      "tests_run": 6
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/model_evaluation_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.777,
+      "tests_run": 34
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/evaluation_proxy_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 13.795,
+      "tests_run": 13
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/desktop_evaluation_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.685,
+      "tests_run": 21,
+      "skipped": 16
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/qualify_macos_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 57.892,
+      "tests_run": 18
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/qualify_windows_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.084,
+      "tests_run": 17,
+      "skipped": 17
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/windows_process_test.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.093,
+      "tests_run": 10,
+      "skipped": 7
+    }
+  ],
+  "rc6_checks": {
+    "build_test.py": {
+      "passed": 6,
+      "elapsed_seconds": 11.189,
+      "initial_invocation_error": "Go toolchain missing from caller PATH; five fixture builds failed before compilation. Repeated with explicit toolchain PATH and passed."
+    },
+    "lifecycle_test.py": {
+      "passed": 4,
+      "elapsed_seconds": 5.029
+    },
+    "terminal_test.py": {
+      "passed": 2,
+      "elapsed_seconds": 0.689
+    },
+    "workflow_go_tests": "passed",
+    "release_test.py": {
+      "passed": 6,
+      "elapsed_seconds": 3.092
+    },
+    "embedded_build_identity": "v0.1.0-rc.6; 5f4793f0865192e3f30c0f612784da66483e2075; vcs.modified=false; Go1.27.1; CGO0"
+  },
+  "ui_recorder": {
+    "checks": [
+      "bash syntax passed",
+      "Python compilation passed",
+      "frozen bundle/app hashes passed",
+      "missing observations rejected",
+      "complete synthetic observations accepted",
+      "settings drift rejected",
+      "shell-only CODEX_HOME override rejected",
+      "SIGTERM stops synthetic owned wizard and retains incomplete report",
+      "actual installer/uninstaller restores standard PATH activation in temporary home"
+    ],
+    "helper_sha256": {
+      "observe.py": "5ebd791c43e7eb12f8434ce23907b5522724490da853212497c735fae8380298",
+      "wizard.sh": "dff92604d3a7061b1f0b331ed9918be7c71e12f2301453956c08207aa2fc8c89",
+      "check_recorder.py": "ba12c6bf3665a9321928df22b8710b8394d5adc63528c5812e88d5e3f29c9175"
+    },
+    "real_wizard_run": false,
+    "computer_use": "access to com.openai.codex refused"
+  },
+  "review": {
+    "standards_remaining_findings": 0,
+    "spec_remaining_findings": 0,
+    "resolved": [
+      "ordinary login-shell home selection",
+      "recorder termination cleanup",
+      "existing shell activation restoration"
+    ]
+  },
+  "ci": {
+    "run": "https://github.com/kreuzhofer/tofa-launcher/actions/runs/36608209151",
+    "source_commit": "5f4793f0865192e3f30c0f612784da66483e2075",
+    "status": "completed",
+    "native_job_budget_minutes": 20,
+    "client_deadlines_changed": false,
+    "tag_ci": "not_started",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "artifacts",
+        "conclusion": "success",
+        "startedAt": "2026-09-29T17:54:08Z",
+        "completedAt": "2026-09-29T17:55:40Z"
+      },
+      {
+        "name": "native (ubuntu-latest)",
+        "conclusion": "success",
+        "startedAt": "2026-09-29T17:55:43Z",
+        "completedAt": "2026-09-29T17:58:31Z"
+      },
+      {
+        "name": "native (macos-latest)",
+        "conclusion": "success",
+        "startedAt": "2026-09-29T17:55:48Z",
+        "completedAt": "2026-09-29T18:04:44Z"
+      },
+      {
+        "name": "native (windows-latest)",
+        "conclusion": "success",
+        "startedAt": "2026-09-29T17:55:43Z",
+        "completedAt": "2026-09-29T17:59:49Z"
+      },
+      {
+        "name": "publish",
+        "conclusion": "skipped",
+        "startedAt": "2026-09-29T18:04:45Z",
+        "completedAt": "2026-09-29T18:04:45Z"
+      }
+    ]
+  },
+  "live_inference_performed": false,
+  "normal_account_installation_performed": false,
+  "published": false,
+  "remaining": [
+    "maintainer real-account UI and installed-lifecycle report",
+    "final qualification evidence review",
+    "release notes and installation instructions for qualified candidate",
+    "tag CI and immutable prerelease publication",
+    "published-byte verification"
+  ]
+}
