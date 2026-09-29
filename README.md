@@ -209,11 +209,15 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 ./tofa auth logout
 ```
 
-Omitting `--model` in a terminal opens the shared main-model picker for
-`tofa`, `tofa --allow-unverified`, `tofa launch codex [OPTIONS]`, and
-`tofa launch codex-desktop [OPTIONS]`. Bare launches retain Codex CLI. A dedicated
-screen highlights the current model, with its exact ID, compatibility status and
-Guardian below. Up/Down moves between ready models; Enter launches. Type to filter
+In a terminal, `tofa` and `tofa --allow-unverified` first show **Codex CLI** and
+**Codex desktop**. Choose the app with Up/Down and Enter, then choose its main
+model. App selection happens before credential lookup or catalog discovery;
+Escape/Ctrl-C cancels either stage. Desktop requires the pinned macOS ARM64 app.
+
+Explicit `tofa launch codex [OPTIONS]` and `tofa launch codex-desktop [OPTIONS]`
+skip app selection. Omitting `--model` opens the shared model picker. Its screen
+highlights the current model, with its exact ID, compatibility status and
+Guardian below. Up/Down moves between ready models; Enter selects. Type to filter
 by model name or provider, Backspace edits, and Ctrl-U clears the filter. Page
 Up/Down and Home/End navigate longer lists.
 
@@ -226,22 +230,25 @@ client or an adapter.
 The picker resizes with your terminal, retains the highlighted choice and restores
 the previous shell screen, cursor and terminal settings on exit. It requires at
 least 40 columns and 18 rows; smaller terminals receive instructions to enlarge
-the window or use `--model ID`. `NO_COLOR=1` disables styling while retaining the
+the window or use an explicit `launch TARGET --model ID` command. `NO_COLOR=1` disables styling while retaining the
 leading selection indicator. Guardian uses its default or explicit override
 without another prompt.
 
-Normal choices require support for the exact target, route and Guardian. CLI
-records remain experimental, so bare `tofa` explains that `--allow-unverified` is needed.
-That flag shows the selected project's entire catalog, including unknown IDs;
-entries without compatible bundled metadata remain disabled with reasons. Empty
-catalogs, failed discovery and unavailable Guardians stop the launch.
+Supported and experimental models appear together, labelled for the exact target,
+route and Guardian. CLI combinations remain experimental. Choosing one asks for
+confirmation: **Y** launches once, **N/Enter** returns to the list, and **Esc**
+cancels. `--allow-unverified` skips this extra confirmation. Explicit or scripted
+experimental `--model ID` launches still require the flag. Entries without
+compatible bundled metadata remain disabled with reasons. Empty catalogs,
+failed discovery and unavailable Guardians stop the launch.
 
-**Script migration:** always pass `--model ID`, for example
+**Script migration:** use an explicit target and `--model ID`, for example
 `tofa launch codex --model moonshotai/Kimi-K3 --allow-unverified`. An omitted model
 in noninteractive use now fails with these instructions, even if `config.yml`
-contains a saved `model`. Saved preferences never bypass the picker. Selection
+contains a saved `model`. Noninteractive bare launches with an explicit model
+retain the existing Codex CLI behavior. Saved preferences never bypass the picker. Selection
 does not change saved preferences or credentials; explicit `--model` bypasses the
-picker in both terminal and scripted use.
+model picker in both terminal and scripted use.
 
 For the tested macOS desktop application, source builds offer:
 

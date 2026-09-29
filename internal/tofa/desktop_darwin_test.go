@@ -164,6 +164,9 @@ if lock.is_symlink():
     except ProcessLookupError: lock.unlink()
 try: lock.symlink_to(socket.gethostname()+'-'+str(os.getpid()))
 except FileExistsError: sys.exit(0)
+if MODE == 'unclaimed': lock.unlink(); time.sleep(30)
+if MODE == 'stalled-bridge': time.sleep(30)
+if MODE == 'lost-before-bridge': time.sleep(3.5); lock.unlink(); time.sleep(30)
 if pathlib.Path(CAPTURE+'.fail-startup').exists(): sys.exit(17)
 if MODE == 'before-ownership':
     request=urllib.request.Request(os.environ['TOFA_DESKTOP_CONTEXT']+'/responses',data=json.dumps({'model':'moonshotai/Kimi-K3','input':[]}).encode(),headers={'Authorization':'Bearer '+os.environ['TOFA_API_KEY'],'Content-Type':'application/json'})
@@ -172,6 +175,7 @@ if MODE == 'before-ownership':
     except urllib.error.HTTPError as error: status=error.code
     pathlib.Path(CAPTURE+'.pending').write_text(str(status))
 # Exercise the authenticated startup gate before reading integration state.
+if MODE == 'delayed-claim': time.sleep(4)
 request=urllib.request.Request(os.environ['TOFA_DESKTOP_CONTEXT']+'/desktop-launch',headers={'Authorization':'Bearer '+os.environ['TOFA_API_KEY'],'X-Tofa-Parent-Pid':str(os.getpid())})
 with urllib.request.urlopen(request,timeout=40) as response: route=json.load(response)
 config_text=config_path.read_text()
@@ -1525,6 +1529,47 @@ func TestDesktopWithholdsInferenceUntilOwnershipQualified(t *testing.T) {
 	status, err := os.ReadFile(capture + ".pending")
 	if err != nil || string(status) != "503" {
 		t.Fatalf("unqualified inference was not refused: %s %v", status, err)
+	}
+}
+
+func TestDesktopAllowsBridgeStartupAfterAcquiringNativeProfile(t *testing.T) {
+	bundle, capture := desktopFixture(t, "delayed-claim")
+	app, output := adapterFixture(t, nil, nil)
+	if err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "deepseek-ai/DeepSeek-V4.1-Flash"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(capture); err != nil {
+		t.Fatal("desktop did not finish startup:", err)
+	}
+	if !strings.Contains(output.String(), "Main: deepseek-ai/DeepSeek-V4.1-Flash") {
+		t.Fatal("selected main was not launched")
+	}
+}
+
+func TestDesktopBridgeWaitPreservesOwnershipAndStartupLimits(t *testing.T) {
+	for _, tc := range []struct {
+		mode, want string
+		maxElapsed time.Duration
+	}{
+		{"unclaimed", "desktop ownership handshake timed out", 5 * time.Second},
+		{"lost-before-bridge", "native profile ownership changed before engine bridge startup", 6 * time.Second},
+		{"stalled-bridge", "engine bridge handshake timed out after native profile ownership", 18 * time.Second},
+	} {
+		t.Run(tc.mode, func(t *testing.T) {
+			bundle, capture := desktopFixture(t, tc.mode)
+			app, _ := adapterFixture(t, nil, nil)
+			start := time.Now()
+			err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "deepseek-ai/DeepSeek-V4.1-Flash"})
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("expected %q, got %v", tc.want, err)
+			}
+			if time.Since(start) > tc.maxElapsed {
+				t.Fatal("startup did not stop within its operational deadline")
+			}
+			if _, err := os.Stat(capture); !os.IsNotExist(err) {
+				t.Fatal("unqualified desktop completed startup")
+			}
+		})
 	}
 }
 

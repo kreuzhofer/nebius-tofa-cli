@@ -36,7 +36,7 @@ type App struct {
 
 const help = `tofa — Token Factory launcher (prototype)
 
-  tofa [--allow-unverified]                  Choose a Codex CLI main model
+  tofa [--allow-unverified]                  Choose an app, then a main model
   tofa auth login [--storage keyring|file]   Save API key and project ID
   tofa auth logout                          Remove locally saved credentials
   tofa models [--project-id ID]              List available models
@@ -49,9 +49,11 @@ const help = `tofa — Token Factory launcher (prototype)
 Supported desktop pairs: deepseek-ai/DeepSeek-V4.1-Flash or zai-org/GLM-5.3 main
 with zai-org/GLM-5.3-Flash Guardian, on the pinned macOS desktop adapted route.
 Automatic naming remains unsupported for these mains. See docs/codex-desktop.md
-for tested versions and evidence limits. CLI and other pairs require explicit
---allow-unverified. Models in the catalog are not certified by availability.
-Omit --model in a terminal to choose with Up/Down and Enter; Escape/Ctrl-C cancels.
+for tested versions and evidence limits. CLI and other pairs need experimental consent:
+confirm Y in the picker, or pass --allow-unverified for explicit/scripted models.
+Models in the catalog are not certified by availability.
+Interactive bare launches choose Codex CLI or Codex desktop first.
+Omit --model to choose its main model next; Up/Down and Enter select, Escape/Ctrl-C cancels.
 Scripts must supply --model ID. Saved model preferences never bypass the picker.
 Both selected roles must be available in the project and have compatible model metadata.
 Adapted Codex CLI and desktop launches default to Guardian zai-org/GLM-5.3-Flash; --guardian-model
@@ -99,7 +101,15 @@ func (a *App) RunContext(ctx context.Context, args []string) error {
 	}
 	s := Store{Dir: a.Dir, Vault: a.Vault}
 	if len(args) == 0 || strings.HasPrefix(args[0], "--") {
-		return a.launch(ctx, s, append([]string{"codex"}, args...))
+		target := "codex"
+		if term.IsTerminal(int(os.Stdin.Fd())) {
+			var err error
+			target, err = a.pickTargetClient(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		return a.launch(ctx, s, append([]string{target}, args...))
 	}
 	switch args[0] {
 	case "desktop-lifecycle":
@@ -368,14 +378,16 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		route = "direct"
 	}
 	if !modelSelected {
-		choices, err := mainModelChoices(models, "codex", route, *guardian, *allow)
+		choices, err := mainModelChoices(models, "codex", route, *guardian, true)
 		if err != nil {
 			return err
 		}
-		*model, err = a.pickMainModel(ctx, choices, "Codex CLI", route, *guardian)
+		*model, err = a.pickMainModel(ctx, choices, "Codex CLI", route, *guardian, *allow)
 		if err != nil {
 			return err
 		}
+		// The picker requires explicit consent for experimental selections.
+		*allow = true
 	}
 	if err := validateAvailableRole(models, "main", *model); err != nil {
 		return err

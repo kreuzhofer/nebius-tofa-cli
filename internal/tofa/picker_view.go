@@ -5,20 +5,31 @@ import (
 	"strings"
 )
 
+type pickerChoice struct {
+	identity    string
+	name        string
+	description string
+	status      string
+	disabled    string
+}
+
 // pickerView contains presentation state only; launch eligibility remains in the
 // selection policy and is checked again by the launcher after confirmation.
 type pickerView struct {
-	choices       []modelChoice
-	query         string
-	unavailable   bool
-	cursor, first int
-	details       bool
-	detailOffset  int
-	notice        string
+	confirmExperimental bool
+	confirming          *pickerChoice
+	choices             []pickerChoice
+	apps                bool
+	query               string
+	unavailable         bool
+	cursor, first       int
+	details             bool
+	detailOffset        int
+	notice              string
 }
 
-func (p *pickerView) matches() []modelChoice {
-	result := []modelChoice{}
+func (p *pickerView) matches() []pickerChoice {
+	result := []pickerChoice{}
 	for _, choice := range p.choices {
 		if (choice.disabled != "") != p.unavailable {
 			continue
@@ -30,7 +41,10 @@ func (p *pickerView) matches() []modelChoice {
 	return result
 }
 
-func (c modelChoice) displayName() string {
+func (c pickerChoice) displayName() string {
+	if c.name != "" {
+		return c.name
+	}
 	metadata, _ := metadataFor(c.identity)
 	if metadata.DisplayName != "" {
 		return metadata.DisplayName
@@ -84,8 +98,15 @@ func wrapPickerText(value string, width int) []string {
 	return lines
 }
 
-func choiceDetails(choice modelChoice, width int) []string {
+func choiceDetails(choice pickerChoice, width int) []string {
 	text := choice.identity + "\n"
+	if choice.description != "" {
+		text += choice.description
+		if choice.disabled != "" {
+			text += "\nUnavailable: " + choice.disabled
+		}
+		return wrapPickerText(text, width)
+	}
 	switch {
 	case choice.disabled != "":
 		text += "Unavailable: " + choice.disabled
@@ -108,14 +129,34 @@ func (p *pickerView) frame(width, height int, targetName, route, guardian string
 		return "\x1b[" + code + "m" + text + "\x1b[0m"
 	}
 	line := func(text string) string { return "  " + clipPickerText(text, contentWidth) }
+	if p.confirming != nil {
+		if guardian == "" {
+			guardian = "native reviewer"
+		}
+		text := "Launch experimental selection?\n\n" + targetName + " / " + route +
+			"\nMain: " + p.confirming.identity + "\nGuardian: " + guardian +
+			"\n\nThis combination has not passed the support gate.\nLaunch once? Y = yes; N/Enter = back; Esc = cancel"
+		rows := wrapPickerText(text, contentWidth)
+		for i := range rows {
+			rows[i] = line(rows[i])
+		}
+		return rows
+	}
+	noun := "model"
 	title := "Choose a main model"
+	subtitle := targetName + "  /  " + route
+	if p.apps {
+		noun = "app"
+		title = "Choose an app"
+		subtitle = "Select the client to launch"
+	}
 	if p.unavailable {
-		title = "Inspect unavailable models"
+		title = "Inspect unavailable " + noun + "s"
 	}
 	if p.details {
-		title = "Model details"
+		title = "Selection details"
 	}
-	lines := []string{style(line("tofa  /  Token Factory"), "36"), style(line(title), "1"), line(targetName + "  /  " + route), ""}
+	lines := []string{style(line("tofa  /  Token Factory"), "36"), style(line(title), "1"), line(subtitle), ""}
 	ready := 0
 	for _, c := range p.choices {
 		if c.disabled == "" {
@@ -134,7 +175,7 @@ func (p *pickerView) frame(width, height int, targetName, route, guardian string
 	// Seven header rows, eight lower-panel rows and the final cursor row leave
 	// a useful list even in an 18-row terminal. Larger terminals show at most eight choices at once.
 	listHeight := min(8, height-16)
-	detail := []string{"Type a model name or provider to narrow the list."}
+	detail := []string{"Type a name to narrow the list."}
 	if len(matches) > 0 {
 		detail = choiceDetails(matches[p.cursor], contentWidth)
 	}
@@ -162,13 +203,16 @@ func (p *pickerView) frame(width, height int, targetName, route, guardian string
 		if index >= len(matches) {
 			text := ""
 			if i == 0 {
-				text = "No models match. Backspace edits; Ctrl-U clears."
+				text = "No " + noun + "s match. Backspace edits; Ctrl-U clears."
 			}
 			lines = append(lines, style(line(text), "2"))
 			continue
 		}
 		choice := matches[index]
 		badge := "Experimental"
+		if p.apps {
+			badge = "Select"
+		}
 		if choice.status == "supported" {
 			badge = "Supported"
 		}
@@ -208,6 +252,8 @@ func (p *pickerView) frame(width, height int, targetName, route, guardian string
 	}
 	if p.notice != "" {
 		lines = append(lines, style(line(p.notice), "33"))
+	} else if p.apps {
+		lines = append(lines, style(line("Choose an app, then its main model."), "2"))
 	} else {
 		reviewer := guardian
 		if reviewer == "" {
@@ -217,7 +263,7 @@ func (p *pickerView) frame(width, height int, targetName, route, guardian string
 	}
 	navigation, shortcuts := "Up/Down choose | Enter confirms | Esc cancels", "Type to filter | Tab unavailable | ? details"
 	if p.unavailable {
-		navigation, shortcuts = "Up/Down inspect | Tab ready models | Esc cancels", "Type to filter | ? full details"
+		navigation, shortcuts = "Up/Down inspect | Tab ready "+noun+"s | Esc cancels", "Type to filter | ? full details"
 	}
 	if contentWidth < 48 {
 		navigation, shortcuts = "Up/Down  Enter launch  Esc cancel", "Type filter  Tab views  ? details"

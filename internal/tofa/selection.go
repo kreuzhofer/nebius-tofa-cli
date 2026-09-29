@@ -12,17 +12,11 @@ var verificationSnapshot []byte
 
 var errUnverifiedCombination = errors.New("unverified combination")
 
-type modelChoice struct {
-	identity string
-	status   string
-	disabled string
-}
-
-func mainModelChoices(models []Model, target, route, guardian string, allow bool) ([]modelChoice, error) {
+func mainModelChoices(models []Model, target, route, guardian string, allow bool) ([]pickerChoice, error) {
 	if len(models) == 0 {
 		return nil, errors.New("no models available in this project's catalog")
 	}
-	choices := []modelChoice{}
+	choices := []pickerChoice{}
 	for _, model := range models {
 		status, err := selectionStatus(target, route, model.ID, guardian, allow)
 		if errors.Is(err, errUnverifiedCombination) {
@@ -31,7 +25,7 @@ func mainModelChoices(models []Model, target, route, guardian string, allow bool
 		if err != nil {
 			return nil, err
 		}
-		choice := modelChoice{identity: model.ID, status: status}
+		choice := pickerChoice{identity: model.ID, status: status}
 		if _, err := metadataFor(model.ID); err != nil {
 			if !allow {
 				continue

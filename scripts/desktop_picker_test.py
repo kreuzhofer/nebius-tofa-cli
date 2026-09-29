@@ -46,8 +46,9 @@ class DesktopPickerTests(PickerFixture):
         settings.write_text('{"theme":"dark"}')
         self.preserved = {path: path.read_bytes() for path in [history, settings]}
 
-    def start(self, args, **kwargs):
-        super().start(['launch', 'codex-desktop', '--app-bundle',
+    def start(self, args, bare=False, **kwargs):
+        prefix = [] if bare else ['launch', 'codex-desktop']
+        super().start([*prefix, '--app-bundle',
                        os.environ['FIXTURE_DESKTOP_BUNDLE'], *args], **kwargs)
         process = self.process
         def stop():
@@ -55,6 +56,21 @@ class DesktopPickerTests(PickerFixture):
                 process.send_signal(signal.SIGTERM)
                 process.wait(timeout=10)
         self.addCleanup(stop)
+
+    def test_bare_launch_selects_desktop_before_supported_model(self):
+        self.start([], bare=True)
+        self.read_until('Choose an app')
+        self.assertEqual(self.requests, [])
+        self.assert_no_start()
+        self.assertIn('Codex desktop', '\n'.join(self.screen_lines()))
+        os.write(self.master, b'\x1b[B\r')
+        self.read_until('Choose a main model')
+        self.assertFalse(self.capture.exists())
+        os.write(self.master, b'\r')
+        child = self.launched()
+        self.read_until('Main: ' + DEEPSEEK)
+        self.read_until('Status: supported')
+        self.stop_desktop(child)
 
     def test_cancel_restores_terminal_without_desktop_startup(self):
         self.start(['--allow-unverified'])
@@ -77,8 +93,8 @@ class DesktopPickerTests(PickerFixture):
                 self.start(['--guardian-model', guardian], binary=self.supported)
                 self.read_until('Enter confirms')
                 lines = '\n'.join(self.screen_lines())
-                self.assertIn('[ Ready 1 ]', lines)
-                self.assertIn(main, lines)
+                self.assertIn('[ Ready 3 ]', lines)
+                self.assertIn('DeepSeek' if main == DEEPSEEK else 'Kimi-K3', lines)
                 self.assertIn('Supported', lines)
                 os.write(self.master, b'\x1b')
                 self.finish(1)
@@ -87,8 +103,11 @@ class DesktopPickerTests(PickerFixture):
     def test_catalog_availability_cannot_inherit_cli_support(self):
         self.models = [KIMI, GLM]
         self.start([], binary=self.supported)
-        self.read_until('no supported main models')
-        self.read_until('--allow-unverified')
+        self.read_until('Enter confirms')
+        os.write(self.master, b'\r')
+        self.read_until('Launch experimental selection?')
+        self.assert_no_start()
+        os.write(self.master, b'\x1b')
         self.finish(1)
         self.assert_no_start()
 
@@ -120,26 +139,33 @@ class DesktopPickerTests(PickerFixture):
                 self.assertNotIn(b'Enter confirms', self.output)
                 self.assert_no_start()
 
-    def test_no_supported_models_explain_next_step(self):
+    def test_experimental_choice_requires_confirmation_before_desktop_start(self):
         self.models = [KIMI, GLM]
         self.start([])
-        self.read_until('--allow-unverified')
-        self.finish(1)
+        self.read_until('Enter confirms')
+        os.write(self.master, b'\r')
+        self.read_until('Launch experimental selection?')
         self.assert_no_start()
+        os.write(self.master, b'y')
+        child = self.launched()
+        self.read_until('Main: ' + KIMI)
+        self.read_until('Status: experimental')
+        self.stop_desktop(child)
 
-    def test_production_support_records_filter_catalog_and_launch_each_choice(self):
-        for main, keys in [(DEEPSEEK, b'\r'), (GLM_MAIN, b'\x1b[B\r')]:
+    def test_production_support_labels_catalog_and_launches_supported_choices(self):
+        for main, keys in [(DEEPSEEK, b'\r'), (GLM_MAIN, b'GLM-5.3\r')]:
             with self.subTest(main=main):
                 self.models = [DEEPSEEK, GLM_MAIN, KIMI, GLM,
                                'nvidia/Nemotron-3-Ultra-550b-a55b', 'mid/unknown-model']
                 self.start([])
                 self.read_until('Enter confirms')
                 lines = '\n'.join(self.screen_lines())
-                self.assertIn('[ Ready 2 ]', lines)
+                self.assertIn('[ Ready 5 ]', lines)
                 self.assertIn(DEEPSEEK, lines)
-                self.assertIn(GLM_MAIN, lines)
-                self.assertNotIn(KIMI, lines)
-                self.assertNotIn('nvidia/Nemotron', lines)
+                self.assertIn('GLM-5.3', lines)
+                self.assertIn('Kimi-K3', lines)
+                self.assertIn('Nemotron', lines)
+                self.assertIn('Experimental', lines)
                 os.write(self.master, keys)
                 child = self.launched()
                 self.read_until('Main: ' + main)
@@ -153,7 +179,10 @@ class DesktopPickerTests(PickerFixture):
 
     def test_production_support_does_not_promote_guardian_overrides(self):
         self.start(['--guardian-model', KIMI])
-        self.read_until('no supported main models')
+        self.read_until('Enter confirms')
+        os.write(self.master, b'\r')
+        self.read_until('Launch experimental selection?')
+        os.write(self.master, b'\x1b')
         self.finish(1)
         self.assert_no_start()
 
@@ -162,8 +191,8 @@ class DesktopPickerTests(PickerFixture):
         self.start([])
         self.read_until('Enter confirms')
         lines = '\n'.join(self.screen_lines())
-        self.assertIn('[ Ready 1 ]', lines)
-        self.assertIn(GLM_MAIN, lines)
+        self.assertIn('[ Ready 2 ]', lines)
+        self.assertIn('GLM-5.3', lines)
         self.assertNotIn(DEEPSEEK, lines)
         os.write(self.master, b'\x1b')
         self.finish(1)
@@ -264,8 +293,8 @@ class DesktopPickerTests(PickerFixture):
             flags += ['--guardian-model', guardian, '--allow-unverified']
         self.start(flags)
         self.read_until('Enter confirms')
-        # Exercise both arrow directions before selecting DeepSeek.
-        os.write(self.master, b'\x1b[B\x1b[A\r')
+        # Exercise both arrow directions, then filter the intended main.
+        os.write(self.master, b'\x1b[B\x1b[A' + main.encode() + b'\r')
         child = self.launched()
         self.read_until('Status: ' + ('supported' if guardian == GLM else 'experimental'))
         engine = subprocess.Popen([child['env']['CODEX_CLI_PATH'], 'app-server',

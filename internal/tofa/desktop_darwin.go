@@ -158,14 +158,16 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		return err
 	}
 	if !modelSelected {
-		choices, err := mainModelChoices(models, "codex-desktop", "adapted", *guardian, *allow)
+		choices, err := mainModelChoices(models, "codex-desktop", "adapted", *guardian, true)
 		if err != nil {
 			return err
 		}
-		*model, err = a.pickMainModel(ctx, choices, "Codex desktop", "adapted", *guardian)
+		*model, err = a.pickMainModel(ctx, choices, "Codex desktop", "adapted", *guardian, *allow)
 		if err != nil {
 			return err
 		}
+		// The picker requires explicit consent for experimental selections.
+		*allow = true
 	}
 	if err := validateAvailableRole(models, "main", *model); err != nil {
 		return err
@@ -406,19 +408,41 @@ func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile s
 	// must never be allowed to time out and take over an unresponsive incumbent.
 	claimDeadline := time.NewTimer(3 * time.Second)
 	defer claimDeadline.Stop()
-	select {
-	case <-ctx.Done():
-		return stop(ctx.Err())
-	case err := <-done:
-		if err != nil {
-			return err
-		}
-		return errors.New("another desktop won profile ownership; Quit it manually and relaunch through tofa; no process was adopted")
-	case <-claimDeadline.C:
-		return stop(errors.New("desktop ownership handshake timed out; no existing process was adopted"))
-	case pid := <-claim:
-		if pid != command.Process.Pid || !desktopOwnsNativeProfile(profile, pid) {
-			return stop(errors.New("competing desktop launch or missing native profile ownership; Quit Codex desktop and relaunch"))
+	ownershipCheck := time.NewTicker(100 * time.Millisecond)
+	defer ownershipCheck.Stop()
+	waitingForBridge := false
+claimLoop:
+	for {
+		select {
+		case <-ctx.Done():
+			return stop(ctx.Err())
+		case err := <-done:
+			if err != nil {
+				return err
+			}
+			return errors.New("another desktop won profile ownership; Quit it manually and relaunch through tofa; no process was adopted")
+		case <-claimDeadline.C:
+			if !waitingForBridge && desktopOwnsNativeProfile(profile, command.Process.Pid) {
+				// The native singleton is already ours, so this is no longer an
+				// unclaimed contender. Allow the bridge to finish starting within
+				// 15 seconds total while continuing to verify native ownership.
+				waitingForBridge = true
+				claimDeadline.Reset(12 * time.Second)
+				continue
+			}
+			if waitingForBridge {
+				return stop(errors.New("desktop engine bridge handshake timed out after native profile ownership; launch cancelled"))
+			}
+			return stop(errors.New("desktop ownership handshake timed out; no existing process was adopted"))
+		case <-ownershipCheck.C:
+			if waitingForBridge && !desktopOwnsNativeProfile(profile, command.Process.Pid) {
+				return stop(errors.New("desktop native profile ownership changed before engine bridge startup; launch cancelled"))
+			}
+		case pid := <-claim:
+			if pid != command.Process.Pid || !desktopOwnsNativeProfile(profile, pid) {
+				return stop(errors.New("competing desktop launch or missing native profile ownership; Quit Codex desktop and relaunch"))
+			}
+			break claimLoop
 		}
 	}
 	if err := owned(ownerContext, command.Process.Pid); err != nil {

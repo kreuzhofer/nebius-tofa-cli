@@ -137,7 +137,7 @@ Build current source; released rc.2 does not contain these records. Use an exist
 
 ```sh
 go build -o tofa ./cmd/tofa
-# Interactive: current catalog filtered to the two supported pairs.
+# Interactive: supported and experimental pairs; experimental choices ask for confirmation.
 ./tofa launch codex-desktop
 # Explicit, also valid in scripts without a terminal:
 ./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash
@@ -150,14 +150,15 @@ go build -o tofa ./cmd/tofa
 
 Up/Down and Enter select; Escape/Ctrl-C cancel and restore the terminal. A missing
 supported main is filtered out, not substituted; an unavailable Guardian is an
-error. Models outside the shortlist remain visible under opt-in, disabled if
+error. Other models remain visible with experimental labels, disabled if
 compatible metadata is missing. Unknown metadata is never invented. No Guardian
 picker is added. The effective default is GLM Flash; the launcher prints main,
 Guardian, route, support status and the unsupported-naming warning.
 
 Scripts must now specify `--model ID`; a saved preference does not bypass selection
-and noninteractive omission fails. Bare `tofa` still launches Codex CLI, whose
-normal supported list remains empty. CLI diagnostic `--direct` leaves reviewer
+and noninteractive omission fails. At publication, bare `tofa` selected Codex CLI;
+current interactive source builds show an app picker first (see the
+[picker contract](../model-picker.md)). CLI combinations remain experimental and ask for confirmation in the picker. CLI diagnostic `--direct` leaves reviewer
 selection to the native client, rejects `--guardian-model`, and remains experimental:
 
 ```sh

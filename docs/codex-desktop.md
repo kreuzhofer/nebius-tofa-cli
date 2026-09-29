@@ -14,6 +14,9 @@ of the combined workflow.
 
 ```sh
 go build -o tofa ./cmd/tofa
+# Choose Codex desktop, then its main model:
+./tofa
+# Skip app selection:
 ./tofa launch codex-desktop
 # Explicit selection bypasses the picker:
 ./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash
@@ -28,17 +31,18 @@ The selected model must be available in the saved project's catalog.
 Availability and bundled provider metadata do not certify a supported combination;
 only the two [promoted desktop pairs](evaluation/desktop-comparison-2026-09-29.md)
 are supported: DeepSeek V4.1 Flash or GLM 5.3 main with GLM 5.3 Flash Guardian.
-Other combinations require `--allow-unverified`. The default Guardian is
+Other combinations require interactive confirmation or `--allow-unverified`. The default Guardian is
 `zai-org/GLM-5.3-Flash`; override it with `--guardian-model ID`. Both roles must be
 available in the selected project and have compatible bundled metadata. There is
 no Guardian picker or automatic substitution. The launcher displays the exact
 main/Guardian pair, adapted route and support status before use.
 
-Normal picker choices require desktop evidence for the exact adapted main/Guardian
-pair. With `--allow-unverified`, the entire current project catalog is shown;
-incompatible metadata disables entries with reasons. Empty supported lists explain
-the experimental flag. Empty catalogs, unavailable Guardians and provider errors
-stop before the picker starts. CLI evidence cannot qualify desktop combinations.
+The picker shows supported and experimental pairs together. Support requires
+exact adapted main/Guardian evidence; CLI evidence cannot qualify a desktop pair.
+Experimental selections require Y confirmation before startup unless
+`--allow-unverified` was supplied. N/Enter returns to the list; Esc cancels.
+Incompatible metadata disables entries with reasons. Empty catalogs, unavailable
+Guardians and provider errors stop before the picker starts.
 See the [universal picker contract](model-picker.md).
 
 For example, select DeepSeek with the default GLM Flash Guardian:
@@ -588,6 +592,13 @@ diagnostics. The final Go and native suites ran sequentially. Independent
 Standards and Spec reviews have no remaining confirmed findings.
 
 ## Failure recovery (#48)
+
+Startup distinguishes native profile ownership from engine bridge readiness. An
+unclaimed launch is still stopped after three seconds to avoid adopting or
+displacing another app. If the launcher-created process already owns the native
+profile, its bridge has up to 15 seconds total to authenticate. Ownership is
+monitored during that wait; cancellation, ownership loss or a stalled bridge
+stops the owned process group. See the [timeout diagnosis](research/desktop-handshake-timeout.md).
 
 The adapter and its in-memory routing record belong to the launcher process.
 Normal exit, cancellation, engine loss and adapter failure stop only the spawned

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -13,9 +14,30 @@ import (
 	"golang.org/x/term"
 )
 
-// Redraw the visible list with a leading indicator beside the selected model.
-// Read exactly one byte on demand so confirming never consumes client input.
-func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, targetName, route, guardian string) (identity string, result error) {
+func (a *App) pickTargetClient(ctx context.Context) (string, error) {
+	choices := []pickerChoice{
+		{identity: "codex", name: "Codex CLI", description: "Terminal coding client. Experimental models need confirmation."},
+		{identity: "codex-desktop", name: "Codex desktop", description: "Desktop app. DeepSeek and GLM 5.3 have supported model pairs."},
+	}
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+		choices[1].disabled = "requires the tested macOS arm64 desktop application"
+	}
+	return a.pick(ctx, pickerView{choices: choices, apps: true}, "", "", "")
+}
+
+func (a *App) pickMainModel(ctx context.Context, choices []pickerChoice, targetName, route, guardian string, allowUnverified bool) (string, error) {
+	return a.pick(ctx, pickerView{choices: choices, confirmExperimental: !allowUnverified}, targetName, route, guardian)
+}
+
+// Share terminal input and restoration between the app and model stages.
+// Read one byte on demand so confirmation leaves later-stage input untouched.
+func (a *App) pick(ctx context.Context, view pickerView, targetName, route, guardian string) (identity string, result error) {
+	choices := view.choices
+	noun := "model"
+	if view.apps {
+		noun = "app"
+	}
+
 	eligible := []int{}
 	for i, choice := range choices {
 		if choice.disabled == "" {
@@ -34,13 +56,13 @@ func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, targetNa
 	defer stop()
 	restoreOutput, err := preparePickerOutput()
 	if err != nil {
-		return "", fmt.Errorf("cannot prepare model picker output: %w", err)
+		return "", fmt.Errorf("cannot prepare %s picker output: %w", noun, err)
 	}
 	defer func() { result = errors.Join(result, restoreOutput()) }()
 	fd := int(os.Stdin.Fd())
 	state, err := term.MakeRaw(fd)
 	if err != nil {
-		return "", fmt.Errorf("cannot prepare model picker terminal: %w", err)
+		return "", fmt.Errorf("cannot prepare %s picker terminal: %w", noun, err)
 	}
 	defer func() {
 		_, cursorErr := fmt.Fprint(a.Out, "\x1b[0m\x1b[?25h\x1b[?1049l")
@@ -76,7 +98,7 @@ func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, targetNa
 			case <-ctx.Done():
 				return 0, ctx.Err()
 			case <-timeout:
-				return 0, errors.New("model selection cancelled")
+				return 0, fmt.Errorf("%s selection cancelled", noun)
 			case <-resize.C:
 				if timeout == nil {
 					w, h, err := term.GetSize(int(os.Stdout.Fd()))
@@ -87,11 +109,13 @@ func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, targetNa
 			}
 		}
 	}
-	view := pickerView{choices: choices}
 	color := os.Getenv("NO_COLOR") == "" && os.Getenv("TERM") != "dumb"
 	for {
 		width, height, err = term.GetSize(int(os.Stdout.Fd()))
 		if err != nil || width < 40 || height < 18 {
+			if view.apps {
+				return "", errors.New("app picker requires a terminal at least 40 columns wide and 18 rows tall; enlarge it or use launch codex / launch codex-desktop")
+			}
 			return "", errors.New("model picker requires a terminal at least 40 columns wide and 18 rows tall; enlarge it or supply --model ID")
 		}
 		lines := view.frame(width, height, targetName, route, guardian, color)
@@ -108,20 +132,38 @@ func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, targetNa
 		if err != nil {
 			return "", err
 		}
+		if view.confirming != nil {
+			switch b {
+			case 'y', 'Y':
+				return view.confirming.identity, nil
+			case 'n', 'N', '\r', '\n':
+				view.confirming = nil
+				continue
+			case 3, 4, 27:
+				return "", fmt.Errorf("%s selection cancelled", noun)
+			default:
+				continue
+			}
+		}
 		switch b {
 		case 3, 4:
-			return "", errors.New("model selection cancelled")
+			return "", fmt.Errorf("%s selection cancelled", noun)
 		case '\r', '\n':
 			matches := view.matches()
 			if len(matches) == 0 {
-				view.notice = "Choose a matching model before launching."
+				view.notice = "Choose a matching " + noun + " before launching."
 				continue
 			}
 			if matches[view.cursor].disabled != "" {
-				view.notice = "This model cannot be launched. Tab returns to ready models."
+				view.notice = "This " + noun + " cannot be launched. Tab returns to ready choices."
 				continue
 			}
-			return matches[view.cursor].identity, nil
+			selected := matches[view.cursor]
+			if view.confirmExperimental && selected.status != "supported" {
+				view.confirming = &selected
+				continue
+			}
+			return selected.identity, nil
 		case '\t':
 			view.unavailable = !view.unavailable
 			view.details = false
@@ -153,7 +195,7 @@ func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, targetNa
 			}
 			if prefix != '[' && prefix != 'O' {
 				timer.Stop()
-				return "", errors.New("model selection cancelled")
+				return "", fmt.Errorf("%s selection cancelled", noun)
 			}
 			var sequence strings.Builder
 			for sequence.Len() < 16 {

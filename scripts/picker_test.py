@@ -213,8 +213,28 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
 
 
 class PickerTests(PickerFixture):
-    def test_arrows_skip_blocked_rows_and_launch_selected_upstream(self):
+    def test_app_picker_cancel_restores_terminal_before_catalog_discovery(self):
+        for key in (b'\x1b', b'\x03'):
+            with self.subTest(key=key):
+                self.start([])
+                self.read_until('Choose an app')
+                os.write(self.master, key)
+                self.finish(1)
+                self.assertEqual(self.requests, [])
+                self.assertFalse(self.marker.exists())
+
+    def test_bare_experimental_launch_selects_app_then_model(self):
         self.start(['--allow-unverified'])
+        self.read_until('Choose an app')
+        self.assertEqual(self.requests, [])
+        os.write(self.master, b'\r')
+        self.read_until('Choose a main model')
+        os.write(self.master, b'\r')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], DEEPSEEK)
+
+    def test_arrows_skip_blocked_rows_and_launch_selected_upstream(self):
+        self.start(['launch', 'codex', '--allow-unverified'])
         output = self.read_until('Enter confirms')
         self.assertIn('Unavailable 1', output)
         self.assertIn('Codex CLI', output)
@@ -226,7 +246,7 @@ class PickerTests(PickerFixture):
         self.assertIn('ai_project_id=synthetic-project', self.requests[-1][0])
 
     def test_indicator_moves_in_presented_list(self):
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('Type to filter')
         rows = [line.strip() for line in self.screen_lines() if line.strip().startswith('> ')]
         self.assertEqual(len(rows), 1)
@@ -243,7 +263,7 @@ class PickerTests(PickerFixture):
     def test_unavailable_view_explains_offscreen_models_without_launch(self):
         long_id = 'unknown/' + 'x' * 180
         self.models = [DEEPSEEK] + [f'unknown/model-{i:02}' for i in range(30)] + [long_id]
-        self.start(['--direct', '--allow-unverified'])
+        self.start(['launch', 'codex', '--direct', '--allow-unverified'])
         self.read_until('Type to filter')
         os.write(self.master, b'\txxxx?')
         lines = self.wait_for_screen(lambda lines: long_id in ''.join(line.strip() for line in lines) and any('Up/Down scroll' in line for line in lines))
@@ -257,7 +277,7 @@ class PickerTests(PickerFixture):
         self.finish(1)
 
     def test_filter_finds_model_and_launches_without_catalog_noise(self):
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('Type to filter')
         self.assertIn('Choose a main model', self.output.decode(errors='replace'))
         os.write(self.master, b'kimi')
@@ -271,7 +291,7 @@ class PickerTests(PickerFixture):
         self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
 
     def test_cancel_returns_to_original_shell_screen(self):
-        self.start(['--allow-unverified'], prelude=b'Previous shell output\r\n')
+        self.start(['launch', 'codex', '--allow-unverified'], prelude=b'Previous shell output\r\n')
         self.read_until('Type to filter')
         self.assertNotIn('Previous shell output', '\n'.join(self.screen_lines()))
         os.write(self.master, b'\x03')
@@ -282,7 +302,7 @@ class PickerTests(PickerFixture):
         self.assertFalse(self.marker.exists())
 
     def test_resize_reflows_without_key_input_or_selection_loss(self):
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('Type to filter')
         os.write(self.master, b'\x1b[B')
         self.wait_for_screen(lambda lines: any(KIMI in line for line in lines))
@@ -297,7 +317,7 @@ class PickerTests(PickerFixture):
 
     def test_page_navigation_and_empty_search_are_recoverable(self):
         self.models += [f'unknown/model-{i:02}' for i in range(20)]
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('Type to filter')
         os.write(self.master, b'\t\x1b[6~')
         lines = self.wait_for_screen(lambda lines: any('unknown/model-07' in line for line in lines))
@@ -312,7 +332,7 @@ class PickerTests(PickerFixture):
         self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
 
     def test_detail_navigation_never_changes_selected_model(self):
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('Type to filter')
         os.write(self.master, b'\x1b[B?')
         self.read_until('Up/Down scroll')
@@ -322,7 +342,7 @@ class PickerTests(PickerFixture):
 
     def test_empty_catalog_does_not_open_picker(self):
         self.models = []
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('no models available')
         self.finish(1)
         self.assertFalse(self.marker.exists())
@@ -339,11 +359,17 @@ class PickerTests(PickerFixture):
 
     def test_supported_bare_picker_ignores_saved_model(self):
         self.start([], self.supported)
-        output = self.read_until('Enter confirms')
-        self.assertIn(KIMI, output)
-        self.assertIn('Supported', output)
-        self.assertNotIn(DEEPSEEK.encode(), self.output)
+        self.read_until('Choose an app')
+        self.assertEqual(self.requests, [])
+        self.assertFalse(self.marker.exists())
+        self.assertIn('Codex CLI', '\n'.join(self.screen_lines()))
         os.write(self.master, b'\r')
+        self.read_until('Choose a main model')
+        output = self.read_until('Enter confirms')
+        self.assertIn('Kimi-K3', output)
+        self.assertIn('Supported', output)
+        self.assertIn(DEEPSEEK.encode(), self.output)
+        os.write(self.master, b'kimi\r')
         self.finish()
         self.read_until('Guardian: ' + GLM)
         self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
@@ -363,7 +389,7 @@ class PickerTests(PickerFixture):
         output = self.read_until('Enter confirms')
         self.assertIn(DEEPSEEK, output)
         self.assertIn('Supported', output)
-        self.assertNotIn(KIMI.encode(), self.output)
+        self.assertIn(b'Kimi-K3', self.output)
         os.write(self.master, b'\r')
         self.finish()
         self.read_until('Guardian: native reviewer selection')
@@ -374,30 +400,58 @@ class PickerTests(PickerFixture):
         # Each process owns its PTY; a cancellation must not start a client.
         for key in (b'\x1b', b'\x03', b'\x1b['):
             with self.subTest(key=key):
-                self.start(['--allow-unverified'])
+                self.start(['launch', 'codex', '--allow-unverified'])
                 self.read_until('Enter confirms')
                 os.write(self.master, key)
                 self.finish(1)
                 self.assertFalse(self.marker.exists())
 
     def test_signal_restores_terminal(self):
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('Enter confirms')
         self.process.send_signal(signal.SIGTERM)
         self.finish(1)
         self.assertFalse(self.marker.exists())
 
-    def test_no_supported_models_explains_experimental_flag(self):
-        self.start([])
-        self.read_until('no supported main models')
+    def test_experimental_models_visible_and_require_explicit_confirmation(self):
+        self.start(['launch', 'codex'])
+        output = self.read_until('Enter confirms')
+        self.assertIn('Kimi-K3', output)
+        self.assertIn('GLM-5.3-Flash', output)
+        self.assertIn('Experimental', output)
+        os.write(self.master, b'kimi\r')
+        self.read_until('Launch experimental selection?')
+        self.assertFalse(self.marker.exists())
+        os.write(self.master, b'y')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
+        self.read_until('Status: experimental')
+
+    def test_experimental_confirmation_decline_and_cancel_never_launch(self):
+        for key in (b'\r', b'n', b'\x1b', b'\x03'):
+            with self.subTest(key=key):
+                self.start(['launch', 'codex'])
+                self.read_until('Enter confirms')
+                os.write(self.master, b'\r')
+                self.read_until('Launch experimental selection?')
+                os.write(self.master, key)
+                if key in (b'\r', b'n'):
+                    self.wait_for_screen(lambda lines: any('Choose a main model' in line for line in lines))
+                    self.assertFalse(self.marker.exists())
+                    os.write(self.master, b'\x03')
+                self.finish(1)
+                self.assertFalse(self.marker.exists())
+
+    def test_explicit_experimental_main_still_requires_flag(self):
+        self.start(['launch', 'codex', '--model', KIMI])
         self.read_until('--allow-unverified')
         self.finish(1)
         self.assertFalse(self.marker.exists())
-        self.assertNotIn(b'Enter confirms', self.output)
+        self.assertNotIn(b'Launch experimental selection?', self.output)
 
     def test_catalog_failure_never_launches(self):
         self.catalog_status = 503
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('model catalog returned HTTP 503')
         self.finish(1)
         self.assertFalse(self.marker.exists())
@@ -436,14 +490,14 @@ class PickerTests(PickerFixture):
 
     def test_output_error_restores_terminal_without_launch(self):
         self.env['FIXTURE_OUTPUT_FAILURE'] = '1'
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('synthetic terminal output failure')
         self.finish(1)
         self.assertFalse(self.marker.exists())
 
     def test_missing_guardian_does_not_prompt_or_substitute(self):
         self.models = [KIMI]
-        self.start(['--allow-unverified'])
+        self.start(['launch', 'codex', '--allow-unverified'])
         self.read_until('Guardian model ' + GLM + ': not available')
         self.finish(1)
         self.assertFalse(self.marker.exists())
