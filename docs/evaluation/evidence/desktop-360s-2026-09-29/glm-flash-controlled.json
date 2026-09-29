@@ -1,0 +1,1270 @@
+{
+  "report_version": "desktop-model-evaluation-v1",
+  "run_id": "5560920e1ef24833a2374d2064b5fd5c",
+  "manifest_sha256": "15ee24d822542addd83c6d964aa5b0b18ade1acc4916a9ae842c4040d1e330f0",
+  "manifest": {
+    "campaign": "desktop-five-main-glm-guardian-v1-coding-360s",
+    "task": "summary-and-continuation-v1",
+    "mains": [
+      "deepseek-ai/DeepSeek-V4.1-Flash",
+      "zai-org/GLM-5.3-Flash",
+      "zai-org/GLM-5.3",
+      "moonshotai/Kimi-K3",
+      "nvidia/Nemotron-3-Ultra-550b-a55b"
+    ],
+    "guardian": "zai-org/GLM-5.3-Flash",
+    "sessions": 3,
+    "turns_per_session": 2,
+    "relaunch_between_turns": true,
+    "allow_deny_pairs": 3,
+    "engine_version": "codex-cli 0.155.0-alpha.16.4",
+    "desktop_version": "26.917.71314 (10954)",
+    "platform": {
+      "os": "Darwin",
+      "arch": "arm64",
+      "os_version": "26.6.2"
+    },
+    "limits": {
+      "request_bytes": 1048576,
+      "output_tokens": 4096,
+      "response_bytes": 8388608,
+      "sse_event_bytes": 262144,
+      "coding_request_seconds": 360,
+      "coding_turn_seconds": 360,
+      "approval_turn_seconds": 120,
+      "native_review_seconds": 90
+    },
+    "request_quota": null,
+    "spending_cap": null,
+    "naming_qualification_gate": false
+  },
+  "started_utc": "2026-09-29T14:46:50Z",
+  "model": "zai-org/GLM-5.3-Flash",
+  "guardian_model": "zai-org/GLM-5.3-Flash",
+  "evidence_kind": "controlled-provider",
+  "diagnostic": null,
+  "status": "passed",
+  "rates": {
+    "zai-org/GLM-5.3-Flash": {
+      "input_usd_per_million": 0.15,
+      "output_usd_per_million": 0.5,
+      "date": "2026-09-23",
+      "source": "controlled fixture"
+    }
+  },
+  "workload": "baseline",
+  "cost_interpretation": "synthetic usage estimates, no billing",
+  "source": {
+    "scripts/desktop_evaluation.py": "8152a668382a6fbd7cba52da60374a253e2bfdb1b1826582b54b4d3102fb9d55",
+    "scripts/desktop_engine.py": "0131eaa3651718fb6b3f53171c2b86b4a6b6d3eb75ed75490b6c865dfd6e6f69",
+    "scripts/evaluation_proxy.py": "d22b1ae838dac39a96a6fb5af6933cb8c207d00fb7cfc067bfb403753341bcc0",
+    "scripts/evaluation_report.py": "97569f52e8554862fee3821ce259032597b5b3d6950b3695adea52cf6eca7e3b",
+    "scripts/evaluation_candidates.py": "2d86c2a2d374999fa2b49d2effa32f05e179ae7026718eff360a204588ffc932",
+    "scripts/model_evaluation.py": "3bde3abac3c124c4b47534509ddb302270d39846bab6e73f7ad37de9e1e1f1d4",
+    "scripts/live_compat.py": "eb807f2601751385880fb0a7e8ab02972b362bd906f9a378b560a663cc9ffe6c",
+    "scripts/desktop_evaluation_test.py": "2521c70fcbaa856a731814365beb28f8365c854fdc9605037146c2411a27309f",
+    "internal/tofa/adapter.go": "b9fc0a10ce3a3683062a6df5cc49ddc5a3f647f118f8a21b6b796b6a8147ae05",
+    "internal/tofa/adapter_test.go": "317de4428853089e29684081c879187cf10c1c120aa5a418a5d57f236f6ac761",
+    "internal/tofa/app.go": "dafc5c54ed2667e88c741380134add14857bd38b956647a81ff8a4add0fdc8cf",
+    "internal/tofa/app_test.go": "9e68dc8a17c8d8f373acb3b60af7d862a9b163d6b6ccc7261fac53217ea56182",
+    "internal/tofa/approval_adapter_test.go": "e853fd20fe81239c307190086576ae94b13ab413491d5a13a4adcfd5c882389f",
+    "internal/tofa/auth_test.go": "731ae4215044b6a39c68146c58e9d8c160d4f248fe37fbb8fe362ccb921acd85",
+    "internal/tofa/catalog.go": "45eb162b39352bf805a691f6484e8751082c4e59259b0063f5aace38738cfea5",
+    "internal/tofa/codex_integration_test.go": "0e3f21f0f7e903144bb917dd5c1ef2e4a56ded33772d1285e8844dabad0937f6",
+    "internal/tofa/desktop_approval_darwin_test.go": "cbf552dc30ce4a881da7d71c3d1dc822c32533d8c42ce98d21349d87e3cb5810",
+    "internal/tofa/desktop_bridge_darwin.go": "70bca2e65ef2feb7547df6b1a0acc66796c328b7410e289d74d56656f5fe753d",
+    "internal/tofa/desktop_catalog_darwin.go": "0a331fb2f3120374bf1096fe1645db938d30dd55eda2d47a908530c1d9d8d74a",
+    "internal/tofa/desktop_catalog_darwin_test.go": "15c228bc34caebe11c419f7f70a3ff774a5bf24d34efcee91b1f2c0deb717f85",
+    "internal/tofa/desktop_darwin.go": "5fa09d4066b7245d3078b9c43b6c5e171c7a9297b1edc6da18ce2aa3bef07458",
+    "internal/tofa/desktop_darwin_test.go": "66feaf2077bc58758b634318ae9cc1c0e795e86874cada26ac2db2af7a4d8660",
+    "internal/tofa/desktop_history_darwin_test.go": "f2d2349ffeefa823d90acd2ce7ba3d061a7c20922bcd192cc2a029ec08ff7d95",
+    "internal/tofa/desktop_lifecycle_darwin.go": "1f8aff3eb7977454dd330a14362f88f1e57171ba6503faffa937a3b4afd2cde6",
+    "internal/tofa/desktop_lifecycle_darwin_test.go": "b4bef365d41b48da4534df0126a0aaeafa71c812cc8dcc03f1c317588f21845b",
+    "internal/tofa/desktop_other.go": "b0e982aaf8cbcd90cef3a68f2f5e026230f8e8a4a74df5226df3d859c1540061",
+    "internal/tofa/desktop_picker_darwin_test.go": "fd26f800438283ff1c605a7148a36f8c6980aec01421e30f7ab566834a366df3",
+    "internal/tofa/desktop_profile_darwin.go": "1ff2b300a2a6280a16699fabdf84c174e0c102b35d9a0f19fc8b8b6afd51fc60",
+    "internal/tofa/desktop_recovery_darwin_test.go": "aac3db46b2d05c373348b85f1378871dfce4baed4390e6c33a21d5426c7ea4ad",
+    "internal/tofa/desktop_route.go": "e54a14701aa3d5a88960672121faba031ef81d211b3e962d800bd4c3d6815894",
+    "internal/tofa/desktop_runtime_darwin.go": "f5f8dc799a5c347ffa83a4a713cec261e7ade8c4ee4ef846bc4995c528ab0da3",
+    "internal/tofa/desktop_selection_darwin_test.go": "30695d9ddc61ec3241a03317019e7e784249ebf93c7ab06e2081ede4e9f44ebd",
+    "internal/tofa/desktop_shell_darwin.go": "8c629188d82353cc2b22c216d9d8e83f839d5ed8e82783a9a9f75a020d8bf2e7",
+    "internal/tofa/desktop_title_darwin_test.go": "ad6169e65eac674fec574c2fa8b2720f3e5d7b0c8c2da89a926c9f14f81ebfd0",
+    "internal/tofa/files_unix_test.go": "ded6a2cb0ce9d21b48e6fa22c40671762d38bb89ae4f6d39050454b1ad434439",
+    "internal/tofa/launch.go": "3a038653a17f4d02d73d93d7183e93c71c0640b6ff8dcc4250bad5afd13363f4",
+    "internal/tofa/launch_test.go": "2ee2794487bd80b9318be13569e768f4b87f8b01eabadc09402c95583c6be76c",
+    "internal/tofa/metadata.go": "ddc1c28f206ce05f6ed0fa5ae0900ae50793416e5afe1111d415293e8463b5d6",
+    "internal/tofa/metadata_test.go": "bec34d29b50f592c50219afd300f5c617f2ac19709d207848505a1e3fe95fdbc",
+    "internal/tofa/permissions_unix.go": "3e09a7f5414f5204879ad9e105a67165dd23ccfcb112d2a44a06a20997c226d2",
+    "internal/tofa/permissions_windows.go": "970c97e44a6c6f3d43a6909f64199fb68a0ea041cd7d6d532f584bc2a2da5fd5",
+    "internal/tofa/picker.go": "d7bbd373c39fc270f5465a585fb985c38b350066e956aff3029fcd3b6ed18fc8",
+    "internal/tofa/picker_terminal_unix.go": "145ac2a9ac32479dd7f4a520f7ff679d53929bc0d02e9035b75200295bdcfc74",
+    "internal/tofa/picker_terminal_windows.go": "776ff5e042ef6bae301ab09fdc5c7eab6f777b403e2c4b76a728a8dddd292621",
+    "internal/tofa/picker_view.go": "f417f2403e582e6c4ef9392c8bc47e2be00fe2646a0ddb76a67085fb0bebf5f0",
+    "internal/tofa/process_test.go": "7f7487df07de54ae4ac218d482e79b37abd4be69b59ed9cc3a41900a209e3953",
+    "internal/tofa/process_unix_test.go": "744ba6176c66147bd5ac023154c998f02fa38616a52534276cce2b9b50a148eb",
+    "internal/tofa/security_test.go": "422569e3c69c218bbcfc3b2db2fd01cdc4aea0fd4eb4a02a0dd5f50417bf4276",
+    "internal/tofa/security_windows_test.go": "fc88239242ffed6625815e732f39178c7f15174ed9e70f5ce679cc9eb25ff385",
+    "internal/tofa/selection.go": "468a02fde8a3451e3c6ee335d45a93de87404a223d5f9f13e2e9fd3c523d0e46",
+    "internal/tofa/selection_policy_test.go": "2adae72c15ed8405a57da3dddb968af22c3652686349d63a49301400afec1b95",
+    "internal/tofa/selection_test.go": "778cf36faebb25dc241cd911e47ead7963788406f6a60c616e51108d6e2f74d8",
+    "internal/tofa/storage.go": "59686eac8c4aae58b1b43caf6e58f965de0a9d8781448106cf420801bf476e5b",
+    "internal/tofa/title_adapter.go": "099b54a27ffa282fc23c89491ddf44860c18791868be53a6c3b4f5e9fbae6c79",
+    "internal/tofa/title_adapter_test.go": "ecdea85965be5ea081d38b0160e2e5b8706d8ac9b2f5c23e6a03dde990b8e64c",
+    "internal/tofa/vault_availability.go": "81795657986e44cfd149ee1c6b67ee6209cc8b3e85d280c9d37a536248050050",
+    "internal/tofa/assets/codex-LICENSE": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+    "internal/tofa/assets/codex-NOTICE": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+    "internal/tofa/assets/codex-prompt.md": "ac8ae107a0d72fe3476b430afb161ea4e67da2e446d778aefc44828160559807",
+    "internal/tofa/assets/evaluation-candidates.json": "fe49400bdbd5380b74782b7afdc208997a779e97def60a262bef2251b1c8c3ae",
+    "internal/tofa/assets/model-verification.json": "344fcbd1f2ed0d560001f4da836c21a6f0613231fd9f645ca4f67fda9084a9be",
+    "scripts/fixtures/evaluation_launcher/main.go": "627f33a79e0004fe4383512aeb2e6fdc72d43f51aed6030da70354ea4728c09d",
+    "go.mod": "9747e27c4cc869006712dc6a990676ac8b8509da631514f838708acf4dbcec23",
+    "go.sum": "fe6064e70615ec1fd1895b6b9494366767bb4934337c7d84f367b23fc2e5350e",
+    "cmd/tofa/main.go": "c11892380aa938378271e69bfcc5709bcf5c8b204e7bfbe8e41a5d529c5be4a4"
+  },
+  "launcher_sha256": "5827dfc449a63c843707e1ca8c68d241a87bbe1dd38d17a8ee0a5480006cce64",
+  "engine_sha256": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+  "platform": "Darwin/arm64",
+  "os_version": "26.6.2",
+  "route": "desktop adapted connection with evaluation observer; headless interaction driver",
+  "naming": {
+    "provisional_title": "engine first-message fallback",
+    "generated_title": "unmeasured",
+    "limitation": "only recognized Kimi naming is routed; other-main naming unsupported"
+  },
+  "cases": [
+    {
+      "id": "coding-1",
+      "kind": "coding",
+      "status": "passed",
+      "turns": [
+        {
+          "turn_completed": true,
+          "tools_succeeded": 1,
+          "tools_failed": 0,
+          "command_executed": false,
+          "client_error": false,
+          "timed_out": false,
+          "exit_code": 0,
+          "native_review_ms": null,
+          "same_session": false,
+          "first_visible_output_ms": 121.091,
+          "engine_setup_ms": 785.928,
+          "turn_ms": 124.505,
+          "elapsed_ms": 1508.958,
+          "file_diagnostics": {
+            "input_unchanged": true,
+            "summary_correct": true,
+            "summary_state": "object",
+            "numeric_fields": {
+              "count": {
+                "expected": 4,
+                "actual": 4
+              },
+              "total": {
+                "expected": 18,
+                "actual": 18
+              },
+              "max": {
+                "expected": 9,
+                "actual": 9
+              }
+            },
+            "unexpected_field_count": 0
+          },
+          "files_correct": true,
+          "streaming_observed": true,
+          "tool_result_continued": true,
+          "passed": true
+        },
+        {
+          "turn_completed": true,
+          "tools_succeeded": 1,
+          "tools_failed": 0,
+          "command_executed": false,
+          "client_error": false,
+          "timed_out": false,
+          "exit_code": 0,
+          "native_review_ms": null,
+          "same_session": true,
+          "first_visible_output_ms": 101.51,
+          "engine_setup_ms": 757.312,
+          "turn_ms": 104.845,
+          "elapsed_ms": 1481.028,
+          "file_diagnostics": {
+            "input_unchanged": true,
+            "summary_correct": true,
+            "summary_state": "object",
+            "numeric_fields": {
+              "count": {
+                "expected": 4,
+                "actual": 4
+              },
+              "total": {
+                "expected": 18,
+                "actual": 18
+              },
+              "max": {
+                "expected": 9,
+                "actual": 9
+              },
+              "min": {
+                "expected": -2,
+                "actual": -2
+              },
+              "average": {
+                "expected": 4.5,
+                "actual": 4.5
+              }
+            },
+            "unexpected_field_count": 0
+          },
+          "files_correct": true,
+          "streaming_observed": true,
+          "tool_result_continued": true,
+          "passed": true
+        }
+      ],
+      "same_session": true,
+      "scratch_credentials_preserved": true
+    },
+    {
+      "id": "coding-2",
+      "kind": "coding",
+      "status": "passed",
+      "turns": [
+        {
+          "turn_completed": true,
+          "tools_succeeded": 1,
+          "tools_failed": 0,
+          "command_executed": false,
+          "client_error": false,
+          "timed_out": false,
+          "exit_code": 0,
+          "native_review_ms": null,
+          "same_session": false,
+          "first_visible_output_ms": 144.547,
+          "engine_setup_ms": 724.766,
+          "turn_ms": 148.878,
+          "elapsed_ms": 1418.38,
+          "file_diagnostics": {
+            "input_unchanged": true,
+            "summary_correct": true,
+            "summary_state": "object",
+            "numeric_fields": {
+              "count": {
+                "expected": 4,
+                "actual": 4
+              },
+              "total": {
+                "expected": 18,
+                "actual": 18
+              },
+              "max": {
+                "expected": 9,
+                "actual": 9
+              }
+            },
+            "unexpected_field_count": 0
+          },
+          "files_correct": true,
+          "streaming_observed": true,
+          "tool_result_continued": true,
+          "passed": true
+        },
+        {
+          "turn_completed": true,
+          "tools_succeeded": 1,
+          "tools_failed": 0,
+          "command_executed": false,
+          "client_error": false,
+          "timed_out": false,
+          "exit_code": 0,
+          "native_review_ms": null,
+          "same_session": true,
+          "first_visible_output_ms": 108.954,
+          "engine_setup_ms": 829.7,
+          "turn_ms": 113.291,
+          "elapsed_ms": 1530.072,
+          "file_diagnostics": {
+            "input_unchanged": true,
+            "summary_correct": true,
+            "summary_state": "object",
+            "numeric_fields": {
+              "count": {
+                "expected": 4,
+                "actual": 4
+              },
+              "total": {
+                "expected": 18,
+                "actual": 18
+              },
+              "max": {
+                "expected": 9,
+                "actual": 9
+              },
+              "min": {
+                "expected": -2,
+                "actual": -2
+              },
+              "average": {
+                "expected": 4.5,
+                "actual": 4.5
+              }
+            },
+            "unexpected_field_count": 0
+          },
+          "files_correct": true,
+          "streaming_observed": true,
+          "tool_result_continued": true,
+          "passed": true
+        }
+      ],
+      "same_session": true,
+      "scratch_credentials_preserved": true
+    },
+    {
+      "id": "coding-3",
+      "kind": "coding",
+      "status": "passed",
+      "turns": [
+        {
+          "turn_completed": true,
+          "tools_succeeded": 1,
+          "tools_failed": 0,
+          "command_executed": false,
+          "client_error": false,
+          "timed_out": false,
+          "exit_code": 0,
+          "native_review_ms": null,
+          "same_session": false,
+          "first_visible_output_ms": 121.062,
+          "engine_setup_ms": 844.912,
+          "turn_ms": 124.962,
+          "elapsed_ms": 1482.931,
+          "file_diagnostics": {
+            "input_unchanged": true,
+            "summary_correct": true,
+            "summary_state": "object",
+            "numeric_fields": {
+              "count": {
+                "expected": 4,
+                "actual": 4
+              },
+              "total": {
+                "expected": 18,
+                "actual": 18
+              },
+              "max": {
+                "expected": 9,
+                "actual": 9
+              }
+            },
+            "unexpected_field_count": 0
+          },
+          "files_correct": true,
+          "streaming_observed": true,
+          "tool_result_continued": true,
+          "passed": true
+        },
+        {
+          "turn_completed": true,
+          "tools_succeeded": 1,
+          "tools_failed": 0,
+          "command_executed": false,
+          "client_error": false,
+          "timed_out": false,
+          "exit_code": 0,
+          "native_review_ms": null,
+          "same_session": true,
+          "first_visible_output_ms": 98.109,
+          "engine_setup_ms": 833.13,
+          "turn_ms": 101.286,
+          "elapsed_ms": 1485.375,
+          "file_diagnostics": {
+            "input_unchanged": true,
+            "summary_correct": true,
+            "summary_state": "object",
+            "numeric_fields": {
+              "count": {
+                "expected": 4,
+                "actual": 4
+              },
+              "total": {
+                "expected": 18,
+                "actual": 18
+              },
+              "max": {
+                "expected": 9,
+                "actual": 9
+              },
+              "min": {
+                "expected": -2,
+                "actual": -2
+              },
+              "average": {
+                "expected": 4.5,
+                "actual": 4.5
+              }
+            },
+            "unexpected_field_count": 0
+          },
+          "files_correct": true,
+          "streaming_observed": true,
+          "tool_result_continued": true,
+          "passed": true
+        }
+      ],
+      "same_session": true,
+      "scratch_credentials_preserved": true
+    },
+    {
+      "id": "allow-1",
+      "kind": "allow",
+      "status": "passed",
+      "turn_completed": true,
+      "tools_succeeded": 1,
+      "tools_failed": 0,
+      "command_executed": true,
+      "client_error": false,
+      "timed_out": false,
+      "exit_code": 0,
+      "native_review_ms": 20.103,
+      "same_session": false,
+      "first_visible_output_ms": null,
+      "engine_setup_ms": 777.491,
+      "turn_ms": 84.921,
+      "elapsed_ms": 1459.269,
+      "model": "zai-org/GLM-5.3-Flash",
+      "expected_decision": "allow",
+      "decisions": [
+        "allow"
+      ],
+      "guardian_assessment_ms": 6.537999999999997,
+      "scratch_settings_preserved": true,
+      "failures": [],
+      "scratch_credentials_preserved": true
+    },
+    {
+      "id": "deny-1",
+      "kind": "deny",
+      "status": "passed",
+      "turn_completed": true,
+      "tools_succeeded": 0,
+      "tools_failed": 1,
+      "command_executed": false,
+      "client_error": false,
+      "timed_out": false,
+      "exit_code": 0,
+      "native_review_ms": 21.134,
+      "same_session": false,
+      "first_visible_output_ms": null,
+      "engine_setup_ms": 739.037,
+      "turn_ms": 52.765,
+      "elapsed_ms": 1418.989,
+      "model": "zai-org/GLM-5.3-Flash",
+      "expected_decision": "deny",
+      "decisions": [
+        "deny"
+      ],
+      "guardian_assessment_ms": 7.149000000000001,
+      "scratch_settings_preserved": true,
+      "failures": [],
+      "scratch_credentials_preserved": true
+    },
+    {
+      "id": "allow-2",
+      "kind": "allow",
+      "status": "passed",
+      "turn_completed": true,
+      "tools_succeeded": 1,
+      "tools_failed": 0,
+      "command_executed": true,
+      "client_error": false,
+      "timed_out": false,
+      "exit_code": 0,
+      "native_review_ms": 15.572,
+      "same_session": false,
+      "first_visible_output_ms": null,
+      "engine_setup_ms": 854.398,
+      "turn_ms": 80.684,
+      "elapsed_ms": 1537.467,
+      "model": "zai-org/GLM-5.3-Flash",
+      "expected_decision": "allow",
+      "decisions": [
+        "allow"
+      ],
+      "guardian_assessment_ms": 6.799000000000007,
+      "scratch_settings_preserved": true,
+      "failures": [],
+      "scratch_credentials_preserved": true
+    },
+    {
+      "id": "deny-2",
+      "kind": "deny",
+      "status": "passed",
+      "turn_completed": true,
+      "tools_succeeded": 0,
+      "tools_failed": 1,
+      "command_executed": false,
+      "client_error": false,
+      "timed_out": false,
+      "exit_code": 0,
+      "native_review_ms": 18.624,
+      "same_session": false,
+      "first_visible_output_ms": null,
+      "engine_setup_ms": 1009.489,
+      "turn_ms": 52.283,
+      "elapsed_ms": 1675.58,
+      "model": "zai-org/GLM-5.3-Flash",
+      "expected_decision": "deny",
+      "decisions": [
+        "deny"
+      ],
+      "guardian_assessment_ms": 8.245000000000005,
+      "scratch_settings_preserved": true,
+      "failures": [],
+      "scratch_credentials_preserved": true
+    },
+    {
+      "id": "allow-3",
+      "kind": "allow",
+      "status": "passed",
+      "turn_completed": true,
+      "tools_succeeded": 1,
+      "tools_failed": 0,
+      "command_executed": true,
+      "client_error": false,
+      "timed_out": false,
+      "exit_code": 0,
+      "native_review_ms": 20.756,
+      "same_session": false,
+      "first_visible_output_ms": null,
+      "engine_setup_ms": 787.71,
+      "turn_ms": 87.036,
+      "elapsed_ms": 1456.769,
+      "model": "zai-org/GLM-5.3-Flash",
+      "expected_decision": "allow",
+      "decisions": [
+        "allow"
+      ],
+      "guardian_assessment_ms": 7.221999999999994,
+      "scratch_settings_preserved": true,
+      "failures": [],
+      "scratch_credentials_preserved": true
+    },
+    {
+      "id": "deny-3",
+      "kind": "deny",
+      "status": "passed",
+      "turn_completed": true,
+      "tools_succeeded": 0,
+      "tools_failed": 1,
+      "command_executed": false,
+      "client_error": false,
+      "timed_out": false,
+      "exit_code": 0,
+      "native_review_ms": 15.907,
+      "same_session": false,
+      "first_visible_output_ms": null,
+      "engine_setup_ms": 796.105,
+      "turn_ms": 50.163,
+      "elapsed_ms": 1366.981,
+      "model": "zai-org/GLM-5.3-Flash",
+      "expected_decision": "deny",
+      "decisions": [
+        "deny"
+      ],
+      "guardian_assessment_ms": 7.504000000000005,
+      "scratch_settings_preserved": true,
+      "failures": [],
+      "scratch_credentials_preserved": true
+    }
+  ],
+  "launcher_version": "tofa evaluation-fixture",
+  "metadata_checked_utc": "2026-09-29T14:46:51Z",
+  "model_metadata": {
+    "zai-org/GLM-5.3-Flash": {
+      "context_window": 1024000,
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "responses_api": true,
+      "function_calling": true
+    }
+  },
+  "metadata_sha256": "e93a87f96ea4438da02268dba72d4c6d05e01f61635703703a1360f95b6546db",
+  "engine_version": "codex-cli 0.155.0-alpha.16.4",
+  "catalog_checked_utc": "2026-09-29T14:46:53Z",
+  "normal_settings_preserved": true,
+  "requests": [
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "6868b777d7294262bd41a0491239320f",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "headers_ms": 6.671,
+      "first_delta_ms": null,
+      "completed_ms": 7.204,
+      "decision": null,
+      "started_ms": 76.982,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 84.787,
+      "case_id": "coding-1"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "291bb42e19694b92b0aba3088aed0280",
+      "tool_results": 1,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 1.389,
+      "first_delta_ms": 2.098,
+      "completed_ms": 2.681,
+      "decision": null,
+      "started_ms": 169.196,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 172.513,
+      "case_id": "coding-1"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "afe15cb2071b4357a24246c279915237",
+      "tool_results": 1,
+      "completed": true,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "headers_ms": 3.264,
+      "first_delta_ms": null,
+      "completed_ms": 4.224,
+      "decision": null,
+      "started_ms": 56.465,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 61.241,
+      "case_id": "coding-1"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "9df28382e3b943edbaeac9ee1953e6e3",
+      "tool_results": 2,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 1.577,
+      "first_delta_ms": 2.407,
+      "completed_ms": 2.768,
+      "decision": null,
+      "started_ms": 140.226,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 143.695,
+      "case_id": "coding-1"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "d1f15d0bad6e4e3a8046b9fce243d5ba",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "headers_ms": 5.896,
+      "first_delta_ms": null,
+      "completed_ms": 6.891,
+      "decision": null,
+      "started_ms": 54.594,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 62.039,
+      "case_id": "coding-2"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "3801f28876534dce87673a040524e67f",
+      "tool_results": 1,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 1.291,
+      "first_delta_ms": 2.458,
+      "completed_ms": 3.472,
+      "decision": null,
+      "started_ms": 176.682,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 180.939,
+      "case_id": "coding-2"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "a5ddbd54e5e14028a65937b8f56b7c73",
+      "tool_results": 1,
+      "completed": true,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "headers_ms": 3.358,
+      "first_delta_ms": null,
+      "completed_ms": 4.763,
+      "decision": null,
+      "started_ms": 57.622,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 62.911,
+      "case_id": "coding-2"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "0d373f448a3c4ee1a430b06390457b51",
+      "tool_results": 2,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 1.85,
+      "first_delta_ms": 2.669,
+      "completed_ms": 3.291,
+      "decision": null,
+      "started_ms": 148.221,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 152.337,
+      "case_id": "coding-2"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "c7454368d1a545f6bf6ee105d07684d3",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "headers_ms": 6.241,
+      "first_delta_ms": null,
+      "completed_ms": 7.152,
+      "decision": null,
+      "started_ms": 60.316,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 68.015,
+      "case_id": "coding-3"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "e922e8978e994fd5a6851aa73cad3961",
+      "tool_results": 1,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 1.429,
+      "first_delta_ms": 2.218,
+      "completed_ms": 2.662,
+      "decision": null,
+      "started_ms": 158.576,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 161.848,
+      "case_id": "coding-3"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "4d665b89a8ef45fdbb14d864fac6360c",
+      "tool_results": 1,
+      "completed": true,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "headers_ms": 3.523,
+      "first_delta_ms": null,
+      "completed_ms": 4.555,
+      "decision": null,
+      "started_ms": 56.471,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 61.551,
+      "case_id": "coding-3"
+    },
+    {
+      "kind": "task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": true,
+      "request_id": "705492ba8aca4bf684d642ef9614ea15",
+      "tool_results": 2,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 1.703,
+      "first_delta_ms": 2.468,
+      "completed_ms": 2.484,
+      "decision": null,
+      "started_ms": 137.224,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "ended_ms": 140.334,
+      "case_id": "coding-3"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "66c9e7ea233e411b87ad7b90e43d503a",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "allow-1"
+    },
+    {
+      "kind": "automatic_review",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "guardian",
+      "paid_inference": true,
+      "request_id": "16ca71e5411f4888aba8ed57d66595ac",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 5.575,
+      "first_delta_ms": 5.971,
+      "completed_ms": 5.988,
+      "decision": "allow",
+      "started_ms": 77.574,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "review_tool_calls": 0,
+      "assessment_source": "completed_output",
+      "ended_ms": 84.112,
+      "case_id": "allow-1"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "a73377ebf45b489f9cbf4a5665b2aba3",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "allow-1"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "d07367b229d14152ba69a89555963e34",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "deny-1"
+    },
+    {
+      "kind": "automatic_review",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "guardian",
+      "paid_inference": true,
+      "request_id": "013ee340cf7742409f35f64933924f23",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 5.734,
+      "first_delta_ms": 6.52,
+      "completed_ms": 6.537,
+      "decision": "deny",
+      "started_ms": 69.423,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "review_tool_calls": 0,
+      "assessment_source": "completed_output",
+      "ended_ms": 76.572,
+      "case_id": "deny-1"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "8da889a44444498c8a1c5b4fe148063e",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "deny-1"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "cfdab6c7b4684672a71ff24afdc987f3",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "allow-2"
+    },
+    {
+      "kind": "automatic_review",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "guardian",
+      "paid_inference": true,
+      "request_id": "c1274e62dfff485f9438f592b79d1d71",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 5.901,
+      "first_delta_ms": 6.218,
+      "completed_ms": 6.233,
+      "decision": "allow",
+      "started_ms": 71.068,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "review_tool_calls": 0,
+      "assessment_source": "completed_output",
+      "ended_ms": 77.867,
+      "case_id": "allow-2"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "94e9391f7f6c4b82ac1bc46ade6e4427",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "allow-2"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "4eaedd8072cd401c9046f12a0f01a962",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "deny-2"
+    },
+    {
+      "kind": "automatic_review",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "guardian",
+      "paid_inference": true,
+      "request_id": "ecb0238c47484e0f8039ed101ac105f0",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 6.51,
+      "first_delta_ms": 7.332,
+      "completed_ms": 7.666,
+      "decision": "deny",
+      "started_ms": 65.312,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "review_tool_calls": 0,
+      "assessment_source": "completed_output",
+      "ended_ms": 73.557,
+      "case_id": "deny-2"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "0dfb7138955b40d8b00178f72a44a3bc",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "deny-2"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "228dbe77a08543ff9eafb752f1366af1",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "allow-3"
+    },
+    {
+      "kind": "automatic_review",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "guardian",
+      "paid_inference": true,
+      "request_id": "9c95eb0eacfd4f7085410fafe9a15fa7",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 5.993,
+      "first_delta_ms": 6.676,
+      "completed_ms": 6.689,
+      "decision": "allow",
+      "started_ms": 67.909,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "review_tool_calls": 0,
+      "assessment_source": "completed_output",
+      "ended_ms": 75.131,
+      "case_id": "allow-3"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "0c79a9c404a3402bbbd76d96923d31a8",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "allow-3"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "e9db49b1f36f424e81a24f56a9bb34d6",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "deny-3"
+    },
+    {
+      "kind": "automatic_review",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "guardian",
+      "paid_inference": true,
+      "request_id": "9354b1d3f696413fab01a6b363cf8acb",
+      "tool_results": 0,
+      "completed": true,
+      "text_deltas": 2,
+      "tool_deltas": 0,
+      "headers_ms": 5.266,
+      "first_delta_ms": 6.274,
+      "completed_ms": 6.959,
+      "decision": "deny",
+      "started_ms": 73.104,
+      "stage": "client_write",
+      "usage": {
+        "input_tokens": 100,
+        "output_tokens": 20
+      },
+      "review_tool_calls": 0,
+      "assessment_source": "completed_output",
+      "ended_ms": 80.608,
+      "case_id": "deny-3"
+    },
+    {
+      "kind": "synthetic_task",
+      "status": 200,
+      "model": "zai-org/GLM-5.3-Flash",
+      "role": "main",
+      "paid_inference": false,
+      "request_id": "8def608141ad4e30b8149d3bd318dab6",
+      "completed": false,
+      "text_deltas": 0,
+      "tool_deltas": 0,
+      "first_delta_ms": null,
+      "completed_ms": null,
+      "case_id": "deny-3"
+    }
+  ],
+  "cost": {
+    "main": {
+      "model": "zai-org/GLM-5.3-Flash",
+      "paid_requests": 12,
+      "measured_requests": 12,
+      "input_tokens_observed": 1200,
+      "output_tokens_observed": 240,
+      "complete": true,
+      "estimated_usd": 0.0003,
+      "known_subtotal_usd": 0.0003,
+      "prices": {
+        "input_usd_per_million": 0.15,
+        "output_usd_per_million": 0.5,
+        "date": "2026-09-23",
+        "source": "controlled fixture"
+      }
+    },
+    "guardian": {
+      "model": "zai-org/GLM-5.3-Flash",
+      "paid_requests": 6,
+      "measured_requests": 6,
+      "input_tokens_observed": 600,
+      "output_tokens_observed": 120,
+      "complete": true,
+      "estimated_usd": 0.00015,
+      "known_subtotal_usd": 0.00015,
+      "prices": {
+        "input_usd_per_million": 0.15,
+        "output_usd_per_million": 0.5,
+        "date": "2026-09-23",
+        "source": "controlled fixture"
+      }
+    }
+  },
+  "native_attempts": 30,
+  "roles": {
+    "main": {
+      "passed": 3,
+      "failed": 0,
+      "incomplete": 0,
+      "blocked": 0,
+      "unattempted": 0
+    },
+    "guardian": {
+      "passed": 6,
+      "failed": 0,
+      "incomplete": 0,
+      "blocked": 0,
+      "unattempted": 0
+    }
+  },
+  "auxiliary_attempts": 0,
+  "missing_measurements": [
+    "pure_provider_compute_ms",
+    "generated_title_quality"
+  ]
+}

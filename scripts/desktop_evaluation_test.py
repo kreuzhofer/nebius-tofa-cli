@@ -357,6 +357,80 @@ class DesktopEvaluationTests(unittest.TestCase):
 
 
 
+class CodingDeadlineTests(unittest.TestCase):
+    def test_extended_deadline_reaches_observer_turn_and_process_wait(self):
+        from types import SimpleNamespace
+        import desktop_evaluation as evaluation
+        from unittest.mock import MagicMock
+        manifest, fingerprint = evaluation.effective_manifest(360)
+        self.assertEqual(manifest['limits']['coding_request_seconds'], 360)
+        self.assertEqual(manifest['limits']['coding_turn_seconds'], 360)
+        self.assertEqual(manifest['limits']['approval_turn_seconds'], 120)
+        self.assertEqual(manifest['limits']['native_review_seconds'], 90)
+        baseline, baseline_fingerprint = evaluation.effective_manifest(180)
+        self.assertNotEqual(fingerprint, baseline_fingerprint)
+        self.assertEqual(baseline, evaluation.read(evaluation.MANIFEST))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'workspace').mkdir()
+            app, config = evaluation.bundle(root, '/engine', 'zai-org/GLM-5.3-Flash', manifest['limits'])
+            state = {'case': 'coding', 'observations': str(root / 'requests.json'), 'result': str(root / 'result.json')}
+            evaluation.save(config['state'], state)
+            process = MagicMock()
+            process.wait.return_value = 0
+            options = SimpleNamespace(launcher='/launcher', model=config['model'], evidence={'manifest': manifest})
+            with patch('desktop_evaluation.subprocess.Popen', return_value=process):
+                evaluation.launch(options, root, app, state)
+            process.wait.assert_called_once_with(timeout=420)
+            with patch.dict(os.environ, TOFA_API_KEY='synthetic', TOFA_DESKTOP_CONTEXT='synthetic'), patch(
+                    'desktop_evaluation.EvaluationProxy') as proxy, patch('desktop_evaluation.subprocess.call'):
+                proxy.return_value.__enter__.return_value.url = 'http://127.0.0.1:2'
+                evaluation.observe(config, ['model_providers.nebius-tofa.base_url="http://127.0.0.1:1"'])
+            self.assertEqual(proxy.call_args.args[5], 360)
+            engine = MagicMock()
+            engine.call.side_effect = [{'thread': {'id': 'thread'}, 'model': config['model'], 'modelProvider': 'nebius-tofa'}, {'turn': {'id': 'turn'}}]
+            engine.receive.return_value = {'method': 'turn/completed', 'params': {'threadId': 'thread', 'turn': {'status': 'completed'}}}
+            profile = root / 'profile'; profile.mkdir()
+            with patch.dict(os.environ, CODEX_ELECTRON_USER_DATA_PATH=str(profile), CODEX_CLI_PATH='/bridge'), patch(
+                    'desktop_evaluation.Engine', return_value=engine), patch('desktop_evaluation.time.monotonic', return_value=100):
+                evaluation.desktop(config)
+            self.assertEqual(engine.call.call_args_list[1].args[2], 460)
+            engine.receive.assert_called_once_with(460)
+
+    def test_extended_observer_accepts_360_but_rejects_larger_deadlines(self):
+        from evaluation_proxy import EvaluationProxy
+        with tempfile.TemporaryDirectory() as temporary:
+            with EvaluationProxy('http://127.0.0.1:1', 'synthetic', Path(temporary) / 'requests.json', None, 'coding', 360):
+                pass
+            with self.assertRaises(ValueError):
+                EvaluationProxy('http://127.0.0.1:1', 'synthetic', Path(temporary) / 'requests.json', None, 'coding', 361)
+
+
+class CaseFailureTests(unittest.TestCase):
+    def test_failed_relaunch_without_turn_result_is_recorded_without_raising(self):
+        from types import SimpleNamespace
+        import desktop_evaluation as evaluation
+        entry = {'id': 'coding-1', 'kind': 'coding', 'status': 'unattempted'}
+        options = SimpleNamespace(codex='/engine', model='moonshotai/Kimi-K3',
+            evidence={'manifest': evaluation.read(evaluation.MANIFEST), 'cases': [entry]})
+        def failed_relaunch(options, root, app, state):
+            if state['resume']:
+                return {'turn_completed': False, 'client_error': True, 'exit_code': 1}
+            (root / 'workspace/summary.json').write_text('{"count":4,"total":18,"max":9}')
+            evaluation.save(state['observations'], [{'completed': True, 'status': 200,
+                'text_deltas': 2, 'tool_results': 1}])
+            return {'turn_completed': True, 'client_error': False, 'tools_succeeded': 1,
+                    'tools_failed': 0, 'same_session': False}
+        with tempfile.TemporaryDirectory() as temporary, patch('desktop_evaluation.bundle',
+                return_value=('/app', {})), patch('desktop_evaluation.launch', side_effect=failed_relaunch):
+            evaluation.case(options, Path(temporary), entry)
+        self.assertEqual(entry['status'], 'failed')
+        self.assertTrue(entry['turns'][0]['passed'])
+        self.assertFalse(entry['turns'][1]['passed'])
+        self.assertFalse(entry['same_session'])
+        self.assertTrue(entry['scratch_credentials_preserved'])
+
+
 class FileDiagnosticsTests(unittest.TestCase):
     def test_distinguishes_wrong_output_from_changed_input_without_raw_content(self):
         from desktop_evaluation import file_diagnostics

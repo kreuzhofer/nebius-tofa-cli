@@ -238,6 +238,8 @@ def main():
     mode.add_argument('--desktop-report', help='rebuild a durable desktop run report; no inference')
     mode.add_argument('--launcher', help='built launcher; live evaluation using saved login')
     parser.add_argument('--desktop', action='store_true', help='evaluate the real desktop engine through the launcher')
+    parser.add_argument('--coding-timeout', type=int, choices=(180, 360), default=180,
+                        help='desktop evaluation coding request/turn deadline in seconds; default 180')
     parser.add_argument('--campaign', help='directory retaining independent desktop runs and observations')
     parser.add_argument('--qualification-evidence', help='matching passing controlled desktop report required before live inference')
     parser.add_argument('--metadata-snapshot', help='normalized controlled-provider metadata fixture')
@@ -249,6 +251,8 @@ def main():
     parser.add_argument('--output', required=True, help='new sanitized evaluation JSON')
     options = parser.parse_args()
     options.guardian_model = ('zai-org/GLM-5.3-Flash' if options.desktop else options.model) if options.guardian_model is None else options.guardian_model
+    if options.coding_timeout != 180 and not options.desktop:
+        parser.error('--coding-timeout requires --desktop')
     output = Path(options.output)
     if output.exists() or not output.parent.is_dir():
         parser.error('output must be a new file in an existing directory')

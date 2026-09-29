@@ -1,0 +1,28 @@
+{
+  "coding_deadline_regressions": {
+    "passed": 2
+  },
+  "evaluation_proxy_tests": {
+    "passed": 13
+  },
+  "model_evaluation_tests": {
+    "passed": 34
+  },
+  "desktop_evaluation_suite": {
+    "passed": 19,
+    "failed": 1,
+    "failure": "test_restart_report_does_not_replay_or_double_count_attempts: controlled invocation returned 1; initial temporary report not retained"
+  },
+  "isolated_failure_recheck": {
+    "passed": 1,
+    "seconds": 59.249,
+    "notes": "Passed with retained controlled evidence; transient initial failure cause not established."
+  },
+  "post_run_failed_relaunch_regression": {
+    "red": "KeyError: same_session",
+    "passed": 1
+  },
+  "file_diagnostics_tests": {
+    "passed": 2
+  }
+}

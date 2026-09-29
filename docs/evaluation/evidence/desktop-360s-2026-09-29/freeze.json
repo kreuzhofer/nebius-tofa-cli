@@ -1,0 +1,19 @@
+{
+  "base_commit": "7a26ec9d29c98a94f8cb81e58a0dcf5cba03e2f1",
+  "capsule": ".qualification/desktop-360s-2026-09-29",
+  "source_patch_sha256": "56bef6067c93f4f797b9035bf686383f76763737d26bd784e2b7f8b7cebd99c3",
+  "launcher_sha256": "3c4a7f730abdb679aca9b95369eb278da5d4a138b94d7ba7a20876724c78bf1b",
+  "engine_sha256": "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
+  "arguments": [
+    "--desktop",
+    "--coding-timeout",
+    "360"
+  ],
+  "notes": "Full baseline; coding request and turn deadlines doubled; Guardian and all other limits unchanged. Separate campaign condition; no support promotion.",
+  "post_run_changes": {
+    "patch": "post-run-launch-failure.patch",
+    "sha256": "e6d2b9a1100ca36791c27bd969cb6312046ea5cebb75d9a7a9d1e3f2bd131716",
+    "included_in_live_capsule": false,
+    "purpose": "Handle failed relaunch result without KeyError; regression reproduced then passed. Does not revise prior evidence."
+  }
+}

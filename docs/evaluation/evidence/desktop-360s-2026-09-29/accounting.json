@@ -1,0 +1,9 @@
+{
+  "paid_requests": 21,
+  "measured_requests": 20,
+  "input_tokens_observed": 187934,
+  "output_tokens_observed": 3379,
+  "known_subtotal_usd": 0.30156735,
+  "synthetic_observations": 2,
+  "complete_cost": false
+}

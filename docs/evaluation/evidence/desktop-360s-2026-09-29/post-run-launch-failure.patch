@@ -1,0 +1,45 @@
+--- a/scripts/desktop_evaluation.py
++++ b/scripts/desktop_evaluation.py
+@@ -352,7 +352,7 @@
+                 save(run / 'run.json', options.evidence)
+                 if not result['passed']:
+                     break
+-            entry['same_session'] = len(entry['turns']) == 2 and entry['turns'][1]['same_session']
++            entry['same_session'] = len(entry['turns']) == 2 and entry['turns'][1].get('same_session', False)
+             entry['status'] = 'passed' if entry['same_session'] and all(t['passed'] for t in entry['turns']) else 'failed'
+         else:
+             state = {'case': entry['kind'], 'observations': str(path / 'requests-0.json'),
+--- a/scripts/desktop_evaluation_test.py
++++ b/scripts/desktop_evaluation_test.py
+@@ -406,6 +406,31 @@
+                 EvaluationProxy('http://127.0.0.1:1', 'synthetic', Path(temporary) / 'requests.json', None, 'coding', 361)
+ 
+ 
++class CaseFailureTests(unittest.TestCase):
++    def test_failed_relaunch_without_turn_result_is_recorded_without_raising(self):
++        from types import SimpleNamespace
++        import desktop_evaluation as evaluation
++        entry = {'id': 'coding-1', 'kind': 'coding', 'status': 'unattempted'}
++        options = SimpleNamespace(codex='/engine', model='moonshotai/Kimi-K3',
++            evidence={'manifest': evaluation.read(evaluation.MANIFEST), 'cases': [entry]})
++        def failed_relaunch(options, root, app, state):
++            if state['resume']:
++                return {'turn_completed': False, 'client_error': True, 'exit_code': 1}
++            (root / 'workspace/summary.json').write_text('{"count":4,"total":18,"max":9}')
++            evaluation.save(state['observations'], [{'completed': True, 'status': 200,
++                'text_deltas': 2, 'tool_results': 1}])
++            return {'turn_completed': True, 'client_error': False, 'tools_succeeded': 1,
++                    'tools_failed': 0, 'same_session': False}
++        with tempfile.TemporaryDirectory() as temporary, patch('desktop_evaluation.bundle',
++                return_value=('/app', {})), patch('desktop_evaluation.launch', side_effect=failed_relaunch):
++            evaluation.case(options, Path(temporary), entry)
++        self.assertEqual(entry['status'], 'failed')
++        self.assertTrue(entry['turns'][0]['passed'])
++        self.assertFalse(entry['turns'][1]['passed'])
++        self.assertFalse(entry['same_session'])
++        self.assertTrue(entry['scratch_credentials_preserved'])
++
++
+ class FileDiagnosticsTests(unittest.TestCase):
+     def test_distinguishes_wrong_output_from_changed_input_without_raw_content(self):
+         from desktop_evaluation import file_diagnostics

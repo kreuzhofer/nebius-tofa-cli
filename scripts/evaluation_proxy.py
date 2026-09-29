@@ -48,7 +48,7 @@ class EvaluationProxy:
         if (target.scheme != 'http' or target.hostname != '127.0.0.1' or not target.port
                 or target.path or target.query or target.fragment or target.username):
             raise ValueError('expected launcher loopback adapter')
-        if case not in ('coding', 'allow', 'deny') or not 1 <= timeout <= 180:
+        if case not in ('coding', 'allow', 'deny') or not 1 <= timeout <= (360 if case == 'coding' else 180):
             raise ValueError('unsupported evaluation case or deadline')
         self.report = Path(report)
         self.budget = Path(budget) if budget is not None else None
