@@ -1,0 +1,19 @@
+{
+  "issue": 63,
+  "prior_issue": 62,
+  "prior_freeze": "docs/evaluation/evidence/desktop-first-pair-2026-09-29/final/freeze.json",
+  "prior_freeze_sha256": "1c3d8d7ce70e4841083e6bcb3622479f72de75cadd4674ecfce55889f188d8a7",
+  "prior_campaign": "docs/evaluation/evidence/desktop-first-pair-2026-09-29/campaign.json",
+  "prior_campaign_sha256": "cfcbd56b521c70e16b49b799e23e2ea1e44fe16f26736b6dd8c0356a0677c61f",
+  "source_and_artifacts": ".qualification/desktop-2026-09-29-v2",
+  "live_order": [
+    "zai-org/GLM-5.3-Flash",
+    "zai-org/GLM-5.3",
+    "nvidia/Nemotron-3-Ultra-550b-a55b"
+  ],
+  "guardian": "zai-org/GLM-5.3-Flash",
+  "conditions": "Use the prior final freeze without changes; refresh availability, exact metadata and prices per invocation.",
+  "live_execution": "Sequential; no retries added by evaluator; no active desktop interruption.",
+  "test_seams": "Existing public evaluator and installed bundled-engine boundaries confirmed in #54; no implementation changes.",
+  "local_test_load": "The controlled-provider regression overlapped part of GLM Flash live baseline; local load was not measured. Full suites started after all live baselines finished."
+}
