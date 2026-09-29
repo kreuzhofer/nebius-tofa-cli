@@ -1,6 +1,6 @@
 # Experimental Codex desktop launch
 
-Source-build feature for [#32](https://github.com/kreuzhofer/nebius-tofa-cli/issues/32);
+Source-build feature for [#32](https://github.com/kreuzhofer/tofa-launcher/issues/32);
 not included in v0.1.0-rc.2.
 
 The production implementation uses **one ordinary desktop profile and history**.
@@ -120,7 +120,7 @@ tofa launch codex-desktop --model zai-org/GLM-5.3-Flash --allow-unverified
 Reopen the original conversation. Having its main available as the previous
 launch's Guardian did not authorize it as a conversation route. Deliberate changes
 to a conversation's main remain a separate follow-up in
-[#55](https://github.com/kreuzhofer/nebius-tofa-cli/issues/55).
+[#55](https://github.com/kreuzhofer/tofa-launcher/issues/55).
 See the [controlled recovery checks](evaluation/desktop-recovery-2026-09-28.md)
 for tested model/failure combinations and coverage limits.
 
@@ -269,9 +269,9 @@ three review attempts for an invalid assessment and four for a 503 stream failur
 the adapter adds no retries, replay, fallback, or deadline extension. These native
 attempts must be counted separately during later paid qualification.
 
-The [#46](https://github.com/kreuzhofer/nebius-tofa-cli/issues/46) catalog behavior
+The [#46](https://github.com/kreuzhofer/tofa-launcher/issues/46) catalog behavior
 is integrated with the ordinary profile by
-[#47](https://github.com/kreuzhofer/nebius-tofa-cli/issues/47).
+[#47](https://github.com/kreuzhofer/tofa-launcher/issues/47).
 The [#50 qualification](releases/desktop-shared-history-final-2026-09-24.md)
 records authorized live-account checks of native picker/full-descriptor parity,
 fresh catalog resolution on relaunch, native continuation, account/onboarding

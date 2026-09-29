@@ -43,7 +43,7 @@ Codex may itself retry a Guardian assessment; every upstream request counts and
 remains in the evidence. Incomplete and failed attempts stay in denominators.
 
 The maintainer explicitly authorized the expanded five-model campaign without a
-Token Factory currency cap ([agreed specification #36](https://github.com/kreuzhofer/nebius-tofa-cli/issues/36)). Hard operational limits remain: **48 upstream requests across the
+Token Factory currency cap ([agreed specification #36](https://github.com/kreuzhofer/tofa-launcher/issues/36)). Hard operational limits remain: **48 upstream requests across the
 whole run, 1 MiB per input body, 4,096 output tokens per request, 8 MiB per response,
 256 KiB per SSE event**. The evaluator adds `max_output_tokens`; this is an
 observable evaluation condition, not a production launcher change. The provider's

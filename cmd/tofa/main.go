@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
-	"github.com/kreuzhofer/nebius-tofa-cli/scripts"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/scripts"
 	"os"
 	"os/exec"
 	"path/filepath"

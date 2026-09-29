@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 )
 
 // Kill the actual launcher process: cancelling an in-process context cannot

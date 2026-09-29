@@ -1,6 +1,6 @@
 param([string]$Version='latest', [switch]$NoModifyPath)
 $ErrorActionPreference='Stop'
-$Repo='kreuzhofer/nebius-tofa-cli'
+$Repo='kreuzhofer/tofa-launcher'
 if ($Version -notmatch '^[A-Za-z0-9._-]+$') { throw 'Invalid release tag' }
 $Root=Join-Path $env:LOCALAPPDATA 'tofa\install'
 if ($env:TOFA_INSTALL_DIR) {$Root=$env:TOFA_INSTALL_DIR}

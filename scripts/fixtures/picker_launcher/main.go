@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 )
 
 type failingTerminal struct{}

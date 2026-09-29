@@ -5,7 +5,7 @@ package tofa_test
 import (
 	"bytes"
 	"context"
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 	"net"
 	"net/http"
 	"net/http/httptest"

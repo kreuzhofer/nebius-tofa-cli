@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/godbus/dbus/v5"
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 	"github.com/zalando/go-keyring"
 )
 

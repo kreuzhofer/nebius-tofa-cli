@@ -2,8 +2,8 @@
 
 Codex CLI and Codex desktop share this launch interaction. New target integrations
 must provide their own validation and evidence; implementing Claude remains in
-[#30](https://github.com/kreuzhofer/nebius-tofa-cli/issues/30) and
-[#31](https://github.com/kreuzhofer/nebius-tofa-cli/issues/31).
+[#30](https://github.com/kreuzhofer/tofa-launcher/issues/30) and
+[#31](https://github.com/kreuzhofer/tofa-launcher/issues/31).
 
 1. Interactive bare launches first select a target client (Codex CLI or Codex
    desktop) through the same terminal UI, before credentials/catalog discovery.

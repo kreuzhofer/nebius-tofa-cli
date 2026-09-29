@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 )
 
 func TestMain(tests *testing.M) {

@@ -54,9 +54,11 @@ import json, os, pathlib, shutil, sys
 if os.environ["FIXTURE_MODE"] == "download_failure": sys.exit(1)
 args = sys.argv[1:]
 if args[0] == 'api':
+    assert args[1].startswith('repos/kreuzhofer/tofa-launcher/'), args
     if '/commits/' in args[1]: print(json.dumps({'sha': '1234567890abcdef1234567890abcdef12345678'}))
     else: print(json.dumps({'tag_name':'v0.1.0-rc.1','draft':False,'prerelease':True}))
 else:
+    assert args[args.index('--repo')+1] == 'kreuzhofer/tofa-launcher', args
     target = pathlib.Path(args[args.index('--dir')+1])
     for name in ('install.sh','uninstall.sh','SHA256SUMS'):
         shutil.copyfile(pathlib.Path(os.environ['FIXTURE_ASSETS'])/name, target/name)

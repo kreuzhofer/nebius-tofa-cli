@@ -3,7 +3,7 @@
 A standalone CLI that launches an **already installed Codex CLI** against
 Nebius Token Factory. It does not run models locally or install Codex.
 
-The current release is [v0.1.0-rc.2](https://github.com/kreuzhofer/nebius-tofa-cli/releases/tag/v0.1.0-rc.2),
+The current release is [v0.1.0-rc.2](https://github.com/kreuzhofer/tofa-launcher/releases/tag/v0.1.0-rc.2),
 an experimental prerelease. The repository and release downloads are public;
 no GitHub account is needed to install.
 
@@ -40,7 +40,7 @@ and a Token Factory API key and project ID are required to launch Codex.
 
 ```sh
 version=v0.1.0-rc.2
-curl -fsSL "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version/install.sh" -o install.sh &&
+curl -fsSL "https://github.com/kreuzhofer/tofa-launcher/releases/download/$version/install.sh" -o install.sh &&
   sh install.sh --version "$version"
 ```
 
@@ -59,7 +59,7 @@ AMD64 or ARM64 host, including when PowerShell runs under emulation.
 
 ```powershell
 $Version = 'v0.1.0-rc.2'
-$Installer = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/install.ps1" -ErrorAction Stop
+$Installer = Invoke-RestMethod "https://github.com/kreuzhofer/tofa-launcher/releases/download/$Version/install.ps1" -ErrorAction Stop
 & ([scriptblock]::Create($Installer)) -Version $Version
 ```
 
@@ -104,7 +104,7 @@ installer with the downloaded assets:
 ```sh
 version=v0.1.0-rc.2
 release_dir=$(mktemp -d)
-gh release download "$version" --repo kreuzhofer/nebius-tofa-cli --dir "$release_dir" &&
+gh release download "$version" --repo kreuzhofer/tofa-launcher --dir "$release_dir" &&
   (cd "$release_dir" && shasum -a 256 -c SHA256SUMS) &&
   TOFA_RELEASE_BASE_URL="file://$release_dir" sh "$release_dir/install.sh" --version "$version"
 ```
@@ -118,7 +118,7 @@ are finished using this executable; replace `amd64` with `arm64` for Windows ARM
 $Version = 'v0.1.0-rc.2'
 $Asset = "tofa_${Version}_windows_amd64.exe"
 $Download = Join-Path $env:TEMP ([guid]::NewGuid().ToString('N'))
-gh release download $Version --repo kreuzhofer/nebius-tofa-cli --dir $Download --pattern $Asset --pattern SHA256SUMS
+gh release download $Version --repo kreuzhofer/tofa-launcher --dir $Download --pattern $Asset --pattern SHA256SUMS
 if ($LASTEXITCODE -ne 0) { throw 'Release download failed' }
 $Lines = @(Select-String -Path (Join-Path $Download 'SHA256SUMS') -Pattern ('^[0-9a-f]{64}  ' + [regex]::Escape($Asset) + '$'))
 if ($Lines.Count -ne 1) { throw 'Missing or ambiguous checksum' }
@@ -374,7 +374,7 @@ Evaluation tools retain their explicit same-model default and the internal flag.
 The desktop picker uses desktop evidence; CLI qualification never becomes desktop
 support by inference. See the [universal picker contract](docs/model-picker.md)
 for future target integrations.
-See [the metadata research](https://github.com/kreuzhofer/nebius-tofa-cli/blob/03d47a502c09debc36a2072c3aa3a929beb6c38d/docs/research/kimi-provider-metadata.md)
+See [the metadata research](https://github.com/kreuzhofer/tofa-launcher/blob/03d47a502c09debc36a2072c3aa3a929beb6c38d/docs/research/kimi-provider-metadata.md)
 for the provider snapshot and remaining gaps.
 
 ## Credentials and preferences
@@ -503,7 +503,7 @@ The standalone harness records sanitized request metadata, status and timing;
 the released executable has no `--debug` flag. Traces must be enabled for a new
 run and cannot reconstruct earlier conversations.
 
-Design decisions: [Wayfinder map](https://github.com/kreuzhofer/nebius-tofa-cli/issues/1).
+Design decisions: [Wayfinder map](https://github.com/kreuzhofer/tofa-launcher/issues/1).
 Dependencies and reuse: [third-party notices](docs/prototype/THIRD_PARTY.md).
 
 ## Uninstallation
@@ -539,7 +539,7 @@ This works even if the installed binary is broken:
 
 ```sh
 version=v0.1.0-rc.2 # use the installed version, shown by tofa --version
-curl -fsSL "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version/uninstall.sh" -o uninstall.sh &&
+curl -fsSL "https://github.com/kreuzhofer/tofa-launcher/releases/download/$version/uninstall.sh" -o uninstall.sh &&
   sh uninstall.sh
 ```
 
@@ -553,7 +553,7 @@ This works even if the installed binary is broken:
 
 ```powershell
 $Version = 'v0.1.0-rc.2' # use the installed version, shown by tofa --version
-$Uninstaller = Invoke-RestMethod "https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$Version/uninstall.ps1" -ErrorAction Stop
+$Uninstaller = Invoke-RestMethod "https://github.com/kreuzhofer/tofa-launcher/releases/download/$Version/uninstall.ps1" -ErrorAction Stop
 & ([scriptblock]::Create($Uninstaller))
 ```
 

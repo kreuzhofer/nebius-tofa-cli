@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 )
 
 func TestDesktopLifecycleRefusesActiveOwner(t *testing.T) {

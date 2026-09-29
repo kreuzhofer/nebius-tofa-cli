@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 )
 
 func adapterFixture(t *testing.T, upstream http.HandlerFunc, client func(string, string) error) (*tofa.App, *bytes.Buffer) {

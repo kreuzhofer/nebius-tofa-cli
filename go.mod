@@ -1,4 +1,4 @@
-module github.com/kreuzhofer/nebius-tofa-cli
+module github.com/kreuzhofer/tofa-launcher
 
 go 1.26.0
 

@@ -4,7 +4,7 @@ These runners qualify the **Codex CLI** release lifecycle. They do not qualify t
 shared desktop UI or ordinary desktop account continuity. The separate
 [#50 shared-history qualification](desktop-shared-history-final-2026-09-24.md) records
 the source candidate, passing desktop workflow checks and retained limitations
-for [desktop prerelease tracking #35](https://github.com/kreuzhofer/nebius-tofa-cli/issues/35).
+for [desktop prerelease tracking #35](https://github.com/kreuzhofer/tofa-launcher/issues/35).
 The subsequent [#52 automatic-title qualification](../research/desktop-shared-title-generation.md)
 records current-client generation, failed attempts and ordinary/tofa title
 persistence. It supplements #50's original `not_observed` result without changing
@@ -45,7 +45,7 @@ python3 scripts/qualify_macos.py \
   --output "$HOME/tofa-macos-rc2-$(date +%Y%m%d-%H%M%S).json"
 ```
 
-If you need a checkout first, use `gh repo clone kreuzhofer/nebius-tofa-cli` and
+If you need a checkout first, use `gh repo clone kreuzhofer/tofa-launcher` and
 enter the resulting directory. Keep the runner checkout/commit recorded with your
 attached report. The tag selects the candidate automatically; no commit copying
 is needed. The runner resolves its commit via GitHub metadata, verifies all
@@ -94,7 +94,7 @@ the destination directory's Windows ACL on Windows),
 before changing account state, and fills them with evidence when the run ends.
 It rejects unwritable destinations and refuses to overwrite earlier evidence. Exit zero requires every lifecycle
 stage, preservation assertion and final cleanup assertion to pass. Attach both
-files to [the real-machine validation issue](https://github.com/kreuzhofer/nebius-tofa-cli/issues/23)
+files to [the real-machine validation issue](https://github.com/kreuzhofer/tofa-launcher/issues/23)
 yourself. A failed or interrupted run is evidence, too; retain it alongside reruns.
 
 The live assertions reuse the [Codex compatibility harness](../prototype/LIVE-COMPATIBILITY.md):

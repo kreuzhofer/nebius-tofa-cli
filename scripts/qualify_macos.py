@@ -21,7 +21,7 @@ from types import SimpleNamespace
 import live_compat
 from release import prerelease
 
-REPOSITORY = "kreuzhofer/nebius-tofa-cli"
+REPOSITORY = "kreuzhofer/tofa-launcher"
 CONFIG_OWNED = frozenset({"config.yml", "credentials.yml", ".auth-lock"})
 INSTALL_OWNED = frozenset({"bin/tofa", ".path-files", ".tofa-install"})
 STAGES = ("preflight", "recovery", "download", "install", "login", "fresh_terminal",

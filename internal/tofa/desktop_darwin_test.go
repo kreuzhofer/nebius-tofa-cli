@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 )
 
 // A real executable fixture exercises the bundle, app-server protocol, environment,

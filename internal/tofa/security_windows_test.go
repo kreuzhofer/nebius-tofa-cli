@@ -2,7 +2,7 @@ package tofa_test
 
 import (
 	"bytes"
-	"github.com/kreuzhofer/nebius-tofa-cli/internal/tofa"
+	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
 	"golang.org/x/sys/windows"
 	"path/filepath"
 	"testing"

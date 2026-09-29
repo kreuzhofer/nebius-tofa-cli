@@ -14,7 +14,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kreuzhofer/nebius-tofa-cli/scripts"
+	"github.com/kreuzhofer/tofa-launcher/scripts"
 )
 
 // The installer and uninstaller use the same lease as desktop launches. It

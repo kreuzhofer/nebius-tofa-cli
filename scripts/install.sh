@@ -27,11 +27,11 @@ if [ -d "$root" ] && [ ! -f "$root/.tofa-install" ]; then
 fi
 if [ -f "$root/.tofa-install" ]; then [ "$(cat "$root/.tofa-install")" = tofa-install-v1 ] || fail 'unknown install manifest'; fi
 if [ "$version" = latest ]; then
- version=$(curl -fsSL --proto '=https' https://api.github.com/repos/kreuzhofer/nebius-tofa-cli/releases/latest | sed -n 's/.*"tag_name": *"\([A-Za-z0-9._-]*\)".*/\1/p')
+ version=$(curl -fsSL --proto '=https' https://api.github.com/repos/kreuzhofer/tofa-launcher/releases/latest | sed -n 's/.*"tag_name": *"\([A-Za-z0-9._-]*\)".*/\1/p')
  [ -n "$version" ] || fail 'no published release found; select an existing --version'
 fi
 asset="tofa_${version}_${platform}_${arch}"
-base=${TOFA_RELEASE_BASE_URL:-"https://github.com/kreuzhofer/nebius-tofa-cli/releases/download/$version"}
+base=${TOFA_RELEASE_BASE_URL:-"https://github.com/kreuzhofer/tofa-launcher/releases/download/$version"}
 work=$(mktemp -d);trap 'rm -rf "$work"' EXIT HUP INT TERM
 curl -fsSL --proto '=https,file' --proto-redir '=https' "$base/$asset" -o "$work/tofa"
 curl -fsSL --proto '=https,file' --proto-redir '=https' "$base/SHA256SUMS" -o "$work/SHA256SUMS"

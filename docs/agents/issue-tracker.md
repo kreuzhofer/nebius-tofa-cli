@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Issues and specs live in GitHub Issues for kreuzhofer/nebius-tofa-cli.
+Issues and specs live in GitHub Issues for kreuzhofer/tofa-launcher.
 Use the `gh` CLI from this clone; it infers the repository from the remote.
 
 ## Conventions
