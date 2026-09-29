@@ -159,9 +159,13 @@ def score(evidence):
             **role_report(evidence, [])}
 
 
-def request_cost(records, model):
+_BUNDLED_RATES = object()
+
+
+def request_cost(records, model, rates=_BUNDLED_RATES):
     from evaluation_candidates import prices
-    rates = prices(model)
+    if rates is _BUNDLED_RATES:
+        rates = prices(model)
     paid = [r for r in records if r.get('paid_inference', r.get('kind') != 'synthetic_task')]
     known = []
     inputs = outputs = 0

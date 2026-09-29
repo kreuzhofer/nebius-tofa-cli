@@ -9,6 +9,7 @@ import platform
 import re
 import shlex
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
@@ -234,16 +235,39 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--score', help='sanitized live_compat JSON evidence; no inference')
     mode.add_argument('--select-guardian', nargs='+', help='individual evaluation reports; offline selection only')
+    mode.add_argument('--desktop-report', help='rebuild a durable desktop run report; no inference')
     mode.add_argument('--launcher', help='built launcher; live evaluation using saved login')
+    parser.add_argument('--desktop', action='store_true', help='evaluate the real desktop engine through the launcher')
+    parser.add_argument('--campaign', help='directory retaining independent desktop runs and observations')
+    parser.add_argument('--qualification-evidence', help='matching passing controlled desktop report required before live inference')
+    parser.add_argument('--metadata-snapshot', help='normalized controlled-provider metadata fixture')
+    parser.add_argument('--cancel-review', action='store_true', help='diagnostic: interrupt the first native review')
+    parser.add_argument('--diagnostic', help='separate diagnostic identifier; never merged into baseline')
     parser.add_argument('--model', default=live.MODEL, help='exact shortlisted candidate ID; default preserves Kimi invocation')
     parser.add_argument('--guardian-model', help='exact Guardian candidate ID; defaults explicitly to --model')
     parser.add_argument('--codex', default=shutil.which('codex'))
     parser.add_argument('--output', required=True, help='new sanitized evaluation JSON')
     options = parser.parse_args()
-    options.guardian_model = options.model if options.guardian_model is None else options.guardian_model
+    options.guardian_model = ('zai-org/GLM-5.3-Flash' if options.desktop else options.model) if options.guardian_model is None else options.guardian_model
     output = Path(options.output)
     if output.exists() or not output.parent.is_dir():
         parser.error('output must be a new file in an existing directory')
+    if options.desktop_report:
+        from desktop_evaluation import report
+        live.write_json(output, report(Path(options.desktop_report)))
+        return 0
+    if options.desktop:
+        if not options.launcher or not options.campaign:
+            parser.error('--desktop requires --launcher and --campaign')
+        if options.diagnostic and not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,63}', options.diagnostic):
+            parser.error('--diagnostic must be a short lowercase identifier')
+        if options.cancel_review and not options.diagnostic:
+            parser.error('--cancel-review requires --diagnostic')
+        from desktop_evaluation import evaluate as desktop_evaluate
+        def interrupted(*_):
+            raise KeyboardInterrupt
+        signal.signal(signal.SIGTERM, interrupted)
+        return desktop_evaluate(options)
     if options.select_guardian:
         reports = [json.loads(Path(path).read_text()) for path in options.select_guardian]
         live.write_json(output, select_guardian(reports))

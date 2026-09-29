@@ -9,8 +9,10 @@ import http.server
 import json
 from pathlib import Path
 import socket
+import select
 import threading
 import time
+import uuid
 from urllib.parse import urlsplit
 
 from live_compat import LoopbackServer, MODEL
@@ -48,8 +50,9 @@ class EvaluationProxy:
             raise ValueError('expected launcher loopback adapter')
         if case not in ('coding', 'allow', 'deny') or not 1 <= timeout <= 180:
             raise ValueError('unsupported evaluation case or deadline')
-        self.records = []
-        self.report, self.budget = Path(report), Path(budget)
+        self.report = Path(report)
+        self.budget = Path(budget) if budget is not None else None
+        self.records = json.loads(self.report.read_text()) if self.report.exists() else []
         self.lock = threading.Lock()
         self.primary_calls = 0
         self.started = time.monotonic()
@@ -62,6 +65,8 @@ class EvaluationProxy:
                 if not hmac.compare_digest(self.headers.get('Authorization', ''), 'Bearer ' + token):
                     self.send_error(401); return
                 if self.path != '/responses':
+                    owner.append({'kind': 'auxiliary', 'role': 'auxiliary', 'status': 404,
+                                  'failure': 'unsupported_request_contract', 'paid_inference': False})
                     self.send_error(404); return
                 try:
                     length = int(self.headers.get('Content-Length', '0'))
@@ -78,6 +83,7 @@ class EvaluationProxy:
                     review = (structured and assessment.get('required') == ['outcome']
                               and assessment.get('properties', {}).get('outcome') == {'type': 'string', 'enum': ['allow', 'deny']})
                 except (ValueError, AttributeError):
+                    owner.append({'kind': 'unknown', 'status': 400, 'failure': 'unsupported_request_contract', 'paid_inference': False})
                     self.send_error(400); return
                 def unbounded(value):
                     if isinstance(value, dict):
@@ -97,7 +103,9 @@ class EvaluationProxy:
                 if not isinstance(body.get('input'), (list, dict)): reasons.append('input_shape')
                 if unbounded(body): reasons.append('nontext_or_server_tool')
                 if reasons:
-                    owner.append({'kind': 'unknown', 'status': 400, 'failure': 'unsupported_request_contract',
+                    owner.append({'kind': 'auxiliary' if structured and not review else 'unknown',
+                                  'role': 'auxiliary' if structured and not review else ('guardian' if review else 'main'),
+                                  'status': 400, 'failure': 'unsupported_request_contract',
                                   'contract_failures': reasons, 'paid_inference': False})
                     self.send_error(400); return
                 if case in ('allow', 'deny') and not review:
@@ -128,8 +136,8 @@ class EvaluationProxy:
                                   'failure': 'request_body_limit', 'paid_inference': False})
                     self.send_error(413); return
                 with owner.lock:
-                    budget_data = json.loads(owner.budget.read_text())
-                    if budget_data['used'] >= budget_data['maximum']:
+                    budget_data = json.loads(owner.budget.read_text()) if owner.budget else {'used': 0}
+                    if owner.budget and budget_data['used'] >= budget_data['maximum']:
                         owner.records.append({'kind': 'automatic_review' if review else 'task', 'status': 429,
                             'completed': False, 'text_deltas': 0, 'tool_deltas': 0,
                             'first_delta_ms': None, 'completed_ms': None,
@@ -137,10 +145,12 @@ class EvaluationProxy:
                         owner.persist()
                         self.send_error(429); return
                     budget_data['used'] += 1
-                    owner.budget.write_text(json.dumps(budget_data))
+                    if owner.budget:
+                        owner.budget.write_text(json.dumps(budget_data))
                 record = {'kind': 'automatic_review' if review else 'task', 'status': 0,
                           'model': selected, 'role': 'guardian' if review else 'main', 'paid_inference': True,
-                          'request_id': budget_data['used'],
+                          'request_id': budget_data['used'] if owner.budget else uuid.uuid4().hex,
+                          'tool_results': sum(item.get('type') == 'function_call_output' for item in body.get('input', []) if isinstance(item, dict)),
                           'completed': False, 'text_deltas': 0, 'tool_deltas': 0,
                           'headers_ms': None, 'first_delta_ms': None, 'completed_ms': None,
                           'decision': None, 'started_ms': round((time.monotonic() - owner.started) * 1000, 3)}
@@ -149,10 +159,27 @@ class EvaluationProxy:
                 deadline = time.monotonic() + timeout
                 text = ''
                 connection = http.client.HTTPConnection(target.hostname, target.port, timeout=timeout)
+                finished = threading.Event()
+                cancelled = threading.Event()
+                def watch_disconnect():
+                    while not finished.wait(0.02):
+                        try:
+                            ready, _, _ = select.select([self.connection], [], [], 0)
+                            if ready and not self.connection.recv(1, socket.MSG_PEEK):
+                                cancelled.set()
+                                if connection.sock is not None:
+                                    connection.sock.shutdown(socket.SHUT_RDWR)
+                                return
+                        except OSError:
+                            return
+                watcher = threading.Thread(target=watch_disconnect, daemon=True)
+                watcher.start()
                 try:
                     connection.request('POST', '/responses', encoded,
                         {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json',
                          'Accept': 'text/event-stream'})
+                    if cancelled.is_set():
+                        raise ConnectionResetError()
                     record['stage'] = 'response_headers'
                     owner.publish(index, record)
                     adapter_socket = connection.sock
@@ -209,10 +236,25 @@ class EvaluationProxy:
                                 record['usage'] = {key: usage[key] for key in ('input_tokens', 'output_tokens')
                                                  if type(usage.get(key)) is int and usage[key] >= 0}
                                 if review:
-                                    try:
-                                        decision = json.loads(text).get('outcome')
-                                        record['decision'] = decision if decision in ('allow', 'deny') else 'invalid'
-                                    except (ValueError, AttributeError): record['decision'] = 'invalid'
+                                    output = result.get('output', [])
+                                    items = output if isinstance(output, list) else []
+                                    record['review_tool_calls'] = sum(isinstance(item, dict) and item.get('type') == 'function_call' for item in items)
+                                    # Native inspection is an intermediate response, not
+                                    # a malformed final assessment. Its usage still counts.
+                                    if not record['review_tool_calls']:
+                                        assessment = text
+                                        record['assessment_source'] = 'text_deltas'
+                                        if items:
+                                            assessment = ''.join(part.get('text', '') for item in items
+                                                if isinstance(item, dict) and item.get('type') == 'message'
+                                                and isinstance(item.get('content'), list) for part in item['content']
+                                                if isinstance(part, dict) and part.get('type') == 'output_text'
+                                                and isinstance(part.get('text'), str))
+                                            record['assessment_source'] = 'completed_output'
+                                        try:
+                                            decision = json.loads(assessment).get('outcome')
+                                            record['decision'] = decision if decision in ('allow', 'deny') else 'invalid'
+                                        except (ValueError, AttributeError): record['decision'] = 'invalid'
                             if kind in ('response.failed', 'response.incomplete', 'error'):
                                 record['failure'] = 'response_incomplete'
                         if record.get('failure'): break
@@ -229,7 +271,11 @@ class EvaluationProxy:
                         record['failure'] = 'deadline_incomplete' if isinstance(error, (TimeoutError, socket.timeout)) else 'transport_failure'
                         record['transport_error'] = True
                 finally:
+                    finished.set()
+                    watcher.join(timeout=1)
                     connection.close()
+                    if cancelled.is_set() and not record['completed']:
+                        record['failure'] = 'cancelled'
                     if not record['completed'] and not record.get('failure') and record['status'] == 200:
                         record['failure'] = 'response_incomplete'
                     record['ended_ms'] = round((time.monotonic() - owner.started) * 1000, 3)
@@ -254,6 +300,8 @@ class EvaluationProxy:
 
     def append(self, record):
         with self.lock:
+            if not self.budget:
+                record.setdefault('request_id', uuid.uuid4().hex)
             record.update({key: record.get(key, value) for key, value in {
                 'status': 0, 'completed': False, 'text_deltas': 0, 'tool_deltas': 0,
                 'first_delta_ms': None, 'completed_ms': None}.items()})

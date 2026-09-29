@@ -1,5 +1,9 @@
 # Bounded Codex model evaluation
 
+For the desktop five-main campaign, use the [desktop command-to-report workflow](desktop-campaign.md).
+Its operational limits have no campaign request quota or spending cap. The older
+CLI procedure below retains its historical 48-request condition for reproducibility.
+
 This workflow evaluates one exact selected candidate with **Codex CLI 0.155.1,
 macOS ARM64, adapted connection**. The selected model serves both the main and
 Guardian roles by default. `--guardian-model` explicitly selects a different reviewer
