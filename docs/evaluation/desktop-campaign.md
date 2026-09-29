@@ -58,6 +58,13 @@ controlled-provider report for the selected main. Supply it as
 Completing #61 requires no paid inference. Live campaign authorization and results
 belong to the subsequent campaign tickets.
 
+On macOS, a disposable HOME hides the launcher's saved Keychain login. The
+evaluator links the existing `~/Library/Keychains` directory into each disposable
+home so the launcher can read that login. It does not copy or change credentials.
+The engine still uses file authentication in its disposable `.codex` directory;
+normal desktop settings and history are not used for these sessions. Removing
+the disposable home removes the link, not the Keychain directory.
+
 ```sh
 python3 scripts/model_evaluation.py --desktop \
   --launcher /absolute/path/to/tofa \
@@ -66,6 +73,11 @@ python3 scripts/model_evaluation.py --desktop \
   --qualification-evidence /path/to/matching-controlled-report.json \
   --campaign /path/to/campaign --output /path/to/new-report.json
 ```
+
+Use an **absolute `--campaign` path**. The child driver runs from its disposable
+workspace; relative observation/result paths do not resolve there. Such a run
+fails locally and is not model-compatibility evidence. Keep the failed run and
+use a new output path when correcting the invocation.
 
 Live preflight refreshes authenticated project availability through `tofa models`
 and exact public model metadata/prices from the provider catalog. Changed or

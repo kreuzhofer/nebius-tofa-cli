@@ -1,0 +1,16 @@
+[
+  {
+    "exit_code": 1,
+    "known_errors": [
+      "credential not found"
+    ],
+    "stderr_sha256": "4cc1d7144f8e6b7a854c7a36671a71e4d1e1234e74a0b4768b431a71bd473472"
+  },
+  {
+    "exit_code": 1,
+    "known_errors": [
+      "credential not found"
+    ],
+    "stderr_sha256": "4cc1d7144f8e6b7a854c7a36671a71e4d1e1234e74a0b4768b431a71bd473472"
+  }
+]

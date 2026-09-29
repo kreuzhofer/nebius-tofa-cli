@@ -270,6 +270,14 @@ def case(options, run, entry):
     save(run / 'run.json', options.evidence)
     with tempfile.TemporaryDirectory(prefix='tofa-desktop-eval-', dir='/tmp') as temporary:
         root = Path(temporary).resolve()
+        # The launcher's saved macOS login is read from the user's Keychain.
+        # Native vault lookup follows HOME, which otherwise hides that login in
+        # this disposable profile. Link the existing vault without copying or
+        # changing credentials; the engine uses file auth in its scratch home.
+        keychains = Path.home() / 'Library/Keychains'
+        if keychains.is_dir():
+            (root / 'Library').mkdir()
+            (root / 'Library/Keychains').symlink_to(keychains.resolve(), target_is_directory=True)
         (root / 'workspace').mkdir()
         (root / '.codex').mkdir()
         (root / '.codex/config.toml').write_text('cli_auth_credentials_store="file"\n')
