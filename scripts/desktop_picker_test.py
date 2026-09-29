@@ -12,6 +12,8 @@ import unittest
 
 from picker_test import PickerFixture, KIMI, GLM, DEEPSEEK
 
+GLM_MAIN = 'zai-org/GLM-5.3'
+
 
 @unittest.skipUnless(os.environ.get('FIXTURE_DESKTOP_BUNDLE'),
                      'run through go test -run ^TestDesktopPicker$')
@@ -119,8 +121,51 @@ class DesktopPickerTests(PickerFixture):
                 self.assert_no_start()
 
     def test_no_supported_models_explain_next_step(self):
+        self.models = [KIMI, GLM]
         self.start([])
         self.read_until('--allow-unverified')
+        self.finish(1)
+        self.assert_no_start()
+
+    def test_production_support_records_filter_catalog_and_launch_each_choice(self):
+        for main, keys in [(DEEPSEEK, b'\r'), (GLM_MAIN, b'\x1b[B\r')]:
+            with self.subTest(main=main):
+                self.models = [DEEPSEEK, GLM_MAIN, KIMI, GLM,
+                               'nvidia/Nemotron-3-Ultra-550b-a55b', 'mid/unknown-model']
+                self.start([])
+                self.read_until('Enter confirms')
+                lines = '\n'.join(self.screen_lines())
+                self.assertIn('[ Ready 2 ]', lines)
+                self.assertIn(DEEPSEEK, lines)
+                self.assertIn(GLM_MAIN, lines)
+                self.assertNotIn(KIMI, lines)
+                self.assertNotIn('nvidia/Nemotron', lines)
+                os.write(self.master, keys)
+                child = self.launched()
+                self.read_until('Main: ' + main)
+                self.read_until('Status: supported')
+                self.read_until('Automatic title generation is unsupported for main ' + main)
+                selected = next(m for m in child['catalog']['models'] if m['slug'] == main)
+                self.assertEqual(selected['auto_review_model_override'], GLM)
+                self.stop_desktop(child)
+                for path in self.capture.parent.glob(self.capture.name + '*'):
+                    path.unlink()
+
+    def test_production_support_does_not_promote_guardian_overrides(self):
+        self.start(['--guardian-model', KIMI])
+        self.read_until('no supported main models')
+        self.finish(1)
+        self.assert_no_start()
+
+    def test_production_support_still_requires_current_availability(self):
+        self.models = [GLM_MAIN, GLM]
+        self.start([])
+        self.read_until('Enter confirms')
+        lines = '\n'.join(self.screen_lines())
+        self.assertIn('[ Ready 1 ]', lines)
+        self.assertIn(GLM_MAIN, lines)
+        self.assertNotIn(DEEPSEEK, lines)
+        os.write(self.master, b'\x1b')
         self.finish(1)
         self.assert_no_start()
 
@@ -196,19 +241,33 @@ class DesktopPickerTests(PickerFixture):
         self.engine_approval(GLM, 'allow')
 
     @unittest.skipUnless(os.environ.get('TOFA_TEST_DESKTOP_ENGINE'), 'set TOFA_TEST_DESKTOP_ENGINE')
+    def test_installed_engine_supported_deepseek_default_guardian_deny(self):
+        self.engine_approval(GLM, 'deny')
+
+    @unittest.skipUnless(os.environ.get('TOFA_TEST_DESKTOP_ENGINE'), 'set TOFA_TEST_DESKTOP_ENGINE')
+    def test_installed_engine_supported_glm_default_guardian_allow(self):
+        self.engine_approval(GLM, 'allow', GLM_MAIN)
+
+    @unittest.skipUnless(os.environ.get('TOFA_TEST_DESKTOP_ENGINE'), 'set TOFA_TEST_DESKTOP_ENGINE')
+    def test_installed_engine_supported_glm_default_guardian_deny(self):
+        self.engine_approval(GLM, 'deny', GLM_MAIN)
+
+    @unittest.skipUnless(os.environ.get('TOFA_TEST_DESKTOP_ENGINE'), 'set TOFA_TEST_DESKTOP_ENGINE')
     def test_installed_engine_selected_main_and_override_guardian_deny(self):
         self.engine_approval(KIMI, 'deny')
 
-    def engine_approval(self, guardian, assessment):
+    def engine_approval(self, guardian, assessment, main=DEEPSEEK):
         self.assessment = assessment
-        flags = ['--allow-unverified']
+        self.models = [main, KIMI, GLM]
+        flags = []
         if guardian != GLM:
-            flags += ['--guardian-model', guardian]
+            flags += ['--guardian-model', guardian, '--allow-unverified']
         self.start(flags)
         self.read_until('Enter confirms')
         # Exercise both arrow directions before selecting DeepSeek.
         os.write(self.master, b'\x1b[B\x1b[A\r')
         child = self.launched()
+        self.read_until('Status: ' + ('supported' if guardian == GLM else 'experimental'))
         engine = subprocess.Popen([child['env']['CODEX_CLI_PATH'], 'app-server',
                                    '-c', 'features.shell_snapshot=false'], env=child['env'], cwd=child['cwd'],
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -244,7 +303,7 @@ class DesktopPickerTests(PickerFixture):
         send(dict(method='initialized'))
         result = call('thread/start', dict(cwd=child['cwd'], approvalPolicy='on-request',
                                           approvalsReviewer='auto_review', sandbox='read-only'))
-        self.assertEqual(result['model'], DEEPSEEK)
+        self.assertEqual(result['model'], main)
         self.assertEqual(result['modelProvider'], 'nebius-tofa')
         self.assertEqual(result['approvalPolicy'], 'on-request')
         self.assertEqual(result['approvalsReviewer'], 'auto_review')
@@ -262,7 +321,7 @@ class DesktopPickerTests(PickerFixture):
                 break
         self.assertEqual(executed, assessment == 'allow')
         posts = [r for r in self.requests if r[2] is not None]
-        self.assertEqual([r[2]['model'] for r in posts], [DEEPSEEK, guardian, DEEPSEEK])
+        self.assertEqual([r[2]['model'] for r in posts], [main, guardian, main])
         self.assertTrue(all(r[1] == 'Bearer synthetic-key' for r in posts))
         self.assertTrue(all('ai_project_id=synthetic-project' in r[0] for r in posts))
         close()

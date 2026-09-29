@@ -14,9 +14,9 @@ of the combined workflow.
 
 ```sh
 go build -o tofa ./cmd/tofa
-./tofa launch codex-desktop --allow-unverified
+./tofa launch codex-desktop
 # Explicit selection bypasses the picker:
-./tofa launch codex-desktop --model moonshotai/Kimi-K3 --allow-unverified
+./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash
 ```
 
 Use an existing `tofa auth login`. Omit `--model` in a terminal to choose the main
@@ -26,11 +26,13 @@ confirmation. Scripts must supply `--model ID`; an explicit main bypasses the pi
 The selected model must be available in the saved project's catalog.
 `--project-id ID` overrides that project.
 Availability and bundled provider metadata do not certify a supported combination;
-the unverified gate remains mandatory. The default Guardian is
+only the two [promoted desktop pairs](evaluation/desktop-comparison-2026-09-29.md)
+are supported: DeepSeek V4.1 Flash or GLM 5.3 main with GLM 5.3 Flash Guardian.
+Other combinations require `--allow-unverified`. The default Guardian is
 `zai-org/GLM-5.3-Flash`; override it with `--guardian-model ID`. Both roles must be
 available in the selected project and have compatible bundled metadata. There is
 no Guardian picker or automatic substitution. The launcher displays the exact
-main/Guardian pair, adapted route and experimental status before use.
+main/Guardian pair, adapted route and support status before use.
 
 Normal picker choices require desktop evidence for the exact adapted main/Guardian
 pair. With `--allow-unverified`, the entire current project catalog is shown;
@@ -42,19 +44,22 @@ See the [universal picker contract](model-picker.md).
 For example, select DeepSeek with the default GLM Flash Guardian:
 
 ```sh
-./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash --allow-unverified
+./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash
 # Explicit alternative Guardian:
 ./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash --guardian-model moonshotai/Kimi-K3 --allow-unverified
 ```
 
-All metadata-compatible pairs among `zai-org/GLM-5.3-Flash`,
+Beyond the two supported pairs, metadata-compatible pairs among `zai-org/GLM-5.3-Flash`,
 `deepseek-ai/DeepSeek-V4.1-Flash`, `zai-org/GLM-5.3`, `moonshotai/Kimi-K3`, and
 `nvidia/Nemotron-3-Ultra-550b-a55b` are experimentally selectable. Each descriptor
 uses its own dated provider metadata; text-only candidates do not inherit Kimi's
 image capability. Offline routing tests do not qualify live model behavior.
 Naming is separately supported only for the recognized Kimi-main contract;
 other mains explicitly report unavailable naming, with no hidden Kimi dependency.
-See the [offline selection evidence](evaluation/desktop-selection-2026-09-28.md).
+The [five-model comparison](evaluation/desktop-comparison-2026-09-29.md) records
+main/Guardian outcomes, naming limits, timings, shared costs and promotion provenance.
+Support covers the pinned headless bundled-engine baseline, not Electron UI or
+release qualification. See the [offline selection evidence](evaluation/desktop-selection-2026-09-28.md).
 
 ### Switching launch modes and recovering a conversation
 

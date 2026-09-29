@@ -18,6 +18,28 @@
       "status": "experimental",
       "evidence": "docs/evaluation/evidence/selected-pairs-2026-09-23/2-glm-5.3.json",
       "reason": "The paired main lane was incomplete."
+    },
+    {
+      "target": "codex-desktop",
+      "route": "adapted",
+      "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "guardian": "zai-org/GLM-5.3-Flash",
+      "status": "supported",
+      "evidence": "docs/evaluation/evidence/desktop-first-pair-2026-09-29/final/deepseek-baseline.json",
+      "run_id": "23f388312ea744cb8a793e1f19ed9c07",
+      "scope": "ChatGPT 26.917.71314 (10954), codex-cli 0.155.0-alpha.16.4, macOS 26.6.2 arm64; enforced by discoverDesktop. Headless bundled-engine common baseline; Electron UI and generated naming are unqualified.",
+      "reason": "Issue #64 promotes the complete #62 baseline: three two-turn sessions with relaunch/resume and three Guardian allow/deny pairs. See docs/evaluation/desktop-comparison-2026-09-29.md."
+    },
+    {
+      "target": "codex-desktop",
+      "route": "adapted",
+      "main": "zai-org/GLM-5.3",
+      "guardian": "zai-org/GLM-5.3-Flash",
+      "status": "supported",
+      "evidence": "docs/evaluation/evidence/desktop-remaining-2026-09-29/glm-baseline.json",
+      "run_id": "5ce8bf399c064c40b8ff8c675e481469",
+      "scope": "ChatGPT 26.917.71314 (10954), codex-cli 0.155.0-alpha.16.4, macOS 26.6.2 arm64; enforced by discoverDesktop. Headless bundled-engine common baseline; Electron UI and generated naming are unqualified.",
+      "reason": "Issue #64 promotes the complete #63 baseline: three two-turn sessions with relaunch/resume and three Guardian allow/deny pairs. See docs/evaluation/desktop-comparison-2026-09-29.md."
     }
   ]
 }

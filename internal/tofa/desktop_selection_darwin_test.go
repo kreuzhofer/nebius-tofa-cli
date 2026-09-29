@@ -13,6 +13,26 @@ import (
 	"testing"
 )
 
+func TestDesktopSupportedMainLaunchesWithoutExperimentalOptIn(t *testing.T) {
+	for _, main := range []string{"deepseek-ai/DeepSeek-V4.1-Flash", "zai-org/GLM-5.3"} {
+		t.Run(main, func(t *testing.T) {
+			bundle, capture := desktopFixture(t, "normal")
+			app, output := adapterFixture(t, nil, nil)
+			if err := app.Run([]string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", main}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(capture); err != nil {
+				t.Fatal("supported selection did not launch desktop:", err)
+			}
+			for _, want := range []string{"Main: " + main, "Guardian: zai-org/GLM-5.3-Flash", "Status: supported", "Route: adapted", "Automatic title generation is unsupported for main " + main} {
+				if !strings.Contains(output.String(), want) {
+					t.Errorf("missing %q in %s", want, output.String())
+				}
+			}
+		})
+	}
+}
+
 func TestDesktopExplicitMainAndGuardianMetadata(t *testing.T) {
 	for _, model := range []struct {
 		id      string
@@ -52,7 +72,11 @@ func TestDesktopExplicitMainAndGuardianMetadata(t *testing.T) {
 			if !found {
 				t.Fatal("selected main missing from engine catalog")
 			}
-			for _, want := range []string{"Main: " + model.id, "Guardian: zai-org/GLM-5.3-Flash", "experimental (unverified)", "Route: adapted"} {
+			status := "experimental (unverified)"
+			if model.id == "deepseek-ai/DeepSeek-V4.1-Flash" || model.id == "zai-org/GLM-5.3" {
+				status = "supported"
+			}
+			for _, want := range []string{"Main: " + model.id, "Guardian: zai-org/GLM-5.3-Flash", "Status: " + status, "Route: adapted"} {
 				if !strings.Contains(output.String(), want) {
 					t.Fatalf("missing %q in %s", want, output.String())
 				}
@@ -73,7 +97,7 @@ func TestDesktopRejectsInvalidSelectionBeforeStartingTarget(t *testing.T) {
 		{name: "unavailable override", main: "moonshotai/Kimi-K3", flags: []string{"--guardian-model", "absent/model"}, want: "Guardian model absent/model: not available"},
 		{name: "Guardian metadata", main: "moonshotai/Kimi-K3", flags: []string{"--guardian-model", "fixture-model"}, want: "Guardian model fixture-model: missing bundled model metadata"},
 		{name: "empty Guardian", main: "moonshotai/Kimi-K3", flags: []string{"--guardian-model", ""}, want: "valid model ID"},
-		{name: "unverified pair", main: "deepseek-ai/DeepSeek-V4.1-Flash", flags: []string{"--allow-unverified=false"}, want: "unverified combination for codex-desktop adapted"},
+		{name: "unverified pair", main: "deepseek-ai/DeepSeek-V4.1-Flash", flags: []string{"--guardian-model", "moonshotai/Kimi-K3", "--allow-unverified=false"}, want: "unverified combination for codex-desktop adapted"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			bundle, capture := desktopFixture(t, "normal")

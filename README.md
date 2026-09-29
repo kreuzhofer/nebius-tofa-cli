@@ -8,8 +8,8 @@ an experimental prerelease. The repository and release downloads are public;
 no GitHub account is needed to install.
 
 - Kimi-K3 with Codex 0.155.1 on macOS ARM64 passed recorded live streaming,
-  tool execution and continued-conversation checks. All models still require
-  `--allow-unverified`.
+  tool execution and continued-conversation checks. In rc.2 all models require
+  `--allow-unverified`; current source has two supported desktop pairs below.
 - rc.2 addresses the observed automatic-review request-format rejection while
   preserving Codex's approval decisions. The maintainer reports a successful live
   app build with **Approve for me**, including installation and dev-server startup
@@ -230,8 +230,8 @@ the window or use `--model ID`. `NO_COLOR=1` disables styling while retaining th
 leading selection indicator. Guardian uses its default or explicit override
 without another prompt.
 
-Normal choices require support for the exact target, route and Guardian. With the current
-experimental records, bare `tofa` explains that `--allow-unverified` is needed.
+Normal choices require support for the exact target, route and Guardian. CLI
+records remain experimental, so bare `tofa` explains that `--allow-unverified` is needed.
 That flag shows the selected project's entire catalog, including unknown IDs;
 entries without compatible bundled metadata remain disabled with reasons. Empty
 catalogs, failed discovery and unavailable Guardians stop the launch.
@@ -246,17 +246,20 @@ picker in both terminal and scripted use.
 For the tested macOS desktop application, source builds offer:
 
 ```sh
-./tofa launch codex-desktop --allow-unverified
+./tofa launch codex-desktop
 # Explicit selection also works without a terminal:
-./tofa launch codex-desktop --model moonshotai/Kimi-K3 --allow-unverified
+./tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash
 ```
 
 Quit Codex first. This launches ChatGPT desktop **Codex** with ordinary history
 and profile state. Keep the terminal open; Ctrl-C stops that instance. Token Factory
 history stays readable in ordinary mode; relaunch through tofa to continue it.
 Desktop launches default to GLM-5.3-Flash Guardian; `--guardian-model ID` overrides
-it. Other metadata-compatible mains can be selected experimentally, including
-`deepseek-ai/DeepSeek-V4.1-Flash`. Automatic titles retain the captured Kimi-main
+it. The normal picker offers **DeepSeek V4.1 Flash and GLM 5.3** with that Guardian
+when available. Their [five-model comparison](docs/evaluation/desktop-comparison-2026-09-29.md)
+pins headless bundled-engine support to the tested macOS desktop configuration;
+Electron UI and fresh release qualification remain separate. Other pairs require
+`--allow-unverified`, including unqualified Guardian overrides. Automatic titles retain the captured Kimi-main
 route; other mains report unsupported naming explicitly. See
 [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
 The [shared-history qualification](docs/releases/desktop-shared-history-final-2026-09-24.md)

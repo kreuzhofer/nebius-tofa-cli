@@ -30,6 +30,12 @@ must provide their own validation and evidence; implementing Claude remains in
    not save a preference or alter credentials. Desktop conversations retain their
    recorded main/provider, as required by ADR 0001.
 
+Current desktop support records promote DeepSeek V4.1 Flash and GLM 5.3 mains
+with GLM 5.3 Flash Guardian on the pinned adapted macOS desktop configuration.
+CLI and other combinations remain experimental. See the
+[five-model comparison and launch guidance](evaluation/desktop-comparison-2026-09-29.md).
+Naming remains unsupported for both promoted mains.
+
 The shared implementation is `mainModelChoices`, `pickMainModel` and `pickerView`.
 Callers supply an evidence target and a display name; they own target-specific
 startup and policy checks. No new target is supported merely by supplying a name.

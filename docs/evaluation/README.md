@@ -12,6 +12,11 @@ The [remaining-model report](desktop-remaining-2026-09-29.md) continues that fro
 campaign for GLM Flash, GLM and Nemotron and retains the earlier evidence in the
 complete five-candidate comparison.
 
+The [support publication and full comparison](desktop-comparison-2026-09-29.md)
+promotes only DeepSeek and GLM desktop mains with GLM Flash Guardian, preserving
+all failures, unknown costs, naming limitations and measured-artifact provenance.
+The CLI workflow below retains its experimental policy.
+
 This workflow evaluates one exact selected candidate with **Codex CLI 0.155.1,
 macOS ARM64, adapted connection**. The selected model serves both the main and
 Guardian roles by default. `--guardian-model` explicitly selects a different reviewer

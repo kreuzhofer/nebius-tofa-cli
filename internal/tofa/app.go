@@ -46,8 +46,11 @@ const help = `tofa — Token Factory launcher (prototype)
   tofa uninstall [--purge]                   Remove installation; optionally saved data
   tofa --version
 
-No model/client combination is verified yet. Explicit --allow-unverified is
-required for experimental launches. Models in the catalog are not certified.
+Supported desktop pairs: deepseek-ai/DeepSeek-V4.1-Flash or zai-org/GLM-5.3 main
+with zai-org/GLM-5.3-Flash Guardian, on the pinned macOS desktop adapted route.
+Automatic naming remains unsupported for these mains. See docs/codex-desktop.md
+for tested versions and evidence limits. CLI and other pairs require explicit
+--allow-unverified. Models in the catalog are not certified by availability.
 Omit --model in a terminal to choose with Up/Down and Enter; Escape/Ctrl-C cancels.
 Scripts must supply --model ID. Saved model preferences never bypass the picker.
 Both selected roles must be available in the project and have compatible model metadata.
