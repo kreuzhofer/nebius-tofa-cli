@@ -4,6 +4,10 @@ For the desktop five-main campaign, use the [desktop command-to-report workflow]
 Its operational limits have no campaign request quota or spending cap. The older
 CLI procedure below retains its historical 48-request condition for reproducibility.
 
+The [2026-09-29 desktop first-pair report](desktop-first-pair-2026-09-29.md) records
+DeepSeek/GLM Flash passing the common baseline and Kimi's contemporaneous main
+deadline failure, with passing Guardian cases, retained setup failures and costs.
+
 This workflow evaluates one exact selected candidate with **Codex CLI 0.155.1,
 macOS ARM64, adapted connection**. The selected model serves both the main and
 Guardian roles by default. `--guardian-model` explicitly selects a different reviewer

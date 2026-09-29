@@ -1,0 +1,24 @@
+{
+  "retained_in": ".qualification/desktop-2026-09-29-v2/diagnostic-tools",
+  "tools": [
+    {
+      "name": "diagnose-startup.py",
+      "sha256": "c07cb5b09729d937691fc53fb05b7f22b713181f62f1ac39346bf87d799035c6"
+    },
+    {
+      "name": "diagnose-startup-v2.py",
+      "sha256": "42b954d4074d7e92a98cc5427e9d2f65cff32969a0648c0ed428545e51a325e1"
+    },
+    {
+      "name": "diagnose-driver.py",
+      "sha256": "5a0d61f423d846d6bbb42add957a2520555298c9a62465d2665e8be1e671aeb7"
+    },
+    {
+      "name": "driver-probe.py",
+      "sha256": "a0ae99b484bb4d4ea8c487b457f4588f63004268a1fc5afca4c5bfcacbbc52ca"
+    }
+  ],
+  "startup_error_category": "Parent Popen wrapper captured only fixed errors.New messages and a stderr hash; raw stderr discarded.",
+  "driver_startup_exception": "Generated headless driver invoked a runpy wrapper that saved exception type, errno and code locations; no exception message, environment or request content retained.",
+  "comparability": "These runs are explicitly diagnostic. Their extra instrumentation is not part of either baseline source fingerprint."
+}

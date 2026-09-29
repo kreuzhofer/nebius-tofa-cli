@@ -1,0 +1,187 @@
+{
+  "source_freeze": "final/freeze.json",
+  "go": {
+    "command": "TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex go test -race -timeout 20m ./...",
+    "status": "passed",
+    "internal_tofa_seconds": 573.196,
+    "go_vet": "passed",
+    "gofmt": "passed",
+    "platform": "Darwin/arm64",
+    "skips": [
+      "installed Electron shell-isolation test: TOFA_TEST_DESKTOP_APP not supplied",
+      "native Windows-only tests and code paths unavailable on macOS",
+      "optional standalone installed Codex CLI tests: TOFA_TEST_CODEX not supplied"
+    ]
+  },
+  "python": [
+    {
+      "script": "build_test.py",
+      "tests": 6,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 9.555
+    },
+    {
+      "script": "desktop_history_test.py",
+      "tests": 3,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 39.165
+    },
+    {
+      "script": "desktop_ownership_test.py",
+      "tests": 5,
+      "skipped": 5,
+      "status": "skipped",
+      "seconds": 0.0
+    },
+    {
+      "script": "desktop_picker_test.py",
+      "tests": 13,
+      "skipped": 13,
+      "status": "skipped",
+      "seconds": 0.0
+    },
+    {
+      "script": "evaluation_client_test.py",
+      "tests": 9,
+      "skipped": 9,
+      "status": "skipped",
+      "seconds": 0.0
+    },
+    {
+      "script": "install_test.py",
+      "tests": 2,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 0.785
+    },
+    {
+      "script": "lifecycle_test.py",
+      "tests": 4,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 4.119
+    },
+    {
+      "script": "live_compat_test.py",
+      "tests": 19,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 80.916
+    },
+    {
+      "script": "picker_test.py",
+      "tests": 23,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 18.432
+    },
+    {
+      "script": "qualify_macos_test.py",
+      "tests": 18,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 58.021
+    },
+    {
+      "script": "qualify_windows_test.py",
+      "tests": 17,
+      "skipped": 17,
+      "status": "skipped",
+      "seconds": 0.0
+    },
+    {
+      "script": "release_test.py",
+      "tests": 6,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 3.034
+    },
+    {
+      "script": "terminal_test.py",
+      "tests": 2,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 0.482
+    },
+    {
+      "script": "trace_codex_test.py",
+      "tests": 6,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 5.381
+    },
+    {
+      "script": "windows_process_test.py",
+      "tests": 10,
+      "skipped": 7,
+      "status": "passed_with_skips",
+      "seconds": 0.003
+    },
+    {
+      "script": "model_evaluation_test.py",
+      "tests": 34,
+      "skipped": 0,
+      "status": "passed"
+    },
+    {
+      "script": "evaluation_proxy_test.py",
+      "tests": 13,
+      "skipped": 0,
+      "status": "passed"
+    },
+    {
+      "script": "desktop_evaluation_test.py",
+      "tests": 16,
+      "skipped": 0,
+      "status": "passed",
+      "seconds": 491.839
+    }
+  ],
+  "python_compile": "passed",
+  "notes": [
+    "Standalone desktop_picker_test.py skips without its Go parent fixture; the Go TestDesktopPicker wrapper ran with the installed engine.",
+    "All six distribution artifacts built; native installation lifecycle exercised on macOS only.",
+    "No Electron UI qualification or native Windows execution is claimed."
+  ],
+  "retained_failures": [
+    {
+      "check": "initial desktop evaluator suite",
+      "tests": 15,
+      "failures": 1,
+      "detail": "GLM Flash allow-1 returned client_incomplete after successful command execution; exact four-candidate repeat passed; cause unresolved.",
+      "evidence": "initial/glm-flash-controlled-initial.json"
+    },
+    {
+      "check": "saved Keychain regression before fix",
+      "status": "failed_as_expected",
+      "seconds": 2.106,
+      "after_fix": "passed, all nine cases; also passed in final 16-test suite"
+    },
+    {
+      "check": "initial full Go race suite",
+      "status": "failed",
+      "detail": "TestDesktopInstalledEngineOfflineRouting fake desktop exited before engine readiness."
+    },
+    {
+      "check": "unchanged installed-engine test repeated five times",
+      "failed": 3,
+      "passed": 2
+    },
+    {
+      "check": "installed-engine test after initialization handshake",
+      "passed": 5,
+      "failed": 0,
+      "full_suite_after_fix": "passed"
+    }
+  ],
+  "artifact_validation": {
+    "source_reconstruction": "all 65 source hashes match base commit plus published patch",
+    "retained_artifact_hashes": "launcher, engine, source archive and patch match final freeze",
+    "report_recovery": "regenerated canonical campaign equals published JSON without inference",
+    "accounting": "9 unique runs; 58 unique request IDs; 34 paid attempts, 24 synthetic; 33 measured paid requests; known subtotal USD 0.07110715",
+    "sanitization": "JSON scan found no bearer tokens, key-shaped secrets, fixture credential values, thread IDs, raw reviewer rationales or tool output",
+    "local_links": "all report and workflow links resolve"
+  }
+}

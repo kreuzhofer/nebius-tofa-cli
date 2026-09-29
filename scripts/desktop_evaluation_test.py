@@ -213,6 +213,29 @@ class DesktopEvaluationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, json.dumps(report))
         self.assertNotIn('private-parent-sentinel', json.dumps(report))
 
+    def test_saved_keychain_login_is_readable_with_isolated_desktop_home(self):
+        # Simulate the macOS vault's HOME-relative lookup at the executable
+        # boundary, then run the real launcher and engine against the provider.
+        keychains = self.root / 'Library/Keychains'
+        keychains.mkdir(parents=True)
+        sentinel = keychains / 'synthetic-login'
+        sentinel.write_text('synthetic-vault-sentinel')
+        launcher = self.root / 'vault-launcher'
+        launcher.write_text('#!' + sys.executable + '\n' +
+            'import os, sys\nfrom pathlib import Path\n' +
+            'if sys.argv[1:2] == ["launch"]:\n' +
+            '    assert Path.home() != Path(' + repr(str(self.root)) + ')\n' +
+            '    assert (Path.home() / "Library/Keychains/synthetic-login").read_text() == "synthetic-vault-sentinel"\n' +
+            'os.execv(' + repr(str(self.launcher)) + ', [' + repr(str(self.launcher)) + ', *sys.argv[1:]])\n')
+        launcher.chmod(0o700)
+        self.launcher = launcher
+        result, report = self.invoke()
+        self.assertEqual(result.returncode, 0, json.dumps(report))
+        self.assertEqual([c['status'] for c in report['cases']], ['passed'] * 9)
+        self.assertEqual(sentinel.read_text(), 'synthetic-vault-sentinel')
+        self.assertTrue(report['normal_settings_preserved'])
+        self.assertNotIn('synthetic-vault-sentinel', json.dumps(report))
+
     def test_live_run_without_matching_qualification_is_blocked_before_inference(self):
         result, report = self.invoke(live=True)
         self.assertEqual(result.returncode, 1)

@@ -1,0 +1,104 @@
+[
+  {
+    "exception": "FileNotFoundError",
+    "errno": 2,
+    "frames": [
+      {
+        "file": "driver-probe.py",
+        "function": "<module>",
+        "line": 6
+      },
+      {
+        "file": "runpy.py",
+        "function": "run_path",
+        "line": 268
+      },
+      {
+        "file": "runpy.py",
+        "function": "_run_module_code",
+        "line": 97
+      },
+      {
+        "file": "runpy.py",
+        "function": "_run_code",
+        "line": 87
+      },
+      {
+        "file": "desktop_evaluation.py",
+        "function": "<module>",
+        "line": 493
+      },
+      {
+        "file": "desktop_evaluation.py",
+        "function": "desktop",
+        "line": 211
+      },
+      {
+        "file": "desktop_evaluation.py",
+        "function": "save",
+        "line": 38
+      },
+      {
+        "file": "pathlib.py",
+        "function": "open",
+        "line": 1242
+      },
+      {
+        "file": "pathlib.py",
+        "function": "_opener",
+        "line": 1110
+      }
+    ]
+  },
+  {
+    "exception": "FileNotFoundError",
+    "errno": 2,
+    "frames": [
+      {
+        "file": "driver-probe.py",
+        "function": "<module>",
+        "line": 6
+      },
+      {
+        "file": "runpy.py",
+        "function": "run_path",
+        "line": 268
+      },
+      {
+        "file": "runpy.py",
+        "function": "_run_module_code",
+        "line": 97
+      },
+      {
+        "file": "runpy.py",
+        "function": "_run_code",
+        "line": 87
+      },
+      {
+        "file": "desktop_evaluation.py",
+        "function": "<module>",
+        "line": 493
+      },
+      {
+        "file": "desktop_evaluation.py",
+        "function": "desktop",
+        "line": 211
+      },
+      {
+        "file": "desktop_evaluation.py",
+        "function": "save",
+        "line": 38
+      },
+      {
+        "file": "pathlib.py",
+        "function": "open",
+        "line": 1242
+      },
+      {
+        "file": "pathlib.py",
+        "function": "_opener",
+        "line": 1110
+      }
+    ]
+  }
+]

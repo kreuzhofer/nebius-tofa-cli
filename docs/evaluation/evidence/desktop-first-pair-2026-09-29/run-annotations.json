@@ -1,0 +1,92 @@
+[
+  {
+    "run_id": "1b6e203fe36343a0b3ad60763c581db1",
+    "configuration": "initial",
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "diagnostic": null,
+    "started_utc": "2026-09-29T09:37:46Z",
+    "setup_failure": "isolated_home_hides_saved_keychain_login",
+    "campaign_argument": "relative",
+    "inference_observed": false
+  },
+  {
+    "run_id": "bfe1aca8f8324a19badb46b5964e18b6",
+    "configuration": "initial",
+    "model": "moonshotai/Kimi-K3",
+    "diagnostic": null,
+    "started_utc": "2026-09-29T09:38:20Z",
+    "setup_failure": "isolated_home_hides_saved_keychain_login",
+    "campaign_argument": "relative",
+    "inference_observed": false
+  },
+  {
+    "run_id": "380f47e1fa264239823915fe25cebfc6",
+    "configuration": "initial",
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "diagnostic": "startup-error-category",
+    "started_utc": "2026-09-29T09:39:39Z",
+    "setup_failure": "isolated_home_hides_saved_keychain_login",
+    "campaign_argument": "relative",
+    "inference_observed": false
+  },
+  {
+    "run_id": "51c124c7021e42bc9ba3be1acf73266f",
+    "configuration": "final",
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "diagnostic": null,
+    "started_utc": "2026-09-29T09:53:54Z",
+    "setup_failure": "relative_campaign_path_unresolvable_in_child",
+    "campaign_argument": "relative",
+    "inference_observed": false
+  },
+  {
+    "run_id": "741fa31da0ae4240914272c4c3493e46",
+    "configuration": "final",
+    "model": "moonshotai/Kimi-K3",
+    "diagnostic": null,
+    "started_utc": "2026-09-29T09:54:33Z",
+    "setup_failure": "relative_campaign_path_unresolvable_in_child",
+    "campaign_argument": "relative",
+    "inference_observed": false
+  },
+  {
+    "run_id": "6017caa3d742437785d94168803fc09b",
+    "configuration": "final",
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "diagnostic": "startup-error-category",
+    "started_utc": "2026-09-29T09:54:39Z",
+    "setup_failure": "relative_campaign_path_unresolvable_in_child",
+    "campaign_argument": "relative",
+    "inference_observed": false
+  },
+  {
+    "run_id": "20b75e47cd1f486ab52cbfe6cea06b3e",
+    "configuration": "final",
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "diagnostic": "driver-startup-exception",
+    "started_utc": "2026-09-29T09:56:39Z",
+    "setup_failure": "relative_campaign_path_unresolvable_in_child",
+    "campaign_argument": "relative",
+    "inference_observed": false
+  },
+  {
+    "run_id": "23f388312ea744cb8a793e1f19ed9c07",
+    "configuration": "final",
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "diagnostic": null,
+    "started_utc": "2026-09-29T09:58:05Z",
+    "setup_failure": null,
+    "campaign_argument": "absolute",
+    "inference_observed": true
+  },
+  {
+    "run_id": "91005921ae2b42cb926f7cbf4abb415f",
+    "configuration": "final",
+    "model": "moonshotai/Kimi-K3",
+    "diagnostic": null,
+    "started_utc": "2026-09-29T10:02:20Z",
+    "setup_failure": null,
+    "campaign_argument": "absolute",
+    "inference_observed": true
+  }
+]

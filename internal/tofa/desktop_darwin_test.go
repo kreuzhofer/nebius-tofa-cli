@@ -57,7 +57,7 @@ func desktopFixture(t *testing.T, mode string) (string, string) {
 	}
 	capture := filepath.Join(t.TempDir(), "capture.json")
 	script := fmt.Sprintf(`#!%s
-import json, os, pathlib, re, sys, time, urllib.request, urllib.error, signal, subprocess, hashlib, socket, atexit
+import json, os, pathlib, re, sys, time, urllib.request, urllib.error, signal, subprocess, hashlib, socket, atexit, select
 MODE = %q
 CAPTURE = %q
 if '--version' in sys.argv:
@@ -213,8 +213,16 @@ if MODE != 'exit':
     worker_args = [str(engine), '-c', 'features.code_mode_host=true', 'app-server'] + ([] if bundled_engine.is_symlink() else ['--owned-worker'])
     worker_ready = pathlib.Path(CAPTURE+'.worker-ready')
     worker_ready.unlink(missing_ok=True)
-    worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if not bundled_engine.is_symlink():
+    worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE if bundled_engine.is_symlink() else subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if bundled_engine.is_symlink():
+        # Wait for the installed engine, not just the bridge process. In race
+        # builds the bridge can still be starting when a short fixture exits.
+        worker.stdin.write(json.dumps({'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name': 'tofa_desktop_fixture', 'version': '1'}}}).encode() + b'\n')
+        worker.stdin.flush()
+        if not select.select([worker.stdout], [], [], 10)[0]: raise RuntimeError('installed engine initialization timed out')
+        initialized = json.loads(worker.stdout.readline())
+        if initialized.get('id') != 1 or 'result' not in initialized: raise RuntimeError('installed engine initialization failed')
+    else:
         deadline = time.monotonic() + 5
         while not worker_ready.exists():
             if worker.poll() is not None: raise RuntimeError('fixture worker exited before readiness')
