@@ -1,0 +1,121 @@
+{
+  "issue": 63,
+  "source_freeze": "../desktop-first-pair-2026-09-29/final/freeze.json",
+  "changes": "Evidence and documentation only; evaluation source, launcher, engine and workload remain frozen.",
+  "preflight": {
+    "prior_issue_62": "closed",
+    "retained_source_artifacts_manifest": "all hashes match the final #62 freeze",
+    "matching_controlled_evidence": "passed for all three remaining candidates",
+    "observer_tests": {
+      "tests": 13,
+      "seconds": 13.452,
+      "status": "passed"
+    },
+    "evaluator_tests": {
+      "tests": 34,
+      "seconds": 4.499,
+      "status": "passed"
+    },
+    "frozen_installed_engine_remaining_candidates": {
+      "tests": 1,
+      "candidate_subtests": 4,
+      "seconds": 126.769,
+      "status": "passed"
+    },
+    "go_vet": "passed with /private/tmp/tofa-toolchain/go/bin on PATH"
+  },
+  "artifact_validation": {
+    "prior_runs": "9 prior run objects preserved exactly",
+    "shared_conditions": "new runs match final #62 freeze",
+    "capabilities": "refreshed exact-role metadata matches frozen controlled reports",
+    "accounting": "unique run/request IDs; independently recomputed observed token and priced cost subtotals",
+    "sanitization": "no raw prompts, output, thread IDs, reviewer rationales or credential-shaped strings in published JSON",
+    "complete_campaign": "12 runs; every candidate has a baseline outcome",
+    "local_links": "passed",
+    "python_syntax": "all scripts compile",
+    "whitespace": "git diff --cached --check passed"
+  },
+  "review": {
+    "fixed_point": "1fc04b13bbcf56e63e1adab659e9e0e9f5351346",
+    "scope": "staged documentation and evidence against starting commit",
+    "standards": {
+      "findings": 0,
+      "summary": "Terminology, ADRs and campaign reporting rules followed; sanitized evidence, failures and unknowns explicit."
+    },
+    "spec": {
+      "findings": 0,
+      "summary": "Independently verified outcomes, gates, timings, accounting, frozen conditions, capability consistency and prior-run preservation; no missing requirements or scope creep."
+    }
+  },
+  "go": {
+    "command": "PATH=/private/tmp/tofa-toolchain/go/bin:$PATH TOFA_TEST_DESKTOP_ENGINE=$PWD/.qualification/desktop-2026-09-29-v2/codex go test -race -json -timeout 20m ./...",
+    "status": "passed",
+    "test_events_passed": 414,
+    "packages": [
+      {
+        "package": "github.com/kreuzhofer/nebius-tofa-cli/scripts",
+        "seconds": 1.995
+      },
+      {
+        "package": "github.com/kreuzhofer/nebius-tofa-cli/internal/tofa",
+        "seconds": 593.815
+      }
+    ],
+    "skipped_tests": [
+      "TestInstalledCodexToolAndContinuationThroughAdapter",
+      "TestInstalledCodexApprovalReviewThroughAdapter",
+      "TestDesktopInstalledAppShellIsolation"
+    ],
+    "platform": "Darwin/arm64"
+  },
+  "python": {
+    "command": "PATH=/private/tmp/tofa-toolchain/go/bin:$PATH TOFA_TEST_DESKTOP_ENGINE=$PWD/.qualification/desktop-2026-09-29-v2/codex python3 -m unittest discover -s scripts -p \"*_test.py\" -v",
+    "discovery": {
+      "tests": 206,
+      "passed": 149,
+      "errors": 6,
+      "skipped": 51,
+      "seconds": 790.12,
+      "status": "failed_due_to_invocation"
+    },
+    "retained_error_causes": [
+      "Four lifecycle tests require script-main initialization of DIST and VERSION; discovery left VERSION undefined.",
+      "Two terminal tests require a binary argument; discovery was incorrectly interpreted as its binary path."
+    ],
+    "corrected_invocations": [
+      {
+        "command": "python3 scripts/lifecycle_test.py .qualification/desktop-remaining-2026-09-29/lifecycle-dist v0.1.0-rc.63 -v",
+        "tests": 4,
+        "seconds": 5.758,
+        "status": "passed"
+      },
+      {
+        "command": "python3 scripts/terminal_test.py .qualification/desktop-remaining-2026-09-29/lifecycle-dist/tofa_v0.1.0-rc.63_darwin_arm64 -v",
+        "tests": 2,
+        "seconds": 1.13,
+        "status": "passed"
+      }
+    ],
+    "final": {
+      "passed": 155,
+      "skipped": 51,
+      "unresolved_failures": 0,
+      "status": "passed_with_skips_after_corrected_invocations"
+    },
+    "skip_reasons": {
+      "'set TOFA_TEST_DESKTOP_APP on macOS to run installed-app checks'": 5,
+      "'run through go test -run ^TestDesktopPicker$'": 13,
+      "'set TOFA_TEST_CODEX for installed-client fixture'": 9,
+      "'native Windows required'": 17,
+      "'requires native Windows Job Objects'": 7
+    },
+    "native_test_artifact": "Built from unchanged current source with version v0.1.0-rc.63 in private lifecycle-dist; separate from frozen live campaign artifacts."
+  },
+  "coverage_notes": [
+    "No native Windows execution on this macOS host.",
+    "Optional standalone Codex CLI checks skipped because TOFA_TEST_CODEX was not supplied.",
+    "Electron shell-isolation/UI coverage skipped because TOFA_TEST_DESKTOP_APP was not supplied; headless bundled-engine cases ran.",
+    "Standalone desktop ownership/picker scripts skip without their Go parent fixtures; corresponding Go integration tests ran.",
+    "Original failed discovery invocation retained; only the two scripts requiring command-line arguments were rerun. No source changes or live inference reruns."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "prior_runs_preserved": 9,
+  "new_runs": 3,
+  "total_runs": 12,
+  "unique_observations": 147,
+  "paid_attempts": 87,
+  "synthetic_observations": 60,
+  "auxiliary_attempts": 0,
+  "measured_paid_requests": 85,
+  "input_tokens_observed": 720478,
+  "output_tokens_observed": 13595,
+  "known_subtotal_usd": 0.35049975,
+  "complete_cost": false,
+  "checks": "passed"
+}

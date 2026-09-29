@@ -8,6 +8,10 @@ The [2026-09-29 desktop first-pair report](desktop-first-pair-2026-09-29.md) rec
 DeepSeek/GLM Flash passing the common baseline and Kimi's contemporaneous main
 deadline failure, with passing Guardian cases, retained setup failures and costs.
 
+The [remaining-model report](desktop-remaining-2026-09-29.md) continues that frozen
+campaign for GLM Flash, GLM and Nemotron and retains the earlier evidence in the
+complete five-candidate comparison.
+
 This workflow evaluates one exact selected candidate with **Codex CLI 0.155.1,
 macOS ARM64, adapted connection**. The selected model serves both the main and
 Guardian roles by default. `--guardian-model` explicitly selects a different reviewer
