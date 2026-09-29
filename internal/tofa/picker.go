@@ -15,7 +15,7 @@ import (
 
 // Redraw the visible list with a leading indicator beside the selected model.
 // Read exactly one byte on demand so confirming never consumes client input.
-func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, route, guardian string) (identity string, result error) {
+func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, targetName, route, guardian string) (identity string, result error) {
 	eligible := []int{}
 	for i, choice := range choices {
 		if choice.disabled == "" {
@@ -94,7 +94,7 @@ func (a *App) pickMainModel(ctx context.Context, choices []modelChoice, route, g
 		if err != nil || width < 40 || height < 18 {
 			return "", errors.New("model picker requires a terminal at least 40 columns wide and 18 rows tall; enlarge it or supply --model ID")
 		}
-		lines := view.frame(width, height, route, guardian, color)
+		lines := view.frame(width, height, targetName, route, guardian, color)
 		var frame strings.Builder
 		frame.WriteString("\x1b[H\r\x1b[2K\x1b[J")
 		frame.WriteString(strings.Join(lines, "\r\n") + "\r\n")

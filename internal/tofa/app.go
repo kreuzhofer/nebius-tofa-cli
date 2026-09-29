@@ -41,7 +41,7 @@ const help = `tofa — Token Factory launcher (prototype)
   tofa auth logout                          Remove locally saved credentials
   tofa models [--project-id ID]              List available models
   tofa launch codex [--model ID] [--guardian-model ID] [--project-id ID] [--allow-unverified] [--direct] [-- ARGS]
-  tofa launch codex-desktop --model ID [--guardian-model ID] [--project-id ID] --allow-unverified [--app-bundle PATH]
+  tofa launch codex-desktop [--model ID] [--guardian-model ID] [--project-id ID] [--allow-unverified] [--app-bundle PATH]
   tofa doctor                               Check local prerequisites; no inference
   tofa uninstall [--purge]                   Remove installation; optionally saved data
   tofa --version
@@ -365,11 +365,11 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 		route = "direct"
 	}
 	if !modelSelected {
-		choices, err := mainModelChoices(models, route, *guardian, *allow)
+		choices, err := mainModelChoices(models, "codex", route, *guardian, *allow)
 		if err != nil {
 			return err
 		}
-		*model, err = a.pickMainModel(ctx, choices, route, *guardian)
+		*model, err = a.pickMainModel(ctx, choices, "Codex CLI", route, *guardian)
 		if err != nil {
 			return err
 		}

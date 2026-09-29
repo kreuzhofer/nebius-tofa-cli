@@ -18,13 +18,13 @@ type modelChoice struct {
 	disabled string
 }
 
-func mainModelChoices(models []Model, route, guardian string, allow bool) ([]modelChoice, error) {
+func mainModelChoices(models []Model, target, route, guardian string, allow bool) ([]modelChoice, error) {
 	if len(models) == 0 {
 		return nil, errors.New("no models available in this project's catalog")
 	}
 	choices := []modelChoice{}
 	for _, model := range models {
-		status, err := selectionStatus("codex", route, model.ID, guardian, allow)
+		status, err := selectionStatus(target, route, model.ID, guardian, allow)
 		if errors.Is(err, errUnverifiedCombination) {
 			continue
 		}
