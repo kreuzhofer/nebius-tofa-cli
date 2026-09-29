@@ -54,7 +54,8 @@ Across these baselines: 8 passed, 3 failed and 4 unattempted coding sessions;
 GLM Flash's combined check does not distinguish incorrect output from altered
 input. Nemotron's sanitized report retains no provider error body, so the request
 validation cause remains unknown. A failed bounded baseline is not proof of
-permanent incompatibility. Provisional first-message titles are not generated
+permanent incompatibility. Later [GLM Flash/Kimi reruns](desktop-retest-2026-09-29.md)
+retain new file diagnostics and timing observations without rewriting these results. Provisional first-message titles are not generated
 naming successes; there is no hidden Kimi naming fallback for other mains.
 
 The [complete campaign](evidence/desktop-remaining-2026-09-29/campaign.json)

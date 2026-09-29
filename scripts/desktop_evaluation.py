@@ -255,12 +255,46 @@ def launch(options, root, app, state):
     return result
 
 
-def check_files(root, number, input_digest):
+def file_diagnostics(root, number, input_digest):
+    """Retain only numeric workload facts, never arbitrary generated content."""
+    expected = live.EXPECTED[number]
+    result = {'input_unchanged': live.digest(root / 'workspace/input.json') == input_digest,
+              'summary_correct': False, 'summary_state': 'unreadable',
+              'numeric_fields': {}, 'unexpected_field_count': None}
     try:
-        return (json.loads((root / 'workspace/summary.json').read_text()) == live.EXPECTED[number]
-                and live.digest(root / 'workspace/input.json') == input_digest)
-    except (OSError, ValueError):
-        return False
+        with (root / 'workspace/summary.json').open() as source:
+            raw = source.read(65537)
+        if len(raw) > 65536:
+            result['summary_state'] = 'oversized'
+            return result
+        actual = json.loads(raw)
+    except FileNotFoundError:
+        result['summary_state'] = 'missing'
+        return result
+    except PermissionError:
+        result['summary_state'] = 'permission_denied'
+        return result
+    except OSError:
+        return result
+    except ValueError:
+        result['summary_state'] = 'invalid_json'
+        return result
+    result['summary_state'] = 'object' if isinstance(actual, dict) else 'not_object'
+    if not isinstance(actual, dict):
+        return result
+    result['unexpected_field_count'] = len(actual.keys() - expected.keys())
+    for key, value in expected.items():
+        observed = actual.get(key)
+        numeric = type(observed) is int or (type(observed) is float and math.isfinite(observed))
+        result['numeric_fields'][key] = {'expected': value, 'actual': observed if numeric else None}
+    result['summary_correct'] = (actual == expected and all(
+        field['actual'] == field['expected'] for field in result['numeric_fields'].values()))
+    return result
+
+
+def check_files(root, number, input_digest):
+    result = file_diagnostics(root, number, input_digest)
+    return result['input_unchanged'] and result['summary_correct']
 
 
 def case(options, run, entry):
@@ -292,7 +326,9 @@ def case(options, run, entry):
                          'result': str(path / ('turn-' + str(number) + '.json'))}
                 result = launch(options, root, app, state)
                 records = read(state['observations'], [])
-                result['files_correct'] = check_files(root, number, original)
+                result['file_diagnostics'] = file_diagnostics(root, number, original)
+                result['files_correct'] = (result['file_diagnostics']['input_unchanged'] and
+                                           result['file_diagnostics']['summary_correct'])
                 result['streaming_observed'] = any(r.get('text_deltas', 0) >= 2 for r in records)
                 result['tool_result_continued'] = any(r.get('tool_results', 0) > 0 for r in records)
                 result['passed'] = (result.get('turn_completed') and not result.get('client_error') and

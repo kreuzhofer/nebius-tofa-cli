@@ -15,7 +15,9 @@ complete five-candidate comparison.
 The [support publication and full comparison](desktop-comparison-2026-09-29.md)
 promotes only DeepSeek and GLM desktop mains with GLM Flash Guardian, preserving
 all failures, unknown costs, naming limitations and measured-artifact provenance.
-The CLI workflow below retains its experimental policy.
+The CLI workflow below retains its experimental policy. The later
+[GLM Flash and Kimi diagnostic reruns](desktop-retest-2026-09-29.md) separate
+main-output failures from inference deadlines and retain all new observations.
 
 This workflow evaluates one exact selected candidate with **Codex CLI 0.155.1,
 macOS ARM64, adapted connection**. The selected model serves both the main and
@@ -23,7 +25,8 @@ Guardian roles by default. `--guardian-model` explicitly selects a different rev
 for this invocation. Omitting `--model` retains the original Kimi-K3 invocation. It extends the existing
 [compatibility harness](../prototype/LIVE-COMPATIBILITY.md); it is not a model
 leaderboard. Available models are candidates, not supported models. The launcher
-continues to require `--allow-unverified`; evaluation never changes that policy.
+requires `--allow-unverified` for explicit experimental model IDs; the interactive
+picker also accepts explicit Y confirmation. Evaluation does not change support records.
 
 The [2026-09-22 Kimi baseline](kimi-baseline-2026-09-22.md) records the first result,
 including a separately retained zero-inference setup failure.

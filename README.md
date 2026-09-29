@@ -262,11 +262,11 @@ Quit Codex first. This launches ChatGPT desktop **Codex** with ordinary history
 and profile state. Keep the terminal open; Ctrl-C stops that instance. Token Factory
 history stays readable in ordinary mode; relaunch through tofa to continue it.
 Desktop launches default to GLM-5.3-Flash Guardian; `--guardian-model ID` overrides
-it. The normal picker offers **DeepSeek V4.1 Flash and GLM 5.3** with that Guardian
-when available. Their [five-model comparison](docs/evaluation/desktop-comparison-2026-09-29.md)
+it. The picker marks **DeepSeek V4.1 Flash and GLM 5.3** with that Guardian
+as supported when available. Their [five-model comparison](docs/evaluation/desktop-comparison-2026-09-29.md)
 pins headless bundled-engine support to the tested macOS desktop configuration;
 Electron UI and fresh release qualification remain separate. Other pairs require
-`--allow-unverified`, including unqualified Guardian overrides. Automatic titles retain the captured Kimi-main
+interactive confirmation or `--allow-unverified`, including unqualified Guardian overrides. Automatic titles retain the captured Kimi-main
 route; other mains report unsupported naming explicitly. See
 [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
 The [shared-history qualification](docs/releases/desktop-shared-history-final-2026-09-24.md)
@@ -366,8 +366,8 @@ rejects `--guardian-model` (including the retained internal
 approval policies and routing-override protections still apply.
 
 Support decisions use [recorded combination statuses](internal/tofa/assets/model-verification.json)
-for the exact target, route and main/Guardian roles. All current combinations still
-require `--allow-unverified`: the [historical CLI campaign](docs/evaluation/selected-pairs-2026-09-23.md)
+for the exact target, route and main/Guardian roles. Current CLI combinations need
+interactive experimental consent or explicit `--allow-unverified`: the [historical CLI campaign](docs/evaluation/selected-pairs-2026-09-23.md)
 explicitly retained experimental status, and does not promote launcher or desktop
 support. Changing a role or route does not inherit another combination's support.
 Evaluation tools retain their explicit same-model default and the internal flag.

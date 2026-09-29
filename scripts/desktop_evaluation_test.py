@@ -357,4 +357,49 @@ class DesktopEvaluationTests(unittest.TestCase):
 
 
 
+class FileDiagnosticsTests(unittest.TestCase):
+    def test_distinguishes_wrong_output_from_changed_input_without_raw_content(self):
+        from desktop_evaluation import file_diagnostics
+        from live_compat import digest
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'workspace').mkdir()
+            source = root / 'workspace/input.json'
+            output = root / 'workspace/summary.json'
+            source.write_text('{"numbers":[4,-2,7,9]}')
+            original = digest(source)
+            output.write_text('{"count":4,"total":17,"max":9,"secret":"do-not-retain"}')
+            result = file_diagnostics(root, 0, original)
+            self.assertTrue(result['input_unchanged'])
+            self.assertFalse(result['summary_correct'])
+            self.assertEqual(result['numeric_fields']['total'], {'expected':18, 'actual':17})
+            self.assertEqual(result['unexpected_field_count'], 1)
+            self.assertNotIn('secret', json.dumps(result))
+            self.assertNotIn('do-not-retain', json.dumps(result))
+            output.write_text(json.dumps({'count': 4, 'total': 10**400, 'max': 9}))
+            huge = file_diagnostics(root, 0, original)
+            self.assertFalse(huge['summary_correct'])
+            self.assertEqual(huge['numeric_fields']['total']['actual'], 10**400)
+            source.write_text('changed')
+            output.write_text('{"count":4,"total":18,"max":9}')
+            result = file_diagnostics(root, 0, original)
+            self.assertFalse(result['input_unchanged'])
+            self.assertTrue(result['summary_correct'])
+
+    def test_missing_malformed_and_nonnumeric_outputs_are_explicit(self):
+        from desktop_evaluation import file_diagnostics
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'workspace').mkdir()
+            output = root / 'workspace/summary.json'
+            self.assertEqual(file_diagnostics(root, 0, 'original')['summary_state'], 'missing')
+            output.write_text('not-json')
+            self.assertEqual(file_diagnostics(root, 0, 'original')['summary_state'], 'invalid_json')
+            output.write_text('{"count":true,"total":"do-not-retain","max":NaN}')
+            result = file_diagnostics(root, 0, 'original')
+            self.assertFalse(result['summary_correct'])
+            self.assertTrue(all(v['actual'] is None for v in result['numeric_fields'].values()))
+            self.assertNotIn('do-not-retain', json.dumps(result))
+
+
 if __name__ == '__main__': unittest.main()
