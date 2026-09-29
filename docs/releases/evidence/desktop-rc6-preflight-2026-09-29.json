@@ -319,5 +319,29 @@
     "release notes and installation instructions for qualified candidate",
     "tag CI and immutable prerelease publication",
     "published-byte verification"
+  ],
+  "qualification_attempts": [
+    {
+      "started_utc": "2026-09-29T21:08:52.460960+00:00",
+      "finished_utc": "2026-09-29T21:10:10.698577+00:00",
+      "outcome": "incomplete",
+      "observations": {
+        "BASELINE": "pass"
+      },
+      "preservation": {
+        "ordinary_config": true,
+        "ordinary_auth_file": true,
+        "launcher_preferences": true,
+        "launcher_file_credentials": true,
+        "workspace_sentinel": true
+      },
+      "wizard_exit_code": 1,
+      "failure": "upgrade bundle preflight rejected 69 deleted temporary evaluation bundles",
+      "classification": "evaluation harness left bridge records in ordinary launcher configuration",
+      "recovery": "69 ownership/checksum-verified orphaned evaluation bridge directories moved to private reversible quarantine; normal ChatGPT bridge unchanged; recorded-bundle preflight then passed",
+      "candidate_engine_and_app_hashes_still_match": true,
+      "candidate_upgrade_succeeded": false,
+      "candidate_live_inference_performed": false
+    }
   ]
 }

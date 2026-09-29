@@ -245,6 +245,27 @@ def bundle(root, engine, model, limits):
     return app, config
 
 
+def retire_evaluation_bridge(root, bridge, engine):
+    """Move only this stopped launch's verified helper into disposable state."""
+    if not bridge.exists() and not bridge.is_symlink():
+        return
+    try:
+        if bridge.is_symlink() or bridge.parent.is_symlink() or not bridge.is_dir():
+            raise ValueError('unexpected bridge directory')
+        if {p.name for p in bridge.iterdir()} != {'owner.json', 'tofa-desktop-engine'}:
+            raise ValueError('unexpected bridge contents')
+        record, binary = bridge / 'owner.json', bridge / 'tofa-desktop-engine'
+        if any(p.is_symlink() or not p.is_file() for p in (record, binary)):
+            raise ValueError('unexpected bridge file')
+        owner = read(record)
+        if (owner.get('Version') != 2 or owner.get('Engine') != engine or
+                live.digest(binary) not in (owner.get('SHA256'), owner.get('PendingSHA256'))):
+            raise ValueError('bridge ownership mismatch')
+        bridge.rename(root / ('retired-bridge-' + uuid.uuid4().hex))
+    except (OSError, ValueError, AttributeError):
+        raise ValueError('evaluation_bridge_cleanup_failed') from None
+
+
 def launch(options, root, app, state):
     save(root / 'state.json', state)
     env = {key: os.environ[key] for key in ('PATH', 'TMPDIR', 'LANG', 'LC_ALL', 'FIXTURE_ENDPOINT') if key in os.environ}
@@ -252,6 +273,11 @@ def launch(options, root, app, state):
     # Saved launcher login remains read-only, while the native desktop profile
     # and engine history are entirely disposable. No native credentials copied.
     env['XDG_CONFIG_HOME'] = os.environ.get('XDG_CONFIG_HOME', str(Path.home() / '.config'))
+    engine = str(app / 'Contents/Resources/codex')
+    bridge = (Path(env['XDG_CONFIG_HOME']) / 'tofa/desktop-bridge-v2' /
+              hashlib.sha256(engine.encode()).hexdigest())
+    if bridge.exists() or bridge.is_symlink():
+        raise ValueError('evaluation_bridge_preexisting')
     command = [options.launcher, 'launch', 'codex-desktop', '--app-bundle', str(app),
                '--model', options.model, '--guardian-model', GUARDIAN, '--allow-unverified']
     process = subprocess.Popen(command, env=env, cwd=root / 'workspace', stdin=subprocess.DEVNULL,
@@ -262,6 +288,10 @@ def launch(options, root, app, state):
     except BaseException:
         live.stop(process)
         raise
+    finally:
+        if process.poll() is None:
+            raise ValueError('evaluation_bridge_cleanup_failed')
+        retire_evaluation_bridge(root, bridge, engine)
     result = read(state['result'], {'turn_completed': False, 'client_error': True, 'exit_code': code})
     if code:
         result['client_error'] = True
@@ -515,7 +545,7 @@ def evaluate(options):
         evidence.update(status='incomplete', reason='cancelled')
     except ValueError as error:
         evidence.update(status='blocked', reason=str(error) if str(error) in
-            ('unsupported_platform', 'candidate_not_shortlisted', 'candidate_metadata_unresolved', 'incompatible_engine', 'catalog_unavailable', 'candidate_unavailable', 'qualification_prerequisite_failed', 'metadata_response_limit', 'controlled_provider_requires_fixture') else 'invalid_metadata')
+            ('unsupported_platform', 'candidate_not_shortlisted', 'candidate_metadata_unresolved', 'incompatible_engine', 'catalog_unavailable', 'candidate_unavailable', 'qualification_prerequisite_failed', 'metadata_response_limit', 'controlled_provider_requires_fixture', 'evaluation_bridge_cleanup_failed', 'evaluation_bridge_preexisting') else 'invalid_metadata')
     except (OSError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError):
         attempted = any(c['status'] != 'unattempted' for c in evidence['cases'])
         evidence.update(status='incomplete' if attempted else 'blocked', reason='execution_failed' if attempted else 'prerequisite_failed')

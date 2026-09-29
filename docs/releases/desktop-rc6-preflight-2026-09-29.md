@@ -90,3 +90,29 @@ and usable provisional title. No Lightning route, live compaction or additional
 auxiliary behavior is qualified. Windows desktop remains unqualified. GLM Flash and
 Kimi main remain experimental. The five-model campaign is not repeated. Published
 candidate real-computer acceptance remains the separate #23 task.
+
+## First UI attempt and environment recovery
+
+The 21:08:52–21:10:10 UTC attempt passed the ordinary native baseline, then stopped
+at upgrade with `incompatible desktop bundle: expected CFBundleIdentifier=com.openai.codex`.
+All five recorded settings/credential/workspace preservation comparisons passed.
+No candidate desktop session or candidate inference began.
+
+A read-only replay of upgrade's recorded-bundle checks reproduced the error:
+69 bridge records referenced deleted temporary `Evaluation.app` bundles. The
+headless evaluation harness shared the saved-login configuration directory but
+left its disposable bridge records behind. The installed ChatGPT bundle remained
+exactly qualified; its engine and app hashes still matched the rc.6 freeze.
+
+The 69 orphaned records and matching executables were verified for path ownership,
+private permissions and checksums, then moved to a private reversible quarantine.
+The real ChatGPT bridge was retained byte-for-byte. The same recorded-bundle check
+then passed. This is an evaluation-harness state leak, not evidence of an
+incompatible installed app or provider failure. The harness now retires only its
+own verified bridge after the launcher stops, including failed launches; conflicting
+or preexisting records fail explicitly.
+
+The original report and frozen rc.6 assets remain unchanged. Run the same manual
+command again to create a separate attempt. Recovery does not count as a successful
+upgrade or UI qualification. The harness correction is outside rc.6's frozen
+installable artifacts; this retry continues to test the original candidate bytes.

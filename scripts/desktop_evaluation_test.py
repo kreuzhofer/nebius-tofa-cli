@@ -476,4 +476,52 @@ class FileDiagnosticsTests(unittest.TestCase):
             self.assertNotIn('do-not-retain', json.dumps(result))
 
 
+class EvaluationBridgeCleanupTests(unittest.TestCase):
+    def test_launch_retires_only_its_verified_bridge_on_success_and_failure(self):
+        from desktop_evaluation import launch
+        from types import SimpleNamespace
+        import hashlib
+        for code, conflict in ((0, None), (1, None), (0, "edited"), (0, "preexisting")):
+            with self.subTest(exit_code=code, conflict=conflict), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                (root / 'workspace').mkdir()
+                config = root / 'ordinary-config'
+                other = config / 'tofa/desktop-bridge-v2/ordinary-bridge'
+                other.mkdir(parents=True)
+                (other / 'sentinel').write_text('ordinary saved reference')
+                app = root / 'Evaluation.app'
+                engine = str(app / 'Contents/Resources/codex')
+                bridge = other.parent / hashlib.sha256(engine.encode()).hexdigest()
+                launcher = root / 'launcher'
+                launcher.write_text('#!' + sys.executable + '\n' +
+                    'import hashlib,json,os,sys\nfrom pathlib import Path\n' +
+                    'engine=' + repr(engine) + '\n' +
+                    'p=Path(os.environ["XDG_CONFIG_HOME"])/"tofa/desktop-bridge-v2"/hashlib.sha256(engine.encode()).hexdigest()\n' +
+                    'p.mkdir()\nbinary=b"owned evaluation helper"\n' +
+                    '(p/"tofa-desktop-engine").write_bytes(binary)\n' +
+                    '(p/"owner.json").write_text(json.dumps(dict(Version=2,Engine=engine,SHA256=hashlib.sha256(binary).hexdigest())))\n' +
+                    ('(p/"tofa-desktop-engine").write_bytes(b"edited helper")\n' if conflict == 'edited' else '') +
+                    'sys.exit(' + str(code) + ')\n')
+                launcher.chmod(0o700)
+                options = SimpleNamespace(launcher=str(launcher), model='example',
+                    evidence={'manifest': {'limits': {'coding_turn_seconds': 1}}})
+                state = {'case': 'coding', 'result': str(root / 'result.json')}
+                if conflict == 'preexisting':
+                    bridge.mkdir()
+                    (bridge / 'sentinel').write_text('preexisting saved reference')
+                with patch.dict(os.environ, {'XDG_CONFIG_HOME': str(config)}):
+                    if conflict:
+                        reason = 'evaluation_bridge_preexisting' if conflict == 'preexisting' else 'evaluation_bridge_cleanup_failed'
+                        with self.assertRaisesRegex(ValueError, reason):
+                            launch(options, root, app, state)
+                        self.assertTrue(bridge.exists())
+                        self.assertEqual((other / 'sentinel').read_text(), 'ordinary saved reference')
+                        continue
+                    # Repeated turns must recreate the same disposable reference.
+                    for _ in range(2):
+                        launch(options, root, app, state)
+                        self.assertFalse(bridge.exists(), 'evaluation bridge blocks future installed upgrades')
+                self.assertEqual((other / 'sentinel').read_text(), 'ordinary saved reference')
+
+
 if __name__ == '__main__': unittest.main()
