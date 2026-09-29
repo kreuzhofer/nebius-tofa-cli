@@ -8,7 +8,144 @@ selects nor qualifies Lightning. The source findings below retain their original
 versions and date; #52 documents the newer service-selected auxiliary model and
 request serialization.
 
-## Conclusion
+## Current conclusion — 2026-09-29
+
+**The investigation has an evidence-backed negative result: the current launcher
+has no supported configuration for independent Lightning naming.** CLI **0.158.0**
+still selects the current main model for custom-provider titles. Desktop
+**26.917.71314 (10954)** / engine **0.155.0-alpha.16.4** selects a service-configured
+auxiliary model, with no demonstrated user title selector. Its retained native
+catalog prevents a priority-only change from redirecting a present Luna model.
+The existing explicit desktop title route targets Kimi only, and only when Kimi
+is the launch main. These are separate blockers; neither model availability nor
+Kimi title qualification establishes Lightning support. [Current CLI source][cli-current-title],
+[desktop source refresh](lightning-title-source-refresh-2026-09-29.md),
+[launcher title gate][current-adapter], [fixed Kimi route][current-title-route].
+
+This supersedes the original catalog-default recommendation below for the current
+shared-profile launcher. Keep the 2026-09-23 findings as dated history. The newer
+desktop no longer merely requests a fixed source constant: its service can select
+the auxiliary model remotely. The refresh did not query the current remote value;
+the retained `gpt-6-luna` request is historical observed evidence, alongside the
+source default `gpt-5.6-luna`. [#52 and subsequent routing evidence](desktop-shared-title-generation.md),
+[current source locators](lightning-title-source-refresh-2026-09-29.md#primary-source-locators).
+
+### Refreshed CLI and configuration evidence
+
+`/Users/daniel/.local/bin/codex --version` reports `codex-cli 0.158.0`; executable
+SHA-256 is `788a818fbb9596869c7a487554507cb8bdca17584b8671112b23f9e225ba35c8`.
+First-party tag `rust-v0.158.0` resolves through annotated tag
+`54e1bd264b4122fe9471ee7d54c4d021a76bb8ff` to commit
+[`064c6b8c737f5b41d171fdda80bd9ef10ad06eb3`](https://github.com/openai/codex/tree/064c6b8c737f5b41d171fdda80bd9ef10ad06eb3).
+This is a tag-matched source inspection, not a binary reproducibility attestation
+or a new CLI runtime qualification.
+
+`generate_thread_title` still uses `gpt-5.6-luna` only for provider `openai` with a
+ChatGPT account and that catalog entry; otherwise it explicitly copies
+`current_model()` and the configured provider. The schema still requires only
+`title`, 1–36 characters, with no extra properties. The helper disables shell,
+unified execution, code mode, apps and other tools and fails closed if effective
+MCP configuration cannot be read. Its structured response is limited to 8 KiB.
+Startup and structured-turn waiting each have a 30-second bound; interruption and
+unsubscribe have separate bounds. Do not report 30 seconds as an end-to-end title
+deadline or guaranteed upstream cancellation. The inspected turn helper explicitly
+interrupts only when its cancellation token is set and a turn ID is known, then
+unsubscribes. [Title selector and schema][cli-current-title],
+[temporary request lifecycle][cli-current-structured].
+
+The [official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+was searched and opened again on 2026-09-29. Neither it nor the
+[0.158.0 configuration schema][cli-current-config] establishes a title-model or
+title-provider setting. `model_catalog_json` supplies a catalog; `tui.terminal_title`
+controls terminal display. Neither is a conversation-naming role selector.
+
+### Why the former desktop fallback lead does not solve this
+
+The current engine's `StaticModelsManager::get_default_model` first preserves an
+available explicitly requested model even when provider fallback is enabled.
+Only an absent request can fall through to the catalog default. The launcher now
+preserves native descriptors and appends its main/Guardian metadata; Lightning is
+not in the bundled candidate metadata. Adding Lightning or changing priority alone
+does not displace a retained Luna entry. Removing or relabeling that entry would
+change the shared-profile contract, and generic fallback also affects non-title
+auxiliary paths. [Pinned engine selector][current-desktop-manager],
+[native descriptor preservation][current-desktop-catalog],
+[bounded auxiliary inventory](lightning-title-source-refresh-2026-09-29.md#generic-fallback-affects-more-than-titles).
+
+The existing adapter's announced Kimi-only title policy recognizes exact model,
+source markers, schema and tool inventories. It relocates captured `additional_tools`
+definitions and replaces Kimi's incompatible tools-plus-schema constraint with
+complete schema instructions, leaving desktop validation in place. That is
+demonstrated Kimi behavior, not a reusable Lightning compatibility claim. No title
+route, validation rule, main/Guardian setting or installed application was changed
+in this continuation. [Current adapter][current-adapter],
+[title contract implementation][current-title-route],
+[#52 provider failures and correction](desktop-shared-title-generation.md#reproduction-and-correction).
+
+### Concrete follow-up and deadline experiment
+
+Specify an explicit **desktop naming role** as separate product work: exact
+`nvidia/Nemotron-3_5-Lightning` metadata and provider contract, visible requested
+versus upstream identity, title-only request recognition, no fallback on failure,
+and unchanged main/Guardian and native catalog behavior. Decide whether to extend
+the existing launcher title policy or seek an upstream title-model/provider
+selector. The CLI needs its own selector or separately specified naming feature;
+desktop implementation evidence does not supply one. This proposal is compatible
+with the [main identity ADR](../adr/0001-preserve-conversation-model-identity.md) and
+[Guardian route ADR](../adr/0002-guardian-selection-follows-launch-route.md).
+
+Before live inference, exercise the isolated desktop-to-local-provider boundary:
+hold the main stream open beyond the naming deadline while independently returning
+a valid title promptly; then withhold the title beyond its native deadline and
+observe failure, interruption, cleanup and persisted fallback. Include invalid
+structured output, provider error and a manual rename during generation. Capture
+title start separately from main start, first output, structured completion and
+UI persistence. The installed desktop's 30-second timer starts **after temporary
+thread creation**, so the earlier 29.952-second offset from main start does not
+measure title-request duration. Do not extend the native timer to obtain a pass.
+[Exact desktop lifecycle](lightning-title-source-refresh-2026-09-29.md#deadline-cancellation-and-persistence-limits),
+[dated rc.4 observation](https://github.com/kreuzhofer/tofa-launcher/issues/41).
+
+Only after a route and synthetic controls pass, request the separately bounded live
+qualification described [below](#narrow-next-work-and-bounded-qualification), with
+fresh catalog/price/metadata checks and exact request IDs, validity/usefulness,
+latency and usage/cost. The proposed USD 0.10 title budget and other ceilings remain
+unapproved and unexecuted; main/Guardian controls need their own budget. No paid
+campaign, support-policy promotion or release is part of this result.
+
+### Checks performed and unavailable coverage
+
+On source baseline `c5e68e0f35d3086bdbce80ba1f43721028751c30`, nine existing
+top-level adapter tests passed with `-race -count=1` (3.022 seconds):
+
+- `TestCLIDoesNotRouteNativeDesktopTitle`
+- `TestAdapterPreservesDesktopTitleContract`
+- `TestAdapterRejectsUnrecognizedDesktopTitleVariants`
+- `TestAdapterPreservesDesktopTitleResponsesAndFailures`
+- `TestAdapterLeavesOtherModelsTitleRequestsUnchanged`
+- `TestAdapterMovesGuardianGuidanceAndPreservesRequest`
+- `TestAdapterRejectsUnsupportedKimiConstrainedTools`
+- `TestAdapterLeavesUnrelatedGenerationOptionsUnchanged`
+- `TestAdapterStreamsAndCancelsUpstream`
+
+These use synthetic local HTTP fixtures and qualify existing adapter boundaries,
+not Lightning or automatic UI generation. A separate attempt enabling
+`TOFA_TEST_DESKTOP_ENGINE=/Applications/ChatGPT.app/Contents/Resources/codex`
+failed six top-level desktop tests before capture: explicit main/Guardian metadata,
+lane scoping, routed title preservation, both native title rejection inventories,
+and bundled-engine Kimi title replay. Each was stopped by the incumbent-desktop
+process guard. The CLI title non-routing test in that attempt passed. The ordinary
+running app was not closed and the guard was not bypassed. Historical #52 runtime
+evidence remains dated; no fresh engine replay, delayed-main experiment, title UI
+persistence check or live Lightning inference succeeded in this continuation.
+
+Read-only checks refreshed installed versions/hashes, first-party pinned source,
+official configuration documentation and installed desktop member locators. No
+ordinary settings, credentials, private conversation data or frozen qualification
+capsules were accessed or changed. No production code or new tests were needed
+for this research-only result; whitespace and local Markdown links were checked.
+
+## Historical conclusion — 2026-09-23
 
 **No verified, supported route through the existing launcher selects Lightning for automatic titles independently of the main and Guardian roles.** Both inspected clients generate automatic titles, but their selection rules differ. CLI 0.155.1's interactive TUI uses the current conversation model for a custom provider. The installed desktop requests a fixed auxiliary model and permits provider-catalog fallback. Neither inspected title-generation path reads a dedicated title-model setting. These conclusions are bounded to the versions and source paths below; they do not claim that every Codex version lacks such a feature. [CLI selection][cli-title], [desktop evidence](#installed-desktop-evidence), [configuration schema][cli-config].
 
@@ -116,3 +253,10 @@ The coordinating agent ran `go test ./internal/tofa -run 'TestAdapter(MovesGuard
 [launcher-snapshot]: https://github.com/kreuzhofer/nebius-tofa-cli/blob/0a26ad9b67147993e9793e2aba727039908f9658/internal/tofa/assets/evaluation-candidates.json
 [adapter]: https://github.com/kreuzhofer/nebius-tofa-cli/blob/0a26ad9b67147993e9793e2aba727039908f9658/internal/tofa/adapter.go#L219
 [prior-desktop]: codex-desktop-feasibility.md
+[cli-current-title]: https://github.com/openai/codex/blob/064c6b8c737f5b41d171fdda80bd9ef10ad06eb3/codex-rs/tui/src/app/thread_title.rs#L89
+[cli-current-structured]: https://github.com/openai/codex/blob/064c6b8c737f5b41d171fdda80bd9ef10ad06eb3/codex-rs/tui/src/temporary_structured_request.rs
+[cli-current-config]: https://github.com/openai/codex/blob/064c6b8c737f5b41d171fdda80bd9ef10ad06eb3/codex-rs/core/config.schema.json
+[current-desktop-manager]: https://github.com/openai/codex/blob/3853cf0c49daadcacaacceb2cbb732f512eaacdb/codex-rs/models-manager/src/manager.rs#L593
+[current-adapter]: https://github.com/kreuzhofer/tofa-launcher/blob/c5e68e0f35d3086bdbce80ba1f43721028751c30/internal/tofa/adapter.go#L176
+[current-title-route]: https://github.com/kreuzhofer/tofa-launcher/blob/c5e68e0f35d3086bdbce80ba1f43721028751c30/internal/tofa/title_adapter.go
+[current-desktop-catalog]: https://github.com/kreuzhofer/tofa-launcher/blob/c5e68e0f35d3086bdbce80ba1f43721028751c30/internal/tofa/desktop_catalog_darwin.go#L56
