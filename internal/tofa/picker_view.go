@@ -99,7 +99,7 @@ func choiceDetails(choice modelChoice, width int) []string {
 
 // Frame returns physical terminal rows, excluding the cursor row. All text is
 // bounded before styling; ANSI sequences do not contribute to display width.
-func (p *pickerView) frame(width, height int, route, guardian string, color bool) []string {
+func (p *pickerView) frame(width, height int, targetName, route, guardian string, color bool) []string {
 	contentWidth := min(width-4, 88)
 	style := func(text, code string) string {
 		if !color {
@@ -115,7 +115,7 @@ func (p *pickerView) frame(width, height int, route, guardian string, color bool
 	if p.details {
 		title = "Model details"
 	}
-	lines := []string{style(line("tofa  /  Token Factory"), "36"), style(line(title), "1"), line("Codex CLI  /  " + route), ""}
+	lines := []string{style(line("tofa  /  Token Factory"), "36"), style(line(title), "1"), line(targetName + "  /  " + route), ""}
 	ready := 0
 	for _, c := range p.choices {
 		if c.disabled == "" {

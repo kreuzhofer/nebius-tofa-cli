@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"golang.org/x/term"
 )
 
 type desktopBundle struct{ executable, engine string }
@@ -123,8 +126,13 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if fs.NArg() != 0 {
 		return errors.New("codex-desktop does not accept client arguments or routing overrides")
 	}
-	if !validText(*model, 512) {
-		return errors.New("codex-desktop requires explicit --model ID; use --allow-unverified for experimental selection")
+	modelSelected := false
+	fs.Visit(func(f *flag.Flag) { modelSelected = modelSelected || f.Name == "model" })
+	if modelSelected && !validText(*model, 512) {
+		return errors.New("specify a valid explicit --model ID; see tofa models")
+	}
+	if !modelSelected && !term.IsTerminal(int(os.Stdin.Fd())) {
+		return errors.New("noninteractive launch requires --model ID; use tofa launch codex-desktop --model ID (and --allow-unverified for experimental selection)")
 	}
 	if !validText(*guardian, 512) {
 		return errors.New("Guardian requires a valid model ID")
@@ -143,10 +151,23 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	if err != nil {
 		return err
 	}
-	if err := validateAvailableRole(models, "main", *model); err != nil {
-		return err
+	if len(models) == 0 {
+		return errors.New("no models available in this project's catalog")
 	}
 	if err := validateAvailableRole(models, "Guardian", *guardian); err != nil {
+		return err
+	}
+	if !modelSelected {
+		choices, err := mainModelChoices(models, "codex-desktop", "adapted", *guardian, *allow)
+		if err != nil {
+			return err
+		}
+		*model, err = a.pickMainModel(ctx, choices, "Codex desktop", "adapted", *guardian)
+		if err != nil {
+			return err
+		}
+	}
+	if err := validateAvailableRole(models, "main", *model); err != nil {
 		return err
 	}
 	status, err := selectionStatus("codex-desktop", "adapted", *model, *guardian, *allow)

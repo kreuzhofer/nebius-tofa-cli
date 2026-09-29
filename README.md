@@ -209,8 +209,9 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 ./tofa auth logout
 ```
 
-Omitting `--model` in a terminal opens the same Codex CLI main-model picker for
-`tofa`, `tofa --allow-unverified`, and `tofa launch codex [OPTIONS]`. A dedicated
+Omitting `--model` in a terminal opens the shared main-model picker for
+`tofa`, `tofa --allow-unverified`, `tofa launch codex [OPTIONS]`, and
+`tofa launch codex-desktop [OPTIONS]`. Bare launches retain Codex CLI. A dedicated
 screen highlights the current model, with its exact ID, compatibility status and
 Guardian below. Up/Down moves between ready models; Enter launches. Type to filter
 by model name or provider, Backspace edits, and Ctrl-U clears the filter. Page
@@ -219,7 +220,8 @@ Up/Down and Home/End navigate longer lists.
 Tab switches between **Ready** and **Unavailable** models, retaining your filter.
 Unavailable models can be inspected but never launched. Press **?** for complete
 model details and disabled reasons; arrows or Page Up/Down scroll long details.
-Press **?** again to return. Escape or Ctrl-C cancels without starting Codex.
+Press **?** again to return. Escape or Ctrl-C cancels without starting the target
+client or an adapter.
 
 The picker resizes with your terminal, retains the highlighted choice and restores
 the previous shell screen, cursor and terminal settings on exit. It requires at
@@ -228,7 +230,7 @@ the window or use `--model ID`. `NO_COLOR=1` disables styling while retaining th
 leading selection indicator. Guardian uses its default or explicit override
 without another prompt.
 
-Normal choices require support for the exact route and Guardian. With the current
+Normal choices require support for the exact target, route and Guardian. With the current
 experimental records, bare `tofa` explains that `--allow-unverified` is needed.
 That flag shows the selected project's entire catalog, including unknown IDs;
 entries without compatible bundled metadata remain disabled with reasons. Empty
@@ -244,6 +246,8 @@ picker in both terminal and scripted use.
 For the tested macOS desktop application, source builds offer:
 
 ```sh
+./tofa launch codex-desktop --allow-unverified
+# Explicit selection also works without a terminal:
 ./tofa launch codex-desktop --model moonshotai/Kimi-K3 --allow-unverified
 ```
 
@@ -357,7 +361,9 @@ require `--allow-unverified`: the [historical CLI campaign](docs/evaluation/sele
 explicitly retained experimental status, and does not promote launcher or desktop
 support. Changing a role or route does not inherit another combination's support.
 Evaluation tools retain their explicit same-model default and the internal flag.
-The CLI picker does not change desktop model selection.
+The desktop picker uses desktop evidence; CLI qualification never becomes desktop
+support by inference. See the [universal picker contract](docs/model-picker.md)
+for future target integrations.
 See [the metadata research](https://github.com/kreuzhofer/nebius-tofa-cli/blob/03d47a502c09debc36a2072c3aa3a929beb6c38d/docs/research/kimi-provider-metadata.md)
 for the provider snapshot and remaining gaps.
 
@@ -434,6 +440,11 @@ macOS/Linux CI; Linux execution still needs a CI result. Windows console/ConPTY
 key handling and restoration have no native picker coverage yet. Cross-building
 does not establish that coverage, and these offline fixtures do not qualify live
 Codex/model combinations.
+`TestDesktopPicker` runs the same PTY driver through the executable desktop
+boundary on the gated macOS version. With `TOFA_TEST_DESKTOP_ENGINE` set, it also
+checks selected main/Guardian routing and actual approval allow/deny execution
+through the installed engine and a loopback provider. It uses temporary native
+history, settings and credentials; it does not start the installed Electron UI.
 The build tests require Go and run on macOS/Linux. They inspect all six targets'
 embedded versions and build metadata, execute the native binary, verify every
 checksum and bundled notice, and install from a controlled local release source.

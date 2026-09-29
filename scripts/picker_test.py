@@ -23,7 +23,13 @@ GLM = 'zai-org/GLM-5.3-Flash'
 DEEPSEEK = 'deepseek-ai/DeepSeek-V4.1-Flash'
 
 
-class PickerTests(unittest.TestCase):
+class PickerFixture(unittest.TestCase):
+    support_records = [
+        dict(target='codex', route='adapted', main=KIMI, guardian=GLM),
+        dict(target='codex', route='adapted', main=DEEPSEEK, guardian=KIMI),
+        dict(target='codex', route='direct', main=DEEPSEEK, guardian=''),
+    ]
+
     @classmethod
     def setUpClass(cls):
         cls.build = tempfile.TemporaryDirectory()
@@ -31,11 +37,7 @@ class PickerTests(unittest.TestCase):
         subprocess.run(['go', 'build', '-o', str(cls.binary), './scripts/fixtures/picker_launcher'], cwd=ROOT, check=True)
         # Synthetic support records are compiled only into this test executable.
         # Production assets and their experimental status remain untouched.
-        records = [
-            dict(target='codex', route='adapted', main=KIMI, guardian=GLM),
-            dict(target='codex', route='adapted', main=DEEPSEEK, guardian=KIMI),
-            dict(target='codex', route='direct', main=DEEPSEEK, guardian=''),
-        ]
+        records = [dict(record) for record in cls.support_records]
         for record in records:
             record.update(status='supported', evidence='test-only synthetic verification')
         snapshot = pathlib.Path(cls.build.name) / 'verification.json'
@@ -76,9 +78,7 @@ class PickerTests(unittest.TestCase):
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
                 owner.requests.append((self.path, self.headers.get('Authorization'), body))
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(b'{"output":[]}')
+                owner.respond(self, body)
 
             def log_message(self, *_):
                 pass
@@ -105,6 +105,11 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
                         PATH=str(self.home) + os.pathsep + os.environ['PATH'],
                         FIXTURE_ENDPOINT=f'http://127.0.0.1:{self.server.server_port}',
                         FIXTURE_DIR=str(self.store), FIXTURE_MARKER=str(self.marker))
+
+    def respond(self, handler, body):
+        handler.send_response(200)
+        handler.end_headers()
+        handler.wfile.write(b'{"output":[]}')
 
     def start(self, args, binary=None, width=120, height=24, prelude=b''):
         self.master, self.slave = pty.openpty()
@@ -161,19 +166,7 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
         before = list(self.before)
         before[3] &= ~getattr(termios, 'PENDIN', 0)
         self.assertEqual(restored, before)
-        self.assertEqual({p.name: p.read_bytes() for p in self.store.iterdir()}, self.saved)
-
-    def test_arrows_skip_blocked_rows_and_launch_selected_upstream(self):
-        self.start(['--allow-unverified'])
-        output = self.read_until('Enter confirms')
-        self.assertIn('Unavailable 1', output)
-        self.assertIn('Codex CLI', output)
-        os.write(self.master, b'\x1b[B\r')
-        self.finish()
-        self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
-        self.assertEqual(self.requests[-1][2]['model'], KIMI)
-        self.assertEqual(self.requests[-1][1], 'Bearer synthetic-key')
-        self.assertIn('ai_project_id=synthetic-project', self.requests[-1][0])
+        self.assertEqual({name: (self.store / name).read_bytes() for name in self.saved}, self.saved)
 
     def screen_lines(self):
         # Interpret the terminal's cursor/erase operations to assert the visible
@@ -217,6 +210,20 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
                 lines[row][col] = token
                 col += 1
         return [''.join(line).rstrip() for line in lines]
+
+
+class PickerTests(PickerFixture):
+    def test_arrows_skip_blocked_rows_and_launch_selected_upstream(self):
+        self.start(['--allow-unverified'])
+        output = self.read_until('Enter confirms')
+        self.assertIn('Unavailable 1', output)
+        self.assertIn('Codex CLI', output)
+        os.write(self.master, b'\x1b[B\r')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], KIMI)
+        self.assertEqual(self.requests[-1][2]['model'], KIMI)
+        self.assertEqual(self.requests[-1][1], 'Bearer synthetic-key')
+        self.assertIn('ai_project_id=synthetic-project', self.requests[-1][0])
 
     def test_indicator_moves_in_presented_list(self):
         self.start(['--allow-unverified'])

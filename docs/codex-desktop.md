@@ -14,17 +14,30 @@ of the combined workflow.
 
 ```sh
 go build -o tofa ./cmd/tofa
+./tofa launch codex-desktop --allow-unverified
+# Explicit selection bypasses the picker:
 ./tofa launch codex-desktop --model moonshotai/Kimi-K3 --allow-unverified
 ```
 
-Use an existing `tofa auth login`. The model must be explicitly selected and
-available in the saved project's catalog. `--project-id ID` overrides that project.
+Use an existing `tofa auth login`. Omit `--model` in a terminal to choose the main
+with the shared arrow-key picker. Enter confirms; Escape or Ctrl-C restores the
+terminal without starting the desktop or adapter. Saved preferences never bypass
+confirmation. Scripts must supply `--model ID`; an explicit main bypasses the picker.
+The selected model must be available in the saved project's catalog.
+`--project-id ID` overrides that project.
 Availability and bundled provider metadata do not certify a supported combination;
 the unverified gate remains mandatory. The default Guardian is
 `zai-org/GLM-5.3-Flash`; override it with `--guardian-model ID`. Both roles must be
 available in the selected project and have compatible bundled metadata. There is
 no Guardian picker or automatic substitution. The launcher displays the exact
 main/Guardian pair, adapted route and experimental status before use.
+
+Normal picker choices require desktop evidence for the exact adapted main/Guardian
+pair. With `--allow-unverified`, the entire current project catalog is shown;
+incompatible metadata disables entries with reasons. Empty supported lists explain
+the experimental flag. Empty catalogs, unavailable Guardians and provider errors
+stop before the picker starts. CLI evidence cannot qualify desktop combinations.
+See the [universal picker contract](model-picker.md).
 
 For example, select DeepSeek with the default GLM Flash Guardian:
 
