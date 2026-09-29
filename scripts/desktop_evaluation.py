@@ -546,6 +546,11 @@ def evaluate(options):
     except ValueError as error:
         evidence.update(status='blocked', reason=str(error) if str(error) in
             ('unsupported_platform', 'candidate_not_shortlisted', 'candidate_metadata_unresolved', 'incompatible_engine', 'catalog_unavailable', 'candidate_unavailable', 'qualification_prerequisite_failed', 'metadata_response_limit', 'controlled_provider_requires_fixture', 'evaluation_bridge_cleanup_failed', 'evaluation_bridge_preexisting') else 'invalid_metadata')
+        if evidence['reason'] in ('evaluation_bridge_cleanup_failed', 'evaluation_bridge_preexisting'):
+            # An observer failure after a case starts must not rewrite earlier
+            # completed observations or describe attempted work as preflight.
+            if any(c['status'] != 'unattempted' for c in evidence['cases']):
+                evidence['status'] = 'incomplete'
     except (OSError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError):
         attempted = any(c['status'] != 'unattempted' for c in evidence['cases'])
         evidence.update(status='incomplete' if attempted else 'blocked', reason='execution_failed' if attempted else 'prerequisite_failed')

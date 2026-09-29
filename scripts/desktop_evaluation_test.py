@@ -431,6 +431,45 @@ class CaseFailureTests(unittest.TestCase):
         self.assertTrue(entry['scratch_credentials_preserved'])
 
 
+class EvaluationCleanupReportTests(unittest.TestCase):
+    def test_cleanup_failure_keeps_completed_and_unattempted_cases_distinct(self):
+        from model_evaluation import main
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            launcher, engine = root / 'launcher', root / 'engine'
+            launcher.write_text('#!/bin/sh\nif [ "$1" = --version ]; then echo "tofa evaluation-fixture"; else echo "deepseek-ai/DeepSeek-V4.1-Flash"; echo "zai-org/GLM-5.3-Flash"; fi\n')
+            engine.write_text('#!/bin/sh\necho "codex-cli 0.155.0-alpha.16.4"\n')
+            launcher.chmod(0o700); engine.chmod(0o700)
+            metadata = root / 'metadata.json'; metadata.write_text(json.dumps(snapshot()))
+            output = root / 'report.json'
+            args = ['model_evaluation.py', '--desktop', '--launcher', str(launcher),
+                    '--codex', str(engine), '--model', 'deepseek-ai/DeepSeek-V4.1-Flash',
+                    '--campaign', str(root / 'campaign'), '--metadata-snapshot', str(metadata),
+                    '--output', str(output)]
+            def case(options, run, entry):
+                if entry['id'] == 'coding-1':
+                    entry['status'] = 'passed'
+                else:
+                    entry['status'] = 'incomplete'
+                    raise ValueError('evaluation_bridge_cleanup_failed')
+            previous_signal = signal.getsignal(signal.SIGTERM)
+            try:
+                with patch('sys.argv', args), patch.dict(os.environ, HOME=str(root),
+                        CODEX_HOME=str(root / 'native'), XDG_CONFIG_HOME=str(root / 'config')), patch(
+                        'desktop_evaluation.platform.system', return_value='Darwin'), patch(
+                        'desktop_evaluation.platform.machine', return_value='arm64'), patch(
+                        'desktop_evaluation.platform.mac_ver', return_value=('26.6.2', (), '')), patch(
+                        'desktop_evaluation.case', side_effect=case):
+                    self.assertEqual(main(), 1)
+            finally:
+                signal.signal(signal.SIGTERM, previous_signal)
+            report = json.loads(output.read_text())
+            self.assertEqual(report['status'], 'incomplete')
+            self.assertEqual(report['reason'], 'evaluation_bridge_cleanup_failed')
+            self.assertEqual([c['status'] for c in report['cases']],
+                             ['passed', 'incomplete'] + ['unattempted'] * 7)
+
+
 class FileDiagnosticsTests(unittest.TestCase):
     def test_distinguishes_wrong_output_from_changed_input_without_raw_content(self):
         from desktop_evaluation import file_diagnostics

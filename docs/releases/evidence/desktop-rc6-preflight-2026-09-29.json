@@ -343,5 +343,34 @@
       "candidate_upgrade_succeeded": false,
       "candidate_live_inference_performed": false
     }
-  ]
+  ],
+  "evaluation_harness_recovery_validation": {
+    "recorded_bundle_repro_before": "failed on 69 missing evaluation bundles",
+    "recorded_bundle_repro_after": "passed, 0.09 seconds",
+    "cleanup_regression": "passed success/failure, repeated launches, edited helper and preexisting reference cases",
+    "cleanup_report_regression": "passed; completed/incomplete/unattempted case outcomes retained",
+    "model_evaluation_tests": {
+      "passed": 34,
+      "elapsed_seconds": 3.998
+    },
+    "desktop_evaluation_installed_engine_suite": {
+      "tests": 22,
+      "passed": 21,
+      "failures": 1,
+      "elapsed_seconds": 509.922,
+      "failure": "allow-1 client startup incomplete after 488.552ms, before engine setup, turn or provider requests; later approval cases unattempted",
+      "isolated_rerun": "same integration test passed in 30.956 seconds",
+      "qualification_claim": "Initial failure retained; full suite is not reported as all green."
+    },
+    "desktop_evaluation_final_offline_suite": {
+      "tests": 23,
+      "skipped": 16,
+      "failures": 0
+    },
+    "review": {
+      "standards_remaining": 0,
+      "spec_remaining": 0
+    },
+    "candidate_artifacts_changed": false
+  }
 }

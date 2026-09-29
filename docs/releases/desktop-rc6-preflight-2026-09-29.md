@@ -116,3 +116,12 @@ The original report and frozen rc.6 assets remain unchanged. Run the same manual
 command again to create a separate attempt. Recovery does not count as a successful
 upgrade or UI qualification. The harness correction is outside rc.6's frozen
 installable artifacts; this retry continues to test the original candidate bytes.
+
+Recovery validation: the focused cleanup and report-preservation regressions passed,
+as did all 34 model-evaluation tests and the final offline suite (23 tests, 16
+installed-engine opt-ins skipped). The separate opt-in engine suite passed 21 of
+22 tests. One approval case stopped during client startup after 488.552 ms, before
+engine setup or any provider request; its isolated integration-test rerun passed
+in 30.956 seconds. Both results are retained, and the initial full suite is not
+reported as all green. All these requests used synthetic loopback providers.
+Standards and Spec re-review each have zero remaining findings.
