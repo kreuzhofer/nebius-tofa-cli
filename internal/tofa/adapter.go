@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
@@ -360,6 +361,17 @@ func normalizeHistory(body []byte) ([]byte, error) {
 		}
 		if itemChanged {
 			item["content"], _ = json.Marshal(content)
+		}
+		if _, exists := item["id"]; !exists {
+			// Some desktop history messages omit the ID required by Token
+			// Factory. Keep repairs stable on retries and distinguish repeated
+			// identical messages by their position; never replace supplied IDs.
+			canonical, _ := json.Marshal(item)
+			digest := sha256.Sum256(append([]byte(strconv.Itoa(index)+":"), canonical...))
+			item["id"], _ = json.Marshal("msg_tofa_" + hex.EncodeToString(digest[:24]))
+			itemChanged = true
+		}
+		if itemChanged {
 			items[index], _ = json.Marshal(item)
 			changed = true
 		}

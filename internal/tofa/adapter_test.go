@@ -133,8 +133,38 @@ func TestAdaptedLaunchRepairsAssistantHistory(t *testing.T) {
 	}
 }
 
+func TestAdaptedLaunchRepairsMissingAssistantMessageID(t *testing.T) {
+	// The installed 0.159.2 desktop sent this assistant-message shape on
+	// continuation; Token Factory returned 422 at body.input.4.id.
+	body := `{"model":"fixture-model","input":[{"type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"previous reply","annotations":[]}]}]}`
+	app, _ := adapterFixture(t, func(writer http.ResponseWriter, request *http.Request) {
+		var payload struct {
+			Input []struct {
+				ID string `json:"id"`
+			} `json:"input"`
+		}
+		if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
+			t.Error(err)
+			return
+		}
+		if len(payload.Input) != 1 || payload.Input[0].ID == "" {
+			writer.WriteHeader(http.StatusUnprocessableEntity)
+			io.WriteString(writer, `{"detail":[{"type":"missing","loc":["body","input",0,"id"],"msg":"Field required"}]}`)
+			return
+		}
+		io.WriteString(writer, `{"output":[]}`)
+	}, func(endpoint, token string) error {
+		response := adapterRequest(t, endpoint, token, body)
+		if response.StatusCode != http.StatusOK {
+			t.Errorf("assistant-history continuation returned HTTP %d", response.StatusCode)
+		}
+		return nil
+	})
+	runAdapted(t, app)
+}
+
 func TestAdapterPreservesExistingAndUnrelatedFields(t *testing.T) {
-	body := `{"model":"fixture-model","future":9007199254740993,"input":[{"type":"message","role":"assistant","status":"incomplete","content":[{"type":"output_text","text":"existing","annotations":[{"type":"custom","value":7}]},{"type":"output_text","text":"missing"}],"extra":{"status":null}},{"type":"message","role":"user","content":[{"type":"input_text","text":"follow up"}]},{"type":"function_call","name":"shell","arguments":"{}","call_id":"call_1"},{"type":"function_call_output","call_id":"call_1","output":"done"},{"type":"reasoning","encrypted_content":"opaque"},{"type":"message","role":"assistant","status":null,"content":[{"type":"output_text","annotations":null,"text":"explicit null"}]}]}`
+	body := `{"model":"fixture-model","future":9007199254740993,"input":[{"type":"message","role":"assistant","id":"msg_existing","status":"incomplete","content":[{"type":"output_text","text":"existing","annotations":[{"type":"custom","value":7}]},{"type":"output_text","text":"missing"}],"extra":{"status":null}},{"type":"message","role":"user","content":[{"type":"input_text","text":"follow up"}]},{"type":"function_call","name":"shell","arguments":"{}","call_id":"call_1"},{"type":"function_call_output","call_id":"call_1","output":"done"},{"type":"reasoning","encrypted_content":"opaque"},{"type":"message","role":"assistant","id":null,"status":null,"content":[{"type":"output_text","annotations":null,"text":"explicit null"}]}]}`
 	want := strings.Replace(body, `"text":"missing"`, `"text":"missing","annotations":[]`, 1)
 	app, _ := adapterFixture(t, func(writer http.ResponseWriter, request *http.Request) {
 		got, err := io.ReadAll(request.Body)
@@ -163,6 +193,48 @@ func TestAdapterPreservesExistingAndUnrelatedFields(t *testing.T) {
 		return nil
 	})
 	runAdapted(t, app)
+}
+
+func TestAdaptedHistoryIDsSurviveRetriesAndAdditionalTurns(t *testing.T) {
+	message := `{"type":"message","role":"assistant","content":[{"type":"output_text","text":"same reply"}]}`
+	body := `{"model":"fixture-model","input":[` + message + `,` + message + `]}`
+	var firstIDs []string
+	requests := 0
+	app, _ := adapterFixture(t, func(writer http.ResponseWriter, request *http.Request) {
+		requests++
+		var payload struct {
+			Input []struct {
+				ID string `json:"id"`
+			} `json:"input"`
+		}
+		if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
+			t.Error(err)
+			return
+		}
+		if len(payload.Input) < 2 || payload.Input[0].ID == "" || payload.Input[1].ID == "" || payload.Input[0].ID == payload.Input[1].ID {
+			t.Error("repeated assistant messages need distinct nonempty IDs")
+			return
+		}
+		if firstIDs == nil {
+			firstIDs = []string{payload.Input[0].ID, payload.Input[1].ID}
+		} else if payload.Input[0].ID != firstIDs[0] || payload.Input[1].ID != firstIDs[1] {
+			t.Error("retry or new turn changed prior message IDs")
+		}
+		writer.WriteHeader(http.StatusOK)
+	}, func(endpoint, token string) error {
+		for _, input := range []string{body, body, strings.TrimSuffix(body, `]}`) + `,{"type":"message","role":"user","content":[{"type":"input_text","text":"next turn"}]}]}`} {
+			response := adapterRequest(t, endpoint, token, input)
+			if response.StatusCode != http.StatusOK {
+				t.Error(response.Status)
+			}
+			response.Body.Close()
+		}
+		return nil
+	})
+	runAdapted(t, app)
+	if requests != 3 {
+		t.Fatalf("got %d requests, want retry and continuation", requests)
+	}
 }
 
 func TestAdapterStopsAfterClientExitOrStartupFailure(t *testing.T) {

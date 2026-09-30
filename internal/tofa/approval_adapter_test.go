@@ -32,7 +32,7 @@ func jsonValue(t *testing.T, raw []byte) any {
 }
 
 func TestAdapterMovesGuardianGuidanceAndPreservesRequest(t *testing.T) {
-	body := strings.Replace(guardianRequestFixture(), `"input":[`, `"input":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Previous review reasoning"}]},`, 1)
+	body := strings.Replace(guardianRequestFixture(), `"input":[`, `"input":[{"type":"message","role":"assistant","id":"msg_previous_review","content":[{"type":"output_text","text":"Previous review reasoning"}]},`, 1)
 	want := jsonValue(t, []byte(body)).(map[string]any)
 	delete(want["text"].(map[string]any), "format")
 	history := want["input"].([]any)[0].(map[string]any)

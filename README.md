@@ -289,9 +289,10 @@ retry requests or follow redirects. The launcher sets provider request/stream
 retry limits to zero; Codex automatic review can still retry failed review
 sessions and requests independently.
 Unsupported routes and oversized or encoded requests fail explicitly.
-The adapter supplies missing assistant-message `status` and output-text
+The adapter supplies missing assistant-message `id`, `status` and output-text
 `annotations` in conversation history, preserving existing values so Codex can
-continue a conversation through Token Factory.
+continue a conversation through Token Factory. Repaired IDs remain stable for
+identical retries and appended turns; stored conversation history is unchanged.
 
 ### Automatic approval review
 

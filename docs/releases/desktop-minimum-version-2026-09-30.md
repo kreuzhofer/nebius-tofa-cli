@@ -81,6 +81,43 @@ with its own child PID in the synthetic home, and excludes exited helpers. All
 five native ownership checks passed. These observer failures remain recorded.
 
 Both reviews report zero remaining findings for the production fix. Full-suite
-confirmation for that fix is running. rc8 remains a failed, unpublished candidate;
+confirmation passed 452 test/subtest entries with two CLI opt-in skips in 692.788
+seconds; both installed-desktop opt-ins ran. rc8 remains a failed, unpublished candidate;
 its frozen bytes will not be replaced. A fresh candidate is required for the
 remaining ordinary-profile UI and live-provider qualification.
+
+## rc9 startup recovery and history validation
+
+rc9 was frozen from `2db08bcdff3828704e96a5c70207d2bea35bb650`. Its macOS
+ARM64 binary SHA-256 is
+`ee2b005cabcd1c40794fd94db6d3a59673b9fbba193a310850c90104b4c658b3`.
+CI run 36731717915 passed. Six packaging, four native distribution lifecycle and
+two terminal checks passed. The actual installer upgrade, repeat install,
+uninstall without purge, reinstall, saved-login reuse and fresh-shell PATH
+checks passed with settings, credentials and existing history preserved.
+
+The original ordinary-profile startup reproduction now stays open. The user
+confirmed existing history and the eligible picker with Experimental labels.
+They completed a DeepSeek tool call, switched that conversation to GLM 5.3 Flash,
+and confirmed continued history. Read-only metadata independently records the
+two models, one tool call/result and two completed turns. Changing the desktop
+default to GLM 5.3 left the concurrent CLI model and reasoning unchanged.
+
+Separate requests in that launch returned HTTP 422: Token Factory required an
+`id` on an assistant message at `body.input[4]`. The rejected item already had
+`status: completed` and output-text annotations; it omitted the ID. Only the
+validation fields and item shape were retained, without conversation text or
+credentials. These failures are separate from the passing user tool check.
+
+A public adapter regression reproduced that rejection before the repair. The
+adapter now supplies a missing assistant-message ID, deterministically for
+identical retries and appended turns, without replacing existing IDs or changing
+stored history. Repeated identical messages receive distinct IDs by input
+position. This does not promise stable IDs across arbitrary history rewrites.
+Adapter race regressions and vet passed; Standards and Spec reviews have zero
+findings. An existing Guardian preservation fixture needed an explicit original
+ID to retain its assertion that unrelated fields remain unchanged; its initial
+failure and passing rerun are recorded separately.
+
+The full suite for this additional repair is running. Fresh-candidate live
+qualification remains necessary; rc9 is not published or claimed complete.
