@@ -157,3 +157,22 @@ and remains a distinct incomplete attempt. No history snapshots were restored.
 Visible shared-history parity, live tools and continuation, automatic approval,
 cancellation and same-conversation UI recovery still require observation. This
 installed lifecycle result does not claim those UI checks or complete #35.
+
+## Normal PATH setup correction — September 30
+
+The earlier lifecycle used `--no-modify-path` when no managed activation existed.
+That verified installation at its absolute location but left normal terminal
+setup incomplete. The maintainer identified that `tofa` was not on PATH.
+
+The agent stopped its owned test launch, ran the frozen installer with default
+PATH modification enabled, and verified a new interactive login zsh starting with
+only `/usr/bin:/bin:/usr/sbin:/sbin`. `command -v tofa` resolved the installed
+binary and `tofa --version` returned rc.6. Installer-owned activation metadata
+exists; configuration and credential-file preservation checks passed. Existing
+terminal processes retain their previous environment until a new shell starts.
+
+[PATH setup evidence](evidence/desktop-rc6-path-setup-2026-09-30.json) records this
+separately from the earlier limited lifecycle result. The agent then restarted
+the desktop test using `tofa` resolved through that ordinary shell PATH. Main
+and Guardian startup announcements were observed; visible history remains a
+human observation, not a claimed automation result.

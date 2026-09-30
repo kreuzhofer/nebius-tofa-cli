@@ -1,0 +1,13 @@
+{
+  "installer_exit_code": 0,
+  "installer_modify_path": "default enabled",
+  "settings_and_credential_files_preserved": true,
+  "fresh_shell_exit_code": 0,
+  "fresh_shell_resolves_installed_tofa": true,
+  "fresh_shell_version_correct": true,
+  "path_activation_owned": true,
+  "outcome": "passed",
+  "candidate": "v0.1.0-rc.6",
+  "checked_utc": "2026-09-30T08:26:30Z",
+  "prior_gap": "Earlier lifecycle used --no-modify-path with no recorded shell activation; it did not establish normal PATH installation."
+}
