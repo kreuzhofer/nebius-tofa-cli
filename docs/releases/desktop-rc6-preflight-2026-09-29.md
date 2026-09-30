@@ -41,6 +41,12 @@ recorded separately.
 
 ## Maintainer UI procedure
 
+**September 30 update:** the agent has completed the real installer/uninstaller
+checks below. Do not ask the maintainer to repeat the terminal wizard for those
+steps. The remaining handoff is for visible UI observations; the agent handles
+CLI lifecycle operations. The original wizard command is retained as historical
+procedure, not a requirement to rerun completed installation checks.
+
 Computer Use refused access to `com.openai.codex`; the visible real-account checks
 therefore require the maintainer. Run from the repository root:
 
@@ -125,3 +131,29 @@ engine setup or any provider request; its isolated integration-test rerun passed
 in 30.956 seconds. Both results are retained, and the initial full suite is not
 reported as all green. All these requests used synthetic loopback providers.
 Standards and Spec re-review each have zero remaining findings.
+
+## Agent-run installed lifecycle — September 30
+
+The maintainer's second wizard attempt installed rc.6 successfully, then waited
+for confirmation. The agent verified the installed checksum and stopped that
+waiting recorder gracefully, retaining its incomplete report and successful
+preservation comparisons. This hands executable lifecycle checks back to the
+agent instead of requiring further maintainer terminal input.
+
+The agent then ran the frozen **real `install.sh` and `uninstall.sh`** against the
+ordinary installation: repeat install, uninstall without purge, and reinstall.
+All commands exited zero. The exact rc.6 binary is installed again. Authenticated
+catalog checks before and after the sequence confirmed saved-login reuse and
+availability of the selected main and Guardian, without paid inference.
+
+[Installed lifecycle evidence](evidence/desktop-rc6-installed-lifecycle-2026-09-30.json)
+records passing configuration, credential-file, Electron-preference, workspace,
+and existing-history preservation checks after each phase. History checks compare
+existing conversation-log prefixes and stored thread identity/title/archive metadata;
+ongoing conversation appends and SQLite activity-file changes are permitted.
+An earlier bytewise history comparison stopped after successful repeat installation
+and remains a distinct incomplete attempt. No history snapshots were restored.
+
+Visible shared-history parity, live tools and continuation, automatic approval,
+cancellation and same-conversation UI recovery still require observation. This
+installed lifecycle result does not claim those UI checks or complete #35.
