@@ -104,6 +104,7 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 	}
 	var approvalNotice sync.Once
 	var titleNotice sync.Once
+	var reasoningNotice sync.Once
 	imageNotices := map[string]bool{}
 	adapter.server = &http.Server{
 		ReadHeaderTimeout: 5 * time.Second,
@@ -274,6 +275,14 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 					fmt.Fprintln(a.Out, "Request adapter: Kimi-K3 approval-review schema moved to final-answer instructions; Codex still validates the decision.")
 				})
 			}
+			if adjusted, changed := adaptReasoningDefault(body); changed {
+				body = adjusted
+				reasoningNotice.Do(func() {
+					noticeMu.Lock()
+					defer noticeMu.Unlock()
+					fmt.Fprintln(a.Out, "GLM 5.3 thinking: using the provider default; native None is not a supported off switch. Reasoning stays separate from answer text.")
+				})
+			}
 			request.Body = io.NopCloser(bytes.NewReader(body))
 			request.ContentLength = int64(len(body))
 			proxy.ServeHTTP(writer, request)
@@ -322,6 +331,24 @@ func (adapter *requestAdapter) close() error {
 		return errors.New("request adapter could not close its connections")
 	}
 	return nil
+}
+
+// GLM 5.3 emits reasoning as answer text for effort:none. Native presets can
+// supply that value when our catalog advertises no verified effort controls.
+// Use the qualified provider default, preserving its native reasoning events.
+func adaptReasoningDefault(body []byte) ([]byte, bool) {
+	var payload, reasoning map[string]json.RawMessage
+	if json.Unmarshal(body, &payload) != nil || string(payload["model"]) != `"zai-org/GLM-5.3"` || json.Unmarshal(payload["reasoning"], &reasoning) != nil || string(reasoning["effort"]) != `"none"` {
+		return body, false
+	}
+	delete(reasoning, "effort")
+	if len(reasoning) == 0 {
+		delete(payload, "reasoning")
+	} else {
+		payload["reasoning"], _ = json.Marshal(reasoning)
+	}
+	adjusted, _ := json.Marshal(payload)
+	return adjusted, true
 }
 
 func normalizeHistory(body []byte) ([]byte, error) {

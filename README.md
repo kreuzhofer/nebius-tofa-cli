@@ -294,6 +294,13 @@ The adapter supplies missing assistant-message `id`, `status` and output-text
 continue a conversation through Token Factory. Repaired IDs remain stable for
 identical retries and appended turns; stored conversation history is unchanged.
 
+For GLM 5.3, the adapter uses provider-managed thinking when Codex supplies
+reasoning effort `none`: that value produces incorrectly classified reasoning
+in the observed provider stream. A one-time terminal notice explains the change.
+Other explicit effort settings and models remain unchanged. Reasoning, summaries,
+answers and tool calls retain their native event channels; response text is never
+stripped. Codex retains its normal controls for displaying raw reasoning.
+
 ### Automatic approval review
 
 For Kimi-K3, the adapter also handles the exact non-strict automatic approval
