@@ -149,7 +149,7 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 			if err := json.Unmarshal(raw, &child); err != nil {
 				t.Fatal(err)
 			}
-			if len(child.Catalog.Models) != 3 || !reflect.DeepEqual(child.Catalog.Models[0], descriptor) {
+			if len(child.Catalog.Models) != 6 || !reflect.DeepEqual(child.Catalog.Models[0], descriptor) {
 				t.Fatal("effective account catalog replaced with bundled choices or altered")
 			}
 			raw, err = os.ReadFile(filepath.Join(child.Env["CODEX_HOME"], "auth.json"))

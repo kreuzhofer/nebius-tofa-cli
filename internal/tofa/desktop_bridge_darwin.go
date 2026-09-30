@@ -158,6 +158,7 @@ func runDesktopBridge(args []string) error {
 				merged = append(merged, "-c", value)
 			}
 			args = append(merged, args[end:]...)
+			return runDesktopSettingsBridge(owner.Engine, args, env, route.Home)
 		}
 	} else {
 		// An ordinary invocation must not revive inactive Token Factory metadata

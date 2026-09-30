@@ -50,6 +50,8 @@ tool calls, and continued conversation. Support applies to the tested combinatio
 _Avoid_: Available model as a synonym for supported model
 
 **Experimental selection**:
-An explicit opt-in to use an available model in a target-client role whose
-compatibility has not yet been verified. Selection requires sufficient model
-metadata and a compatible client contract; it does not establish support.
+Use of an available model in a target-client role whose compatibility has not
+yet been verified. Experimental status is shown explicitly. The desktop enables
+these choices by default; CLI selection requires explicit opt-in. Selection
+requires sufficient model metadata and a compatible client contract; it does not
+establish support.

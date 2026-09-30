@@ -105,11 +105,10 @@ class DesktopPickerTests(PickerFixture):
         self.start([], binary=self.supported)
         self.read_until('Enter confirms')
         os.write(self.master, b'\r')
-        self.read_until('Launch experimental selection?')
-        self.assert_no_start()
-        os.write(self.master, b'\x1b')
-        self.finish(1)
-        self.assert_no_start()
+        child = self.launched()
+        self.read_until('Status: experimental')
+        self.assertNotIn(b'Launch experimental selection?', self.output)
+        self.stop_desktop(child)
 
     def test_disabled_metadata_cannot_be_confirmed(self):
         self.start(['--allow-unverified'])
@@ -139,14 +138,11 @@ class DesktopPickerTests(PickerFixture):
                 self.assertNotIn(b'Enter confirms', self.output)
                 self.assert_no_start()
 
-    def test_experimental_choice_requires_confirmation_before_desktop_start(self):
+    def test_experimental_choice_launches_without_additional_confirmation(self):
         self.models = [KIMI, GLM]
         self.start([])
         self.read_until('Enter confirms')
         os.write(self.master, b'\r')
-        self.read_until('Launch experimental selection?')
-        self.assert_no_start()
-        os.write(self.master, b'y')
         child = self.launched()
         self.read_until('Main: ' + KIMI)
         self.read_until('Status: experimental')
@@ -180,11 +176,12 @@ class DesktopPickerTests(PickerFixture):
     def test_production_support_does_not_promote_guardian_overrides(self):
         self.start(['--guardian-model', KIMI])
         self.read_until('Enter confirms')
+        self.assertIn('Experimental', '\n'.join(self.screen_lines()))
         os.write(self.master, b'\r')
-        self.read_until('Launch experimental selection?')
-        os.write(self.master, b'\x1b')
-        self.finish(1)
-        self.assert_no_start()
+        child = self.launched()
+        self.read_until('Status: experimental')
+        self.assertNotIn(b'Launch experimental selection?', self.output)
+        self.stop_desktop(child)
 
     def test_production_support_still_requires_current_availability(self):
         self.models = [GLM_MAIN, GLM]

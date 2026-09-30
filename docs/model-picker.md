@@ -21,10 +21,11 @@ must provide their own validation and evidence; implementing Claude remains in
 3. Show supported and experimental choices together, labelled for the exact
    target, route, main and Guardian. Availability, metadata and another target's
    qualification do not grant support. Entries lacking compatible metadata are
-   disabled with reasons. Selecting an experimental entry requires a separate
+   disabled with reasons. Desktop experimental choices are enabled and labelled
+   Experimental without extra confirmation. In Codex CLI, selecting an experimental entry requires a separate
    confirmation: Y launches once; N/Enter returns to the list; Esc cancels.
    `--allow-unverified` supplies this consent in advance. Explicit and scripted
-   experimental `--model ID` launches still require that flag. An empty catalog
+   experimental CLI `--model ID` launches still require that flag. An empty catalog
    or catalog error never broadens the list or silently substitutes a role.
 4. Display the target and route. Up/Down selects ready models; Enter confirms.
    Filtering, paging, unavailable-model inspection and details use the shared UI.
@@ -58,3 +59,19 @@ Desktop PTY checks run in `TestDesktopPicker` on macOS 26.6.2 arm64. The optiona
 `TOFA_TEST_DESKTOP_ENGINE` enables actual bundled-engine approval tests. CLI PTY
 checks are in `scripts/picker_test.py`; native Windows console/ConPTY coverage
 remains outstanding. Cross-builds establish compilation only.
+
+## Desktop conversation selection
+
+The launcher picker sets the initial/default main only. The desktop picker lists
+all eligible available Token Factory models for the configured Guardian, including
+Experimental choices without opt-in. Existing conversations retain their selected
+main when another launcher default is chosen. Changing an existing conversation's
+model through the desktop applies to subsequent turns and retains its history,
+title, workspace and provider. It does not change another conversation's model.
+The launch Guardian applies to all Token Factory mains.
+
+The installed client's catalog has no verified disabled-entry field. Models with
+missing or incompatible metadata remain disabled with reasons in the launcher
+picker, and launch output explains why they are omitted from the desktop picker.
+They cannot be routed by manually supplying an ID. Relaunch to refresh project
+availability. CLI confirmation rules remain unchanged.
