@@ -1,0 +1,319 @@
+{
+  "candidate": {
+    "source_commit": "aaa9e36460c50c226222aa32ef07b0fdaacc8d7d",
+    "version": "v0.1.0-rc.8",
+    "created_utc": "2026-09-30T14:21:39.055051+00:00",
+    "assets_sha256": {
+      "LICENSE": "796a0cd7abc80802b9d2692b7b5a606f14babdd4fed054903af045b56d7997f6",
+      "LICENSE-CODEX.txt": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+      "LICENSE-GO.txt": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "NOTICE-CODEX.txt": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+      "PATENTS-GO.txt": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+      "README.md": "99608fa0811021af230c3778c5d575df3a4de91e3159ee1ff1cf4836071b5b88",
+      "SHA256SUMS": "c48aa71c816161054b17be5eae689b4733b485e6a95f22355d7cf6b8881839ad",
+      "THIRD_PARTY_NOTICES.txt": "dad7f088af26b7c74156dbf9c46d51a8da22eec4f1a4048e75a357058fbee468",
+      "install.ps1": "950b62b3266ef2d1dc4dc395f21c5e2140b14b5eaa48a7a0b9ca689a2ea81c9b",
+      "install.sh": "1a288a20700dfbb7e57272e94730ae1f08ee73641eb3b5854d95ed7f481fc724",
+      "tofa_v0.1.0-rc.8_darwin_amd64": "c807ac742067b15c83a8f89b8375fa8083f2bede449b6648691cc814373f02f3",
+      "tofa_v0.1.0-rc.8_darwin_arm64": "704d8c04bc3620e22f95afc419cd763695e087a8a55f72f52747100bb7da2bab",
+      "tofa_v0.1.0-rc.8_linux_amd64": "95c20219ae2545b557253ec4304180149459d35dacf31e03e9719a17080b97af",
+      "tofa_v0.1.0-rc.8_linux_arm64": "73c283d9b58c1ab5dafef937d56c42138a8883d7e9d03a70d0ed6b745f2ab67d",
+      "tofa_v0.1.0-rc.8_windows_amd64.exe": "0a3bd8c31930267730caf083e3db1d735a1fc653030b71ca7916ba2cff31024e",
+      "tofa_v0.1.0-rc.8_windows_arm64.exe": "bf131e8d05a935d66e3851f3964a16c672039aeff89280af4a837560da52d732",
+      "uninstall.ps1": "0b0a63484262720ecd8f38e748c9fac9913c8cf2d39ac945729e9c66c846a82b",
+      "uninstall.sh": "692fd1469d5d03d9fb1bbefbb829cb0b4c3bb2437be67feb87d2ec4745d00089"
+    },
+    "desktop": {
+      "version": "26.928.21956",
+      "build": "12404",
+      "bundle_id": "com.openai.codex",
+      "engine_relative_path": "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+      "engine_version": "0.159.2",
+      "engine_sha256": "50ac633af64851511f9bbc71032cdae7f1ba20b3234c189687d61ba846c354c5",
+      "asar_sha256": "3bda98f2265ad23677dfe0163d1cc7855beade6bef11d27f830f6663d7658406"
+    },
+    "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "guardian": "zai-org/GLM-5.3-Flash",
+    "platform": "macOS 26.6.2 arm64",
+    "native_baseline": {
+      "existing_conversations_visible": true,
+      "native_chat_responded": true,
+      "source": "explicit user observation"
+    },
+    "candidate_installed": false,
+    "published": false
+  },
+  "upgrade": {
+    "source": "aaa9e36460c50c226222aa32ef07b0fdaacc8d7d",
+    "ci_run": 36728281247,
+    "version": "v0.1.0-rc.8",
+    "time": "2026-09-30T14:23:43.676699+00:00",
+    "installer_exit": 0,
+    "candidate_sha256": "704d8c04bc3620e22f95afc419cd763695e087a8a55f72f52747100bb7da2bab",
+    "installed_matches_candidate": true,
+    "previous_binary_retained": false,
+    "preservation": {
+      "cli_settings": true,
+      "native_auth": true,
+      "launcher_settings": true,
+      "launcher_file_credentials": true,
+      "shell_startup": true
+    }
+  },
+  "installed_lifecycle": {
+    "outcome": "passed",
+    "steps": [
+      {
+        "name": "saved_login_before",
+        "exit_code": 0,
+        "selected_models_available": true
+      },
+      {
+        "name": "repeat_install",
+        "exit_code": 0
+      },
+      {
+        "name": "uninstall_without_purge",
+        "exit_code": 0
+      },
+      {
+        "name": "reinstall",
+        "exit_code": 0
+      },
+      {
+        "name": "saved_login_after",
+        "exit_code": 0,
+        "selected_models_available": true
+      }
+    ],
+    "preservation": {
+      "after_repeat_install": {
+        "ordinary_config": true,
+        "ordinary_auth": true,
+        "launcher_preferences": true,
+        "launcher_file_credentials": true,
+        "electron_preferences": true,
+        "electron_local_state": true,
+        "workspace_sentinel": true,
+        "shell_startup": true,
+        "shell_activation_metadata": true,
+        "existing_conversation_contents_and_identity": true
+      },
+      "after_uninstall": {
+        "ordinary_config": true,
+        "ordinary_auth": true,
+        "launcher_preferences": true,
+        "launcher_file_credentials": true,
+        "electron_preferences": true,
+        "electron_local_state": true,
+        "workspace_sentinel": true,
+        "existing_conversation_contents_and_identity": true
+      },
+      "after_reinstall": {
+        "ordinary_config": true,
+        "ordinary_auth": true,
+        "launcher_preferences": true,
+        "launcher_file_credentials": true,
+        "electron_preferences": true,
+        "electron_local_state": true,
+        "workspace_sentinel": true,
+        "shell_startup": true,
+        "shell_activation_metadata": true,
+        "existing_conversation_contents_and_identity": true
+      }
+    }
+  },
+  "live_startup_attempts": [
+    {
+      "outcome": "incomplete",
+      "candidate": "v0.1.0-rc.8",
+      "launch_entry": "tofa from fresh interactive login shell",
+      "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "guardian": "zai-org/GLM-5.3-Flash",
+      "launcher_exit_code": 1,
+      "preservation": {
+        "cli_config": true,
+        "native_auth": true,
+        "launcher_config": true,
+        "launcher_credentials": true,
+        "workspace_sentinel": true
+      }
+    },
+    {
+      "outcome": "incomplete",
+      "candidate": "v0.1.0-rc.8",
+      "launch_entry": "tofa from fresh interactive login shell",
+      "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "guardian": "zai-org/GLM-5.3-Flash",
+      "launcher_exit_code": 1,
+      "preservation": {
+        "cli_config": true,
+        "native_auth": true,
+        "launcher_config": true,
+        "launcher_credentials": true,
+        "workspace_sentinel": true
+      }
+    },
+    {
+      "outcome": "incomplete",
+      "candidate": "v0.1.0-rc.8",
+      "launch_entry": "tofa from fresh interactive login shell",
+      "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "guardian": "zai-org/GLM-5.3-Flash",
+      "launcher_exit_code": 1,
+      "preservation": {
+        "cli_config": true,
+        "native_auth": true,
+        "launcher_config": true,
+        "launcher_credentials": true,
+        "workspace_sentinel": true
+      }
+    }
+  ],
+  "user_observation": "The app closed on its own. No chat was sent.",
+  "diagnosis": "A temporary network-requirements app-server exits normally before the main conversation connection starts. The old monitor armed on that helper and retained a terminal exit timer, shutting down the healthy main engine.",
+  "process_observation": {
+    "exit_code": 1,
+    "frames": [
+      {
+        "ms": 3398,
+        "desktop_pid": 11270,
+        "processes": []
+      },
+      {
+        "ms": 3801,
+        "desktop_pid": 11270,
+        "processes": [
+          {
+            "pid": 11303,
+            "parent": 11270,
+            "group": 11270,
+            "state": "S",
+            "engine_path_present": false,
+            "app_server": true,
+            "narrow_has_engine": false,
+            "narrow_has_app_server": true,
+            "args_length": 200
+          }
+        ]
+      },
+      {
+        "ms": 4179,
+        "desktop_pid": 11270,
+        "processes": [
+          {
+            "pid": 11303,
+            "parent": 11270,
+            "group": 11270,
+            "state": "S",
+            "engine_path_present": false,
+            "app_server": true,
+            "narrow_has_engine": false,
+            "narrow_has_app_server": false,
+            "args_length": 200
+          }
+        ]
+      },
+      {
+        "ms": 4352,
+        "desktop_pid": 11270,
+        "processes": []
+      },
+      {
+        "ms": 5266,
+        "desktop_pid": 11270,
+        "processes": [
+          {
+            "pid": 11382,
+            "parent": 11270,
+            "group": 11270,
+            "state": "S",
+            "engine_path_present": false,
+            "app_server": true,
+            "narrow_has_engine": false,
+            "narrow_has_app_server": true,
+            "args_length": 352
+          },
+          {
+            "pid": 11383,
+            "parent": 11382,
+            "group": 11270,
+            "state": "R",
+            "engine_path_present": true,
+            "app_server": true,
+            "narrow_has_engine": true,
+            "narrow_has_app_server": true,
+            "args_length": 982
+          }
+        ]
+      },
+      {
+        "ms": 5441,
+        "desktop_pid": 11270,
+        "processes": [
+          {
+            "pid": 11382,
+            "parent": 11270,
+            "group": 11270,
+            "state": "S",
+            "engine_path_present": false,
+            "app_server": true,
+            "narrow_has_engine": false,
+            "narrow_has_app_server": true,
+            "args_length": 352
+          },
+          {
+            "pid": 11383,
+            "parent": 11382,
+            "group": 11270,
+            "state": "S",
+            "engine_path_present": true,
+            "app_server": true,
+            "narrow_has_engine": true,
+            "narrow_has_app_server": true,
+            "args_length": 982
+          }
+        ]
+      },
+      {
+        "ms": 6626,
+        "desktop_pid": 11270,
+        "processes": [
+          {
+            "pid": 11382,
+            "parent": 11270,
+            "group": 11270,
+            "state": "S",
+            "engine_path_present": false,
+            "app_server": true,
+            "narrow_has_engine": false,
+            "narrow_has_app_server": false,
+            "args_length": 352
+          },
+          {
+            "pid": 11383,
+            "parent": 11382,
+            "group": 11270,
+            "state": "S",
+            "engine_path_present": true,
+            "app_server": true,
+            "narrow_has_engine": false,
+            "narrow_has_app_server": false,
+            "args_length": 982
+          }
+        ]
+      }
+    ]
+  },
+  "candidate_outcome": "startup qualification failed; not published",
+  "ci": {
+    "run": 36728281247,
+    "conclusion": "success"
+  },
+  "minimum_change_race_suite": {
+    "pass_entries": 449,
+    "skip_entries": 3,
+    "fail_entries": 0,
+    "note": "Predates the startup-handoff fix; visible real-profile launch found the missing regression."
+  }
+}

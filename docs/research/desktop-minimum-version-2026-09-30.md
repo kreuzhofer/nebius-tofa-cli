@@ -160,3 +160,96 @@ The issue #35 workflow still needs those checks before publication.
 This note changes no product code, credentials, native profile, or application
 state. Research probes launched only isolated engine commands and a loopback server
 with generated synthetic credentials; the desktop app was not launched.
+
+## Ownership harness startup observation
+
+A follow-up source audit addresses the ownership harness's empty redirected
+stdout while native owner/engine acknowledgements succeed. No application was
+launched for this audit.
+
+**Observed source:** `build-flavor-IWwoo-v9.js` (SHA-256
+`a23029482b1a5b16b6e049bce139f02b9ce038b1f1f58af4730ffdf2c26bef58`) defines `u` as equality of `env.CODEX_SPARKLE_ENABLED` to the string `false`;
+`d(e,t,n,r)` requires `!u(r)` before allowing an updater for a build flavor and
+platform. `shouldIncludeSparkle()` and `shouldIncludeUpdater()` use that gate.
+In `bootstrap-B7ariqxX.js`, updater class `uCe.initialize()` returns immediately
+when `options.enableUpdater` is false, and `initializeUpdater()` also checks the
+same option. In `main-BbeJ4AAR.js`, `_Qe()` computes both flags using the gate
+and logs an info-level `Launching app` event with `enableUpdater` and
+`enableSparkle`. The disable environment variable remains respected.
+
+**Observed source:** Bootstrap function `qxe()` routes each enabled log to both
+`Kxe()` (console) and `Wxe()` (rotating files). `Dq()` reads
+`CODEX_MAX_LOG_LEVEL`; `info` explicitly admits the startup event, while `warning`
+or `error` would filter it. On macOS, `L5()` places files under
+`os.homedir()/Library/Logs/<bundle-name-for-build-flavor>`; for production this is
+`com.openai.codex`. `H5()` creates UTC `YYYY/MM/DD` subdirectories, and `W5()`
+forms names `codex-desktop-<session>-<pid>-t<thread>-i<instance>-<HHMMSS>`, followed
+by `-<segment>.log` in `Wxe()`. File writes can complete after engine startup.
+The field formatter in `logger-CUwSCKgw.js` still writes booleans as
+`enableUpdater=false` and `enableSparkle=false`.
+
+**Harness recommendation:** Set `CODEX_MAX_LOG_LEVEL=info` in the fixture and
+poll for that startup event in redirected stdout plus the fixture HOME's log
+files whose filename identifies the spawned desktop PID. Assert both false
+fields in that event. Do not inspect ordinary-profile logs or accept another
+process's startup event. Keep the existing bounded deadline and native
+singleton/engine ownership assertions. Empty stdout is not an updater-policy
+failure; this audit does not establish why the native launcher redirected or
+suppressed that particular stream. Runtime confirmation of fixture log-file
+observation remains part of the parent qualification run.
+
+## Startup helper is distinct from the conversation engine
+
+The parent qualification observed a short-lived app-server, an empty process gap,
+then the main app-server. `/private/tmp/tofa35-desktop-process-watch.json`
+records a helper at about 3.8 seconds, no observed app-server at 4.35 seconds,
+and the later bridge/native-engine pair alive at 5.27 seconds. This observation
+must not be interpreted as the established conversation engine exiting.
+
+**Observed source:** `application-network-startup-D74LEWDz.js`, `Gc()` (exported
+as `readStartupApplicationRequirements`), calls `Gs(e)` without added
+configuration overrides, constructs a temporary `Vs` stdio transport, and sends:
+
+```json
+{"id":"network-initialize","method":"initialize","params":{"clientInfo":{"name":"codex_desktop","title":"Codex Desktop","version":"<app version>"},"capabilities":{"experimentalApi":true}}}
+```
+
+After the initialize response it sends `initialized`, then
+`configRequirements/read` with ID `network-requirements`. Its optional sign-out
+branch first sends `account/logout` with ID `network-logout`. On completion,
+`.finally(()=>c.close())` closes the helper transport. The helper exists to read
+application network requirements, not to own the conversation's lifetime.
+
+**Observed source:** In `bootstrap-B7ariqxX.js`, constant `PA` and builder
+`FA()` use ID `__codex_initialize__` for the main app-server initialize request.
+Its capabilities include extensions and opted-out notifications, and now
+`explicitGatewayOauth`. The successful response is processed before
+`completeInitialization`; `LA()` emits `initialize_handshake_result`. The earlier
+`src-DldfpmrL.js` source also uses main ID `__codex_initialize__` in `IW`/`LW()`.
+Thus the known main initialization exchange supplies a semantic lifecycle
+boundary across both inspected versions. Client name alone is not established
+as a role discriminator.
+
+**Observed source:** Both versions' baseline CLI arguments include
+`-c features.code_mode_host=true app-server --analytics-default-enabled`.
+New `Gc()` uses those four arguments with no additional overrides. The new main
+transport adds `getConfigOverrides`, including the `Qc()` codex-app-tools MCP
+switch and `Hpe()` code-review MCP switch (each is a `-c` pair), explaining the
+observed eight arguments when optional overrides are absent. The older main
+already added the codex-app-tools switch through `Xie()`. Argument counts and
+analytics/code-mode flags therefore cannot reliably distinguish lifecycle roles.
+
+**Recommendation:** Let startup helpers use the bridge, but only identify and
+monitor the conversation app-server once its known main initialization exchange
+is observed (preferably its successful response). An exit before this boundary
+must not arm the established-engine-loss shutdown timer. Once a main process is
+identified, preserve terminal cancellation for loss of that owned process;
+subsequent arbitrary app-server children must not silently replace it. Keep a
+bounded startup deadline for cases where main initialization never occurs.
+
+**Historical limitation:** The retained old source has the main handshake and
+ordinary transport but lacks imported `bootstrap-C4dRql4x.js`; no old ASAR was
+available in the inspected temporary/qualification paths. Absence of the helper
+literal from those partial files does not prove the earlier desktop lacked the
+helper. Its historical presence remains unverified. The new helper's intentional
+short lifetime and the stable main handshake are directly evidenced.

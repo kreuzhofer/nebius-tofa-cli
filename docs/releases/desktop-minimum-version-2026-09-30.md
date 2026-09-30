@@ -49,3 +49,38 @@ The installed-Electron startup attempt refused an already-running ordinary app,
 without changing it. Final full-suite confirmation, installed-Electron ownership,
 real-account UI and the immutable candidate lifecycle remain qualification work.
 Earlier rc6/rc7 evidence and bytes are retained; no existing candidate is retagged.
+
+## rc8 real-profile startup finding
+
+The corrected minimum-version full race suite passed 449 test/subtest entries
+with three opt-in skips. CI run 36728281247 passed artifacts and all three native
+platform jobs. rc8 was installed through its actual installer; repeat install,
+uninstall without purge, reinstall, saved-login reuse, fresh-shell PATH, settings
+and existing-history preservation passed.
+
+The actual desktop then closed itself before any chat was sent, reproduced in
+three separately retained attempts. The temporary native network-requirements
+helper closed normally before the main conversation engine started. The old
+monitor treated its exit as terminal and kept that decision even when the main
+engine was alive. The process capture distinguishes this observer error from an
+engine crash. [Sanitized rc8 evidence](evidence/desktop-rc8-startup-2026-09-30.json).
+
+The executable regression reproduced the failure. The bridge now acknowledges
+only the successful named main initialization exchange, observed on both client
+versions, and records that engine PID for the launch. The authenticated adapter
+rejects replacement registrations; the monitor still validates the owned process
+group, executable and app-server invocation, and still shuts down on established
+main-engine loss. Startup remains bounded when a client changes this contract.
+
+Targeted race checks passed for the startup handoff, immutable registration,
+engine loss, graceful exit, cancellation and sustained installed-desktop startup.
+The native ownership harness initially assumed synchronous stdout logging and
+that every observed engine remained alive; both assumptions failed with startup
+helpers. It now waits for the main initialization log, reads only logs associated
+with its own child PID in the synthetic home, and excludes exited helpers. All
+five native ownership checks passed. These observer failures remain recorded.
+
+Both reviews report zero remaining findings for the production fix. Full-suite
+confirmation for that fix is running. rc8 remains a failed, unpublished candidate;
+its frozen bytes will not be replaced. A fresh candidate is required for the
+remaining ordinary-profile UI and live-provider qualification.

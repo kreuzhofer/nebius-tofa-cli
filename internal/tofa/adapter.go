@@ -132,6 +132,13 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 						return
 					}
 				}
+				if value := request.Header.Get("X-Tofa-Main-Engine-Pid"); value != "" {
+					pid, err := strconv.ParseInt(value, 10, 32)
+					if err != nil || pid <= 0 || route.mainPID == nil || (!route.mainPID.CompareAndSwap(0, pid) && route.mainPID.Load() != pid) {
+						http.Error(writer, "desktop main engine registration conflicts with this launch", http.StatusConflict)
+						return
+					}
+				}
 				writer.Header().Set("Content-Type", "application/json")
 				writer.Header().Set("Cache-Control", "no-store")
 				json.NewEncoder(writer).Encode(route)

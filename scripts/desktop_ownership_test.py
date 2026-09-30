@@ -109,6 +109,7 @@ class DesktopOwnershipTests(unittest.TestCase):
             "ZDOTDIR": str(self.home),
             "CODEX_CLI_PATH": str(observer),
             "CODEX_SPARKLE_ENABLED": "false",
+            "CODEX_MAX_LOG_LEVEL": "info",
             "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
             "TMPDIR": str(self.root),
             "OTEL_SDK_DISABLED": "true",
@@ -179,20 +180,34 @@ class DesktopOwnershipTests(unittest.TestCase):
                 if require_native_owner:
                     for name in ("SingletonLock", "SingletonSocket", "SingletonCookie"):
                         self.assertTrue((self.profile / name).is_symlink(), name)
+                live_engines = 0
                 for event in events:
                     self.assertEqual(event["parent_pid"], process.pid)
                     executable = subprocess.run(
                         ["/bin/ps", "-ww", "-p", str(event["pid"]), "-o", "comm="],
                         capture_output=True, text=True, timeout=3)
-                    if executable.returncode or executable.stdout.strip() != str(self.engine):
+                    # The requirements helper exits before the conversation
+                    # connection starts. Its old event must not prevent the
+                    # new live engine from qualifying this same native owner.
+                    if executable.returncode:
+                        continue
+                    if executable.stdout.strip() != str(self.engine):
                         break
+                    live_engines += 1
                 else:
                     log = child["log"].read_text()
-                    self.assertIn("enableUpdater=false", log)
-                    self.assertIn("enableSparkle=false", log)
-                    return
+                    # Startup logging may flush after the engine starts. The
+                    # current client also writes under the synthetic home;
+                    # inspect only files attributed to this spawned desktop.
+                    logs = self.home / "Library/Logs/com.openai.codex"
+                    for path in logs.rglob(f"codex-desktop-*-{process.pid}-t*-i*-*.log"):
+                        log += path.read_text()
+                    if live_engines and "Launching app" in log and "Codex CLI initialized" in log:
+                        self.assertIn("enableUpdater=false", log)
+                        self.assertIn("enableSparkle=false", log)
+                        return
             time.sleep(0.05)
-        self.fail("desktop did not establish both native PID ownership and engine startup")
+        self.fail("desktop did not establish native PID ownership, engine startup and logged updater disablement")
 
     def assert_reused_owner(self, owner, contender):
         try:

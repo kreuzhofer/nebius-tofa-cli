@@ -2,12 +2,61 @@ package tofa_test
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestDesktopMainEngineRegistrationCannotBeReplaced(t *testing.T) {
+	bundle, capture := desktopFixture(t, "ignore")
+	app, _ := adapterFixture(t, nil, nil)
+	child, stop := liveDesktopFixture(t, app, bundle, capture)
+	defer stop()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, err := os.Stat(capture + ".pid"); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("conversation engine did not initialize")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	for _, pid := range []string{"invalid", "0", "-1", strconv.Itoa(os.Getpid())} {
+		request, err := http.NewRequest(http.MethodGet, child.Env["TOFA_DESKTOP_CONTEXT"]+"/desktop-launch", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer "+child.Env["TOFA_API_KEY"])
+		request.Header.Set("X-Tofa-Main-Engine-Pid", pid)
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		response.Body.Close()
+		if response.StatusCode != http.StatusConflict {
+			t.Fatalf("invalid or replacement engine registration accepted: %s", pid)
+		}
+	}
+}
+
+func TestDesktopStartupProbeDoesNotBecomeConversationEngine(t *testing.T) {
+	bundle, _ := desktopFixture(t, "startup-probe")
+	app, _ := adapterFixture(t, nil, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := app.RunContext(ctx, []string{"launch", "codex-desktop", "--app-bundle", bundle, "--model", "deepseek-ai/DeepSeek-V4.1-Flash"})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("temporary startup engine stopped the healthy conversation engine: %v", err)
+	}
+}
 
 func TestDesktopMinimumVersions(t *testing.T) {
 	for _, tc := range []struct {

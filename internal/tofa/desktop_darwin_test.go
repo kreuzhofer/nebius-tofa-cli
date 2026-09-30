@@ -104,7 +104,10 @@ if '--ordinary-probe' in sys.argv:
     print(json.dumps({'args':sys.argv[1:], 'home':os.environ.get('CODEX_HOME'), 'native_key':os.environ.get('OPENAI_API_KEY'), 'tofa_key':os.environ.get('TOFA_API_KEY')}))
     sys.exit(23)
 if '--owned-worker' in sys.argv:
+    initialize = json.loads(sys.stdin.readline())
+    print(json.dumps({'id': initialize['id'], 'result': {'userAgent': 'fixture'}}), flush=True)
     pathlib.Path(CAPTURE+'.worker-ready').touch()
+    if '--startup-probe' in sys.argv: time.sleep(0.5); sys.exit(0)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     if MODE == 'engine-exit': time.sleep(0.7); sys.exit(19)
     if MODE in ['graceful-engine-first', 'engine-first-failure']: time.sleep(0.7); sys.exit(0)
@@ -220,30 +223,30 @@ if MODE != 'exit':
     engine = pathlib.Path(os.environ.get('CODEX_CLI_PATH') or pathlib.Path(__file__).parent.parent / 'Resources' / 'codex')
     bundled_engine = pathlib.Path(__file__).parent.parent / 'Resources' / 'codex'
     worker_args = [str(engine), '-c', 'features.code_mode_host=true', 'app-server'] + ([] if bundled_engine.is_symlink() else ['--owned-worker'])
+    if MODE == 'startup-probe':
+        probe = subprocess.Popen(worker_args + ['--startup-probe'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        probe.stdin.write(json.dumps({'id': 'network-initialize', 'method': 'initialize', 'params': {'clientInfo': {'name': 'codex_desktop', 'version': '1'}}}).encode() + b'\n')
+        probe.stdin.flush()
+        probe.stdout.readline()
+        probe.wait(timeout=5)
+        time.sleep(0.3)
     worker_ready = pathlib.Path(CAPTURE+'.worker-ready')
     worker_ready.unlink(missing_ok=True)
-    worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE if bundled_engine.is_symlink() else subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if bundled_engine.is_symlink():
-        # Wait for the installed engine, not just the bridge process. In race
-        # builds the bridge can still be starting when a short fixture exits.
-        worker.stdin.write(json.dumps({'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name': 'tofa_desktop_fixture', 'version': '1'}}}).encode() + b'\n')
-        worker.stdin.flush()
-        if not select.select([worker.stdout], [], [], 10)[0]: raise RuntimeError('installed engine initialization timed out')
-        initialized = json.loads(worker.stdout.readline())
-        if initialized.get('id') != 1 or 'result' not in initialized: raise RuntimeError('installed engine initialization failed')
-    else:
-        deadline = time.monotonic() + 5
-        while not worker_ready.exists():
-            if worker.poll() is not None: raise RuntimeError('fixture worker exited before readiness')
-            if time.monotonic() >= deadline: raise RuntimeError('fixture worker readiness timed out')
-            time.sleep(0.01)
+    worker = subprocess.Popen(worker_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    worker.stdin.write(json.dumps({'id': '__codex_initialize__', 'method': 'initialize', 'params': {'clientInfo': {'name': 'codex_desktop', 'version': '1'}}}).encode() + b'\n')
+    worker.stdin.flush()
+    # Wait for the acknowledged engine, not just the bridge process. In race
+    # builds the bridge can still be starting when a short fixture exits.
+    if not select.select([worker.stdout], [], [], 10)[0]: raise RuntimeError('engine initialization timed out')
+    initialized = json.loads(worker.stdout.readline())
+    if initialized.get('id') != '__codex_initialize__' or 'result' not in initialized: raise RuntimeError('engine initialization failed')
     pathlib.Path(CAPTURE+'.pid').write_text(str(worker.pid))
     if MODE in ['graceful-engine-first', 'engine-first-failure']:
         worker.wait()
         time.sleep(0.8)
         pathlib.Path(CAPTURE+'.graceful-exit').touch()
         sys.exit(23 if MODE == 'engine-first-failure' else 0)
-    if MODE not in ['ignore', 'engine-exit', 'controlled']: time.sleep(0.4); sys.exit(0)
+    if MODE not in ['ignore', 'engine-exit', 'controlled', 'startup-probe']: time.sleep(0.4); sys.exit(0)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     while True:
         if MODE == 'controlled' and pathlib.Path(CAPTURE+'.exit').exists(): sys.exit(0)
@@ -479,6 +482,15 @@ func TestDesktopInstalledAppShellIsolation(t *testing.T) {
 	response := adapterRequest(t, "http://"+listener.Addr().String(), string(credential[1]), `{"model":"moonshotai/Kimi-K3","input":[]}`)
 	if response.StatusCode != 200 {
 		t.Fatalf("owned engine credential rejected: %s", response.Status)
+	}
+	response.Body.Close()
+	// A temporary native startup engine can be the first process observed.
+	// Keep the app alive through its handoff to the conversation connection.
+	select {
+	case err := <-done:
+		done <- err
+		t.Fatalf("installed desktop did not survive startup engine handoff: %v", err)
+	case <-time.After(4 * time.Second):
 	}
 	t.Log("Installed desktop loaded the bundled engine and retained its working adapter credential despite conflicting shell exports.")
 }

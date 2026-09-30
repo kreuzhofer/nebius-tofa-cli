@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -276,7 +277,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 			result = errors.Join(result, errors.New("request adapter stopped unexpectedly; desktop launch cancelled"))
 		}
 	}()
-	route := &desktopRoute{Bridge: bridge, Engine: bundle.engine, Home: home, ready: make(chan struct{}), claim: make(chan int, 1)}
+	route := &desktopRoute{Bridge: bridge, Engine: bundle.engine, Home: home, ready: make(chan struct{}), claim: make(chan int, 1), mainPID: &atomic.Int64{}}
 	route.mainModels = make(map[string]bool, len(mainModels))
 	for _, identity := range mainModels {
 		route.mainModels[identity] = true
@@ -323,7 +324,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	// incumbent. The bridge waits for ownership and configuration qualification.
 	command := exec.Command(bundle.executable, "--user-data-dir="+profile)
 	command.Env, command.Dir = env, workspace
-	return runDesktopProcess(adapter.context, command, bundle.engine, profile, route.claim, owned)
+	return runDesktopProcess(adapter.context, command, bundle.engine, profile, route, owned)
 }
 
 // Resolve live routing against ordinary settings without printing private policy.
@@ -422,7 +423,7 @@ func checkDesktopRoutingOverrides(ctx context.Context, engine, workspace string,
 	return nil
 }
 
-func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile string, claim <-chan int, owned func(context.Context, int) error) error {
+func runDesktopProcess(ctx context.Context, command *exec.Cmd, engine, profile string, route *desktopRoute, owned func(context.Context, int) error) error {
 	if err := refuseDesktopOwner(profile); err != nil {
 		return err
 	}
@@ -487,7 +488,7 @@ claimLoop:
 			if waitingForBridge && !desktopOwnsNativeProfile(profile, command.Process.Pid) {
 				return stop(errors.New("desktop native profile ownership changed before engine bridge startup; launch cancelled"))
 			}
-		case pid := <-claim:
+		case pid := <-route.claim:
 			if pid != command.Process.Pid || !desktopOwnsNativeProfile(profile, pid) {
 				return stop(errors.New("competing desktop launch or missing native profile ownership; Quit Codex desktop and relaunch"))
 			}
@@ -525,7 +526,7 @@ claimLoop:
 			return stop(errors.New("owned desktop app-server exited; launch cancelled"))
 		case <-startup.C:
 			if !engineSeen {
-				return stop(errors.New("desktop did not start its owned bundled app-server within 15 seconds"))
+				return stop(errors.New("desktop did not complete recognized main app-server initialization within 15 seconds; launch cancelled"))
 			}
 		case <-tick.C:
 			if !desktopOwnsNativeProfile(profile, command.Process.Pid) {
@@ -549,9 +550,12 @@ claimLoop:
 				return stop(errors.New("could not inspect owned desktop app-server; launch cancelled"))
 			}
 			found := false
+			// The desktop also starts a temporary network-requirements engine.
+			// Only the acknowledged conversation engine can arm this loss monitor.
+			mainPID := route.mainPID.Load()
 			for _, line := range strings.Split(string(output), "\n") {
 				fields := strings.Fields(line)
-				if len(fields) < 4 || fields[1] != strconv.Itoa(command.Process.Pid) || strings.HasPrefix(fields[2], "Z") {
+				if len(fields) < 4 || fields[0] != strconv.FormatInt(mainPID, 10) || fields[1] != strconv.Itoa(command.Process.Pid) || strings.HasPrefix(fields[2], "Z") {
 					continue
 				}
 				if strings.Contains(line, engine+" ") && slices.Contains(fields[3:], "app-server") {

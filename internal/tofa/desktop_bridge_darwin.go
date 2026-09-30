@@ -140,7 +140,7 @@ func runDesktopBridge(args []string) error {
 		if owner.Detached {
 			return errors.New("tofa is uninstalled; this saved engine reference supports ordinary history only. Reinstall tofa and relaunch to continue Token Factory conversations")
 		}
-		route, err := fetchDesktopRoute(endpoint, os.Getenv("TOFA_API_KEY"))
+		route, err := fetchDesktopRoute(endpoint, os.Getenv("TOFA_API_KEY"), 0)
 		if err != nil {
 			return err
 		}
@@ -209,7 +209,7 @@ func desktopAppServerIndex(args []string) int {
 	return -1
 }
 
-func fetchDesktopRoute(endpoint, token string) (desktopRoute, error) {
+func fetchDesktopRoute(endpoint, token string, mainPID int) (desktopRoute, error) {
 	var route desktopRoute
 	invalid := errors.New("desktop launch context is invalid or expired; relaunch through tofa")
 	u, err := url.Parse(endpoint)
@@ -230,6 +230,9 @@ func fetchDesktopRoute(endpoint, token string) (desktopRoute, error) {
 	}
 	request.Header.Set("Authorization", "Bearer "+token)
 	request.Header.Set("X-Tofa-Parent-Pid", strconv.Itoa(os.Getppid()))
+	if mainPID != 0 {
+		request.Header.Set("X-Tofa-Main-Engine-Pid", strconv.Itoa(mainPID))
+	}
 	transport := &http.Transport{Proxy: nil}
 	defer transport.CloseIdleConnections()
 	client := &http.Client{Transport: transport, Timeout: 45 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}

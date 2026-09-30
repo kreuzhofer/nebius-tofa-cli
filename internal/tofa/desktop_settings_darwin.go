@@ -41,6 +41,7 @@ func runDesktopSettingsBridge(engine string, args, env []string, home string) er
 	defer func() { command.Process.Kill(); command.Wait() }()
 	var writesMu, pendingMu sync.Mutex
 	pending := map[string]json.RawMessage{}
+	mainInitialize := false
 	write := func(value any) error {
 		writesMu.Lock()
 		defer writesMu.Unlock()
@@ -64,6 +65,14 @@ func runDesktopSettingsBridge(engine string, args, env []string, home string) er
 				inputDone <- errors.New("invalid desktop protocol request")
 				command.Process.Kill()
 				return
+			}
+			// This named initialization identifies the conversation connection on
+			// both qualified clients. The short-lived network-initialize helper
+			// must not become the engine whose exit ends the desktop session.
+			if request.Method == "initialize" && string(request.ID) == `"__codex_initialize__"` {
+				pendingMu.Lock()
+				mainInitialize = true
+				pendingMu.Unlock()
 			}
 			intercept, valid := desktopModelWrite(request.Method, request.Params)
 			if intercept {
@@ -106,13 +115,23 @@ func runDesktopSettingsBridge(engine string, args, env []string, home string) er
 		}
 		var params json.RawMessage
 		intercepted := false
+		mainReady := false
 		// Server requests (including approvals) have their own ID namespace.
 		// They must never consume a pending client configuration response.
 		if response.Method == "" {
 			pendingMu.Lock()
+			if mainInitialize && string(response.ID) == `"__codex_initialize__"` {
+				mainReady = true
+				mainInitialize = false
+			}
 			params, intercepted = pending[string(response.ID)]
 			delete(pending, string(response.ID))
 			pendingMu.Unlock()
+		}
+		if mainReady && len(response.Result) != 0 && (len(response.Error) == 0 || string(response.Error) == "null") {
+			if _, err := fetchDesktopRoute(os.Getenv("TOFA_DESKTOP_CONTEXT"), os.Getenv("TOFA_API_KEY"), command.Process.Pid); err != nil {
+				return fmt.Errorf("desktop main engine acknowledgement failed: %w", err)
+			}
 		}
 		if intercepted && (len(response.Error) == 0 || string(response.Error) == "null") {
 			var result struct {
