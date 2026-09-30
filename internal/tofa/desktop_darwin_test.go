@@ -1501,7 +1501,7 @@ func TestDesktopPreservesFreshNativeCatalog(t *testing.T) {
 		if err := json.Unmarshal(raw, &child); err != nil {
 			t.Fatal(err)
 		}
-		if len(child.Catalog.Models) != 3 {
+		if len(child.Catalog.Models) != 6 {
 			t.Fatalf("native choices lost: got %d descriptors, want native plus Token Factory", len(child.Catalog.Models))
 		}
 		var got, want any
@@ -1511,8 +1511,13 @@ func TestDesktopPreservesFreshNativeCatalog(t *testing.T) {
 			t.Fatal("effective native descriptor changed or became stale")
 		}
 		var descriptor map[string]any
-		json.Unmarshal(child.Catalog.Models[1], &descriptor)
-		if descriptor["slug"] != "moonshotai/Kimi-K3" || descriptor["display_name"] != "Kimi-K3 (Token Factory)" {
+		for _, raw := range child.Catalog.Models {
+			json.Unmarshal(raw, &descriptor)
+			if descriptor["slug"] == "moonshotai/Kimi-K3" {
+				break
+			}
+		}
+		if descriptor["slug"] != "moonshotai/Kimi-K3" || descriptor["display_name"] != "Kimi-K3 (Token Factory) — Experimental" {
 			t.Fatalf("missing qualified Token Factory choice: %v", descriptor["slug"])
 		}
 	}

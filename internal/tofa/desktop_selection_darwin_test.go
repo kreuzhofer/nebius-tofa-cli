@@ -2,7 +2,6 @@ package tofa_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -97,7 +96,6 @@ func TestDesktopRejectsInvalidSelectionBeforeStartingTarget(t *testing.T) {
 		{name: "unavailable override", main: "moonshotai/Kimi-K3", flags: []string{"--guardian-model", "absent/model"}, want: "Guardian model absent/model: not available"},
 		{name: "Guardian metadata", main: "moonshotai/Kimi-K3", flags: []string{"--guardian-model", "fixture-model"}, want: "Guardian model fixture-model: missing bundled model metadata"},
 		{name: "empty Guardian", main: "moonshotai/Kimi-K3", flags: []string{"--guardian-model", ""}, want: "valid model ID"},
-		{name: "unverified pair", main: "deepseek-ai/DeepSeek-V4.1-Flash", flags: []string{"--guardian-model", "moonshotai/Kimi-K3", "--allow-unverified=false"}, want: "unverified combination for codex-desktop adapted"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			bundle, capture := desktopFixture(t, "normal")
@@ -125,7 +123,6 @@ func TestDesktopNamingAndGuardianLanesRemainScoped(t *testing.T) {
 	child, stop := liveDesktopFixture(t, app, bundle, capture, "--model", "deepseek-ai/DeepSeek-V4.1-Flash")
 	for _, tc := range []struct{ name, body, want string }{
 		{"malformed model", `{"model":"deepseek-ai/DeepSeek-V4.1-Flash","model":123,"input":[]}`, "invalid model"},
-		{"Guardian conversation", `{"model":"zai-org/GLM-5.3-Flash","input":[]}`, "relaunch with --model zai-org/GLM-5.3-Flash --allow-unverified"},
 		{"changed review", strings.Replace(strings.Replace(guardianRequestFixture(), "moonshotai/Kimi-K3", "zai-org/GLM-5.3-Flash", 1), `"strict":false`, `"strict":true`, 1), "unsupported"},
 		{"wrong reviewer", guardianRequestFixture(), "unsupported Guardian"},
 	} {
@@ -203,38 +200,46 @@ func TestDesktopMainStructuredOutcomeRemainsAnOrdinaryRequest(t *testing.T) {
 	}
 }
 
-func TestDesktopWrongMainExplainsRecovery(t *testing.T) {
+func TestDesktopUnavailableMainExplainsRecovery(t *testing.T) {
 	bundle, capture := desktopFixture(t, "ignore")
 	var calls atomic.Int32
-	app, output := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) { calls.Add(1) }, nil)
+	app, output := adapterFixture(t, nil, nil)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/models" {
+			io.WriteString(w, `{"data":[{"id":"deepseek-ai/DeepSeek-V4.1-Flash"},{"id":"zai-org/GLM-5.3-Flash"}]}`)
+			return
+		}
+		calls.Add(1)
+	}))
+	defer server.Close()
+	app.Endpoint = server.URL
 	child, stop := liveDesktopFixture(t, app, bundle, capture, "--model", "deepseek-ai/DeepSeek-V4.1-Flash")
-	response := adapterRequest(t, child.Env["TOFA_DESKTOP_CONTEXT"], child.Env["TOFA_API_KEY"], `{"model":"zai-org/GLM-5.3-Flash","input":[]}`)
-	body, err := io.ReadAll(response.Body)
-	response.Body.Close()
-	stop()
-	if err != nil || response.StatusCode != http.StatusBadRequest || calls.Load() != 0 {
-		t.Fatalf("wrong-main request was not refused: status=%d calls=%d error=%v", response.StatusCode, calls.Load(), err)
-	}
-	for _, want := range []string{
-		"conversation main zai-org/GLM-5.3-Flash differs from launch main deepseek-ai/DeepSeek-V4.1-Flash",
-		"Quit the desktop",
-		"relaunch with --model zai-org/GLM-5.3-Flash --allow-unverified",
-		"reopen the same conversation",
-	} {
-		if !strings.Contains(string(body), want) || !strings.Contains(output.String(), want) {
-			t.Errorf("missing recovery instruction %q: response=%s output=%s", want, body, output.String())
+	for _, model := range []string{"zai-org/GLM-5.3", "fixture-model", "gpt-6-astra"} {
+		response := adapterRequest(t, child.Env["TOFA_DESKTOP_CONTEXT"], child.Env["TOFA_API_KEY"], `{"model":"`+model+`","input":[]}`)
+		body, err := io.ReadAll(response.Body)
+		response.Body.Close()
+		if err != nil || response.StatusCode != http.StatusBadRequest || calls.Load() != 0 {
+			t.Fatalf("unavailable model escaped: %d %s", response.StatusCode, body)
+		}
+		if model != "zai-org/GLM-5.3" && (!strings.Contains(string(body), "missing bundled model metadata") || !strings.Contains(string(body), "select an available model")) { t.Errorf("missing incompatible-model recovery: %s", body) }
+		if model == "zai-org/GLM-5.3" && !strings.Contains(string(body), "unavailable in this launch's project catalog") {
+			t.Fatalf("missing recovery instructions: %s", body)
 		}
 	}
-}
-
-func TestDesktopBundledEngineRequiresRecordedMainOnRelaunch(t *testing.T) {
-	// Cover both a recorded main present as Guardian and one absent from the launch catalog.
-	for _, recorded := range []string{"zai-org/GLM-5.3-Flash", "zai-org/GLM-5.3"} {
-		t.Run(recorded, func(t *testing.T) { desktopWrongMainRoundTrip(t, recorded) })
+	stop()
+	if !strings.Contains(output.String(), "relaunch to refresh the catalog") {
+		t.Fatal("missing availability recovery notice")
 	}
 }
 
-func desktopWrongMainRoundTrip(t *testing.T, recorded string) {
+func TestDesktopBundledEngineResumesRecordedMainWithAnyLaunchDefault(t *testing.T) {
+	// Cover a recorded main that is also Guardian and a different supported main.
+	for _, recorded := range []string{"zai-org/GLM-5.3-Flash", "zai-org/GLM-5.3"} {
+		t.Run(recorded, func(t *testing.T) { desktopRecordedMainRoundTrip(t, recorded) })
+	}
+}
+
+func desktopRecordedMainRoundTrip(t *testing.T, recorded string) {
 	installed := os.Getenv("TOFA_TEST_DESKTOP_ENGINE")
 	if installed == "" {
 		t.Skip("set TOFA_TEST_DESKTOP_ENGINE")
@@ -248,7 +253,7 @@ func desktopWrongMainRoundTrip(t *testing.T, recorded string) {
 		t.Fatal(err)
 	}
 	var calls atomic.Int32
-	app, output := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
+	app, _ := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
 		var request struct{ Model string }
 		if json.NewDecoder(r.Body).Decode(&request) != nil || request.Model != recorded {
 			t.Error("conversation identity changed")
@@ -270,15 +275,7 @@ func desktopWrongMainRoundTrip(t *testing.T, recorded string) {
 		if thread["model"] != recorded || thread["modelProvider"] != "nebius-tofa" {
 			t.Fatal("resume changed recorded identity")
 		}
-		status := "completed"
-		if index == 1 {
-			status = "failed"
-		}
-		before := calls.Load()
-		turn := e.turnText(id, status, "Continue the recorded conversation")
-		if index == 1 && (calls.Load() != before || !strings.Contains(fmt.Sprint(turn["error"]), "relaunch with --model "+recorded+" --allow-unverified")) {
-			t.Fatalf("wrong-main recovery did not reach engine error: %v", turn["error"])
-		}
+		e.turnText(id, "completed", "Continue the recorded conversation")
 		if index == 0 {
 			e.call("thread/name/set", map[string]string{"threadId": id, "name": "Retained title"})
 		}
@@ -292,8 +289,8 @@ func desktopWrongMainRoundTrip(t *testing.T, recorded string) {
 			t.Fatal(err)
 		}
 	}
-	if calls.Load() != 2 || !strings.Contains(output.String(), "relaunch with --model "+recorded+" --allow-unverified") {
-		t.Fatalf("missing refusal/recovery: calls=%d output=%s", calls.Load(), output.String())
+	if calls.Load() != 3 {
+		t.Fatalf("recorded model did not receive all turns: %d", calls.Load())
 	}
 }
 
@@ -309,17 +306,21 @@ func TestDesktopOrdinaryRecoveryGuidanceSupportsSelectedMain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), "original main model") {
+	if !strings.Contains(string(data), "Relaunch through tofa with any default main model") {
 		t.Fatalf("ordinary-mode guidance is tied to a different main: %s", data)
 	}
 	// An older launch's exactly owned inactive entry remains accepted. Avoid
 	// migrating unrelated settings or accepting an arbitrary provider override.
-	const current = "Token Factory is unavailable in ordinary mode. Relaunch through tofa with the conversation's original main model: --model ID --allow-unverified; choosing GPT does not migrate this conversation."
-	const legacy = "Token Factory is unavailable in ordinary mode. Relaunch through tofa with --model moonshotai/Kimi-K3 --allow-unverified; choosing GPT does not migrate this conversation."
-	if err := os.WriteFile(path, []byte(strings.Replace(string(data), current, legacy, 1)), 0600); err != nil {
-		t.Fatal(err)
-	}
-	if err := app.Run(args); err != nil {
-		t.Fatalf("legacy owned provider refused: %v", err)
+	const current = "Token Factory is unavailable in ordinary mode. Relaunch through tofa with any default main model, then reopen this conversation; choosing GPT does not migrate its provider."
+	for _, legacy := range []string{
+		"Token Factory is unavailable in ordinary mode. Relaunch through tofa with --model moonshotai/Kimi-K3 --allow-unverified; choosing GPT does not migrate this conversation.",
+		"Token Factory is unavailable in ordinary mode. Relaunch through tofa with the conversation's original main model: --model ID --allow-unverified; choosing GPT does not migrate this conversation.",
+	} {
+		if err := os.WriteFile(path, []byte(strings.Replace(string(data), current, legacy, 1)), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := app.Run(args); err != nil {
+			t.Fatalf("legacy owned provider refused: %v", err)
+		}
 	}
 }

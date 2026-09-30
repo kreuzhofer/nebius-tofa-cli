@@ -235,10 +235,11 @@ leading selection indicator. Guardian uses its default or explicit override
 without another prompt.
 
 Supported and experimental models appear together, labelled for the exact target,
-route and Guardian. CLI combinations remain experimental. Choosing one asks for
+route and Guardian. CLI combinations remain experimental. Choosing one in CLI asks for
 confirmation: **Y** launches once, **N/Enter** returns to the list, and **Esc**
 cancels. `--allow-unverified` skips this extra confirmation. Explicit or scripted
-experimental `--model ID` launches still require the flag. Entries without
+experimental CLI `--model ID` launches still require the flag. Desktop experimental
+choices are enabled without extra confirmation and labelled Experimental. Entries without
 compatible bundled metadata remain disabled with reasons. Empty catalogs,
 failed discovery and unavailable Guardians stop the launch.
 
@@ -265,8 +266,11 @@ Desktop launches default to GLM-5.3-Flash Guardian; `--guardian-model ID` overri
 it. The picker marks **DeepSeek V4.1 Flash and GLM 5.3** with that Guardian
 as supported when available. Their [five-model comparison](docs/evaluation/desktop-comparison-2026-09-29.md)
 pins headless bundled-engine support to the tested macOS desktop configuration;
-Electron UI and fresh release qualification remain separate. Other pairs require
-interactive confirmation or `--allow-unverified`, including unqualified Guardian overrides. Automatic titles retain the captured Kimi-main
+Electron UI and fresh release qualification remain separate. Other eligible desktop
+pairs are always enabled and marked Experimental. The launcher sets the default;
+the desktop picker offers all eligible available models, and each conversation
+keeps its own selected main across relaunches. The configured Guardian applies
+to every Token Factory main. Automatic titles retain the captured Kimi launch-default
 route; other mains report unsupported naming explicitly. See
 [tested versions, lifecycle, and limitations](docs/codex-desktop.md).
 The [shared-history qualification](docs/releases/desktop-shared-history-final-2026-09-24.md)

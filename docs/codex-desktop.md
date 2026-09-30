@@ -31,7 +31,7 @@ The selected model must be available in the saved project's catalog.
 Availability and bundled provider metadata do not certify a supported combination;
 only the two [promoted desktop pairs](evaluation/desktop-comparison-2026-09-29.md)
 are supported: DeepSeek V4.1 Flash or GLM 5.3 main with GLM 5.3 Flash Guardian.
-Other combinations require interactive confirmation or `--allow-unverified`. The default Guardian is
+Other eligible combinations are always enabled and labelled Experimental. The default Guardian is
 `zai-org/GLM-5.3-Flash`; override it with `--guardian-model ID`. Both roles must be
 available in the selected project and have compatible bundled metadata. There is
 no Guardian picker or automatic substitution. The launcher displays the exact
@@ -39,8 +39,8 @@ main/Guardian pair, adapted route and support status before use.
 
 The picker shows supported and experimental pairs together. Support requires
 exact adapted main/Guardian evidence; CLI evidence cannot qualify a desktop pair.
-Experimental selections require Y confirmation before startup unless
-`--allow-unverified` was supplied. N/Enter returns to the list; Esc cancels.
+Experimental selections launch without an extra flag or confirmation. Esc cancels.
+`--allow-unverified` remains accepted for existing scripts but is unnecessary for desktop.
 Incompatible metadata disables entries with reasons. Empty catalogs, unavailable
 Guardians and provider errors stop before the picker starts.
 See the [universal picker contract](model-picker.md).
@@ -58,8 +58,9 @@ Beyond the two supported pairs, metadata-compatible pairs among `zai-org/GLM-5.3
 `nvidia/Nemotron-3-Ultra-550b-a55b` are experimentally selectable. Each descriptor
 uses its own dated provider metadata; text-only candidates do not inherit Kimi's
 image capability. Offline routing tests do not qualify live model behavior.
-Naming is separately supported only for the recognized Kimi-main contract;
-other mains explicitly report unavailable naming, with no hidden Kimi dependency.
+Naming retains the separately announced launch-default contract: a Kimi default
+routes recognized title requests to Kimi, while other defaults report unavailable
+naming. Changing a conversation main does not select a new naming model.
 The [five-model comparison](evaluation/desktop-comparison-2026-09-29.md) records
 main/Guardian outcomes, naming limits, timings, shared costs and promotion provenance.
 Support covers the pinned headless bundled-engine baseline, not Electron UI or
@@ -78,7 +79,7 @@ release qualification. See the [offline selection evidence](evaluation/desktop-s
    a fresh tofa launch. Changing the picker to GPT/Astra does not migrate the
    conversation to OpenAI.
 4. Quit the ordinary app, rerun the launch command, reopen the **same conversation**
-   using that conversation's original `--model ID`. Continue there;
+   with any default main. Its recorded main is retained if available. Continue there;
    creating a replacement conversation is not the recovery procedure.
 
 After an abrupt launcher exit, quit any surviving desktop manually before retrying.
@@ -87,42 +88,68 @@ to recover. For ownership conflicts or damaged artifacts, follow
 [failure recovery](#failure-recovery-48) and
 [installed lifecycle instructions](#installed-lifecycle-and-retained-history).
 
-#### Matching-main example
+#### Per-conversation selection
 
-For a conversation recorded with `deepseek-ai/DeepSeek-V4.1-Flash`, quit the desktop,
-run this from its workspace, and reopen that same conversation:
-
-```sh
-tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash --allow-unverified
-```
-
-The conversation keeps its main, provider, title, workspace association and tool
-history. This launch displays `Guardian: zai-org/GLM-5.3-Flash`; that effective
-Guardian also applies to resumed Token Factory conversations. An explicit
-`--guardian-model ID` changes the Guardian for this launch. Native conversations
-keep native routing and reviewer descriptors.
-
-#### Wrong-main example
-
-If a conversation recorded with `zai-org/GLM-5.3-Flash` is opened during the
-DeepSeek launch above, sending fails before provider inference with:
-
-```text
-Token Factory conversation main zai-org/GLM-5.3-Flash differs from launch main deepseek-ai/DeepSeek-V4.1-Flash; request was not sent upstream. Quit the desktop, relaunch with --model zai-org/GLM-5.3-Flash --allow-unverified, then reopen the same conversation.
-```
-
-Quit and wait for the launcher to exit, then recover with:
+Launch with DeepSeek as the initial/default model:
 
 ```sh
-tofa launch codex-desktop --model zai-org/GLM-5.3-Flash --allow-unverified
+tofa launch codex-desktop --model deepseek-ai/DeepSeek-V4.1-Flash
 ```
 
-Reopen the original conversation. Having its main available as the previous
-launch's Guardian did not authorize it as a conversation route. Deliberate changes
-to a conversation's main remain a separate follow-up in
-[#55](https://github.com/kreuzhofer/tofa-launcher/issues/55).
-See the [controlled recovery checks](evaluation/desktop-recovery-2026-09-28.md)
-for tested model/failure combinations and coverage limits.
+The desktop picker offers every eligible model available in the selected project,
+including GLM Flash, Kimi and Nemotron as Experimental choices. Experimental labels
+describe qualification status; no opt-in is required. Models with missing or
+incompatible metadata remain disabled with reasons in the launcher picker and
+are omitted from the desktop catalog with an explicit terminal notice: the
+installed model-list contract has no verified disabled-entry field.
+
+A GLM Flash conversation can continue during this DeepSeek launch. Selecting a
+new main within that conversation applies to subsequent turns without changing
+its history, title, workspace association or provider. Other conversations retain
+their own selections. Changes made during an active turn affect subsequent turns;
+cancellation interrupts the current request. The engine retains its approval
+policy and pending execution gates.
+
+Desktop default-model, reasoning-effort and service-tier selections are scoped
+to that desktop session. They do not overwrite the ordinary CLI defaults during
+startup, selection or shutdown. The bridge recognizes the installed client's
+model-setting writes, reads the native configuration version without writing,
+and returns the explicit `okOverridden` result that makes the desktop retain its
+selection locally for the next new conversation. Existing-thread model changes
+remain native `thread/settings/update` calls. Other settings writes still go to
+the native engine; mixed model/unrelated-setting batches fail without partial
+writes. No saved configuration snapshot is restored on exit, so concurrent user
+settings changes are retained.
+
+The configured launch Guardian applies to all Token Factory conversations,
+including when the same model is also selected for ordinary chat. Native
+conversations keep their provider and reviewer descriptors. Choosing a GPT model
+does not migrate a Token Factory conversation to OpenAI.
+
+Availability and metadata are snapshotted at launch. Requests for an unavailable
+model fail explicitly before provider inference. Check project availability and
+relaunch to refresh, or explicitly select an eligible model on the same
+conversation. There is no automatic fallback. Provider errors remain visible;
+Experimental does not promise a successful live response.
+
+Switching to a text-only model preserves saved image history. The engine replaces
+images in that model's inference input with an explicit omission marker; the
+launcher prints a context notice. Switching back to an image-capable model makes
+the saved images available again. This does not convert or discard attachments.
+
+If a smaller context window requires automatic compaction, the launcher rejects
+the recognized compaction request before inference. The turn fails explicitly
+and saved history remains intact. Select a model with enough context or start a
+new conversation. There is no automatic summarization, model substitution or
+history truncation to force a switch to succeed. The native configurable
+compaction threshold is exercised with synthetic responses in the regression
+suite; live behavior near each provider's actual limit is not qualified.
+
+The bundled-engine checks cover model switching, independent conversations,
+tool/result continuation, resume under a different default, cancellation and
+unavailable-model recovery. The desktop UI still needs direct qualification of
+the same interactions; synthetic routing tests do not establish live provider
+compatibility for experimental choices.
 
 ### Compatibility
 
@@ -189,10 +216,10 @@ The durable `model_providers.nebius-tofa` entry contains a display name, Respons
 wire format, loopback port zero and the deliberately absent
 `TOFA_DESKTOP_INACTIVE` credential variable. It contains no live adapter address
 or credential. Ordinary mode can hydrate recorded Token Factory history; sending
-fails with guidance to relaunch through tofa using the conversation's original
-`--model ID --allow-unverified`. Existing owned entries from older launches remain
-accepted unchanged and may still show their historical Kimi-specific hint;
-use the conversation's recorded main. The ordinary bridge removes both
+fails with guidance to relaunch through tofa with any default main. Existing owned
+entries from older launches remain accepted unchanged and may still show their
+historical original-main or Kimi-specific hint; these older hints are no longer
+a model-routing restriction. The ordinary bridge removes both
 stale launch and inactive credential variables. Even a directly invoked engine
 with an artificially populated inactive variable cannot reach either inference
 provider, although its port-zero connection failure may keep retrying until
@@ -203,9 +230,9 @@ interrupted. Choosing GPT does not migrate a conversation's provider.
 Each launch asks the qualified bundled engine for `debug models` **before**
 applying Token Factory overrides, in the target engine home and workspace. The
 launcher preserves complete native descriptors, including account-dependent
-availability, reasoning choices, instructions and unknown fields. It appends the selected main and, when different, Guardian descriptors,
-displayed with a `(Token Factory)` suffix; it neither reconstructs
-descriptors from the
+availability, reasoning choices, instructions and unknown fields. It appends every
+eligible Token Factory main, displayed with a `(Token Factory)` suffix and an
+Experimental label where applicable; it neither reconstructs descriptors from the
 lossy `model/list` picker response nor ships a frozen native snapshot. Empty,
 malformed, duplicate or conflicting model identities cancel the launch.
 
@@ -245,15 +272,15 @@ account files and native provider settings remain the engine's responsibility.
 Cold resume with null model/provider retains the recorded identity. A native Astra
 thread continues through its native provider during a tofa launch; a new default
 thread identifies `nebius-tofa` and the selected main. A Token Factory conversation
-with a different recorded main fails with an explicit relaunch command, including
-when that recorded main happens to be the current Guardian. Relaunch using the
-original main to continue the same history. The picker changes a model, not its
-provider; it does not migrate a conversation to OpenAI.
+with a different recorded main continues on that model when it is eligible in the
+current project. The picker changes a model, not its provider; it does not migrate
+a conversation to OpenAI.
 
-The added main descriptor selects the launch Guardian via
-`auto_review_model_override`. A distinct Guardian is admitted at the adapter only
-for the recognized non-strict review schema, tools and request options. It is not
-an additional conversation route. Native descriptors and reviewers are unchanged.
+Every added main descriptor selects the launch Guardian via
+`auto_review_model_override`. Recognized review requests must use that Guardian
+and the verified review schema, tools and request options. Ordinary chat requests
+may independently select any eligible main, including the Guardian model itself.
+Native descriptors and reviewers are unchanged.
 The launcher does not enable **Approve for me**, change managed policy, fabricate
 assessments, or bypass the engine's decision parser and execution gates. Only Kimi
 review requests receive the existing schema-to-instructions adaptation; other
@@ -423,6 +450,10 @@ recorded for #50. Abrupt-launch recovery and
 installed lifecycle behavior are described below and above, respectively.
 
 ## Limitations and verification
+
+The [#55 implementation checks](releases/desktop-model-routing-2026-09-30.md)
+record per-conversation routing, capability changes, CLI-default isolation and
+the remaining Electron UI qualification.
 
 Automatic titles when the launch main is Kimi use an explicit,
 announced title-only route from the desktop's native Luna request to Kimi. For the

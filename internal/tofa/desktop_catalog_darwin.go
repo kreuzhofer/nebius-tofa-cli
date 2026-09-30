@@ -17,7 +17,7 @@ import (
 // Export before applying Token Factory overrides. The engine owns native auth,
 // policy, cache freshness and descriptor resolution; model/list is a lossy
 // picker projection and cannot be used to reconstruct these descriptors.
-func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspace, model, guardian, runtimeDir string) (string, error) {
+func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspace string, models []string, guardian, runtimeDir string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, engine, "debug", "models")
@@ -36,41 +36,41 @@ func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspac
 		return "", err
 	}
 	seen := make(map[string]bool)
+	for _, model := range models {
+		seen[model] = true
+	}
 	for _, raw := range native.Models {
 		var descriptor struct{ Slug string }
-		if json.Unmarshal(raw, &descriptor) != nil || !validText(descriptor.Slug, 256) || seen[descriptor.Slug] || (descriptor.Slug == model || descriptor.Slug == guardian) {
+		if json.Unmarshal(raw, &descriptor) != nil || !validText(descriptor.Slug, 256) || seen[descriptor.Slug] {
 			return "", errors.New("native model catalog contains an invalid, duplicate or conflicting model identity; launch cancelled")
 		}
 		seen[descriptor.Slug] = true
 	}
-	// The shared catalog includes the native reviewer. Bind only the added
-	// Token Factory model's reviewer to its supported route; native descriptors
-	// and the engine's approval policy, assessment parser and gates stay intact.
-	catalog, err := prepareModelCatalogInDir(model, guardian, runtimeDir)
+	// Preserve every native descriptor, including fields unknown to this launcher.
+	// Each eligible Token Factory main uses the launch Guardian, including when
+	// the same model is selected for both roles.
+	entries := make([]any, 0, len(native.Models)+len(models))
+	for _, raw := range native.Models {
+		entries = append(entries, raw)
+	}
+	for _, identity := range models {
+		entry, err := modelCatalogEntry(identity, guardian)
+		if err != nil {
+			return "", err
+		}
+		status, err := selectionStatus("codex-desktop", "adapted", identity, guardian, true)
+		if err != nil {
+			return "", err
+		}
+		entry["description"] = "Token Factory main; " + status + "; Guardian: " + guardian
+		if status != "supported" {
+			entry["display_name"] = entry["display_name"].(string) + " — Experimental"
+		}
+		entries = append(entries, entry)
+	}
+	catalog, err := writeModelCatalog(entries, runtimeDir)
 	if err != nil {
 		return "", err
-	}
-	if catalog == "" {
-		return "", errors.New("desktop launch requires verified bundled model metadata")
-	}
-	// This file is private and launch-owned. Preserve every native descriptor,
-	// including fields this launcher does not understand, and append only the selected Token Factory roles.
-	data, err = os.ReadFile(catalog)
-	var added struct {
-		Models []json.RawMessage `json:"models"`
-	}
-	if err == nil {
-		err = json.Unmarshal(data, &added)
-	}
-	if err == nil {
-		native.Models = append(native.Models, added.Models...)
-		data, err = json.Marshal(native)
-	}
-	if err == nil {
-		err = os.WriteFile(catalog, data, 0600)
-	}
-	if err != nil {
-		return "", errors.Join(errors.New("could not merge desktop model catalog"), os.Remove(catalog))
 	}
 	return catalog, nil
 }

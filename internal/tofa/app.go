@@ -49,8 +49,11 @@ const help = `tofa — Token Factory launcher (prototype)
 Supported desktop pairs: deepseek-ai/DeepSeek-V4.1-Flash or zai-org/GLM-5.3 main
 with zai-org/GLM-5.3-Flash Guardian, on the pinned macOS desktop adapted route.
 Automatic naming remains unsupported for these mains. See docs/codex-desktop.md
-for tested versions and evidence limits. CLI and other pairs need experimental consent:
-confirm Y in the picker, or pass --allow-unverified for explicit/scripted models.
+for tested versions and evidence limits. Desktop experimental models are always enabled
+and labelled Experimental. The desktop picker offers every eligible available model;
+--model sets the initial/default main and each conversation keeps its own selection.
+CLI pairs need experimental consent: confirm Y in the picker, or pass
+--allow-unverified for explicit/scripted models.
 Models in the catalog are not certified by availability.
 Interactive bare launches choose Codex CLI or Codex desktop first.
 Omit --model to choose its main model next; Up/Down and Enter select, Escape/Ctrl-C cancels.

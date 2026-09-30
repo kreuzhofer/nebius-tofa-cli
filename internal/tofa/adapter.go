@@ -103,6 +103,7 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 	}
 	var approvalNotice sync.Once
 	var titleNotice sync.Once
+	imageNotices := map[string]bool{}
 	adapter.server = &http.Server{
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
@@ -195,17 +196,25 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 				var review map[string]json.RawMessage
 				json.Unmarshal(body, &review)
 				_, _, _, isReview := approvalReviewFormat(review)
+				allowedMain := payload.Model == selectedModel
+				if route := adapter.desktop.Load(); route != nil {
+					allowedMain = route.mainModels[payload.Model]
+				}
 				message := ""
-				if isDesktopTitle(payload.ClientMetadata) && selectedModel != "moonshotai/Kimi-K3" {
+				if isDesktopCompaction(payload.ClientMetadata) {
+					message = "automatic context compaction is unsupported; request was not sent upstream. Select a model with enough context or start a new conversation; the saved conversation history is retained."
+				} else if isDesktopTitle(payload.ClientMetadata) && selectedModel != "moonshotai/Kimi-K3" {
 					message = "automatic title generation is unavailable for main " + selectedModel + "; request was not sent upstream"
 				} else if !isReview && isApprovalReviewCandidate(review) {
 					message = "unsupported desktop approval review contract; request was not sent upstream"
 				} else if isReview && payload.Model != guardian {
 					message = "unsupported Guardian model; relaunch with the configured --guardian-model; request was not sent upstream"
-				} else if payload.Model != selectedModel && !(payload.Model == guardian && isReview) {
+				} else if !allowedMain && !(payload.Model == guardian && isReview) {
 					message = "unsupported model; request was not sent upstream"
 					if _, err := metadataFor(payload.Model); err == nil {
-						message = "Token Factory conversation main " + payload.Model + " differs from launch main " + selectedModel + "; request was not sent upstream. Quit the desktop, relaunch with --model " + payload.Model + " --allow-unverified, then reopen the same conversation."
+						message = "Token Factory conversation model " + payload.Model + " is unavailable in this launch's project catalog; request was not sent upstream. Check project availability and relaunch to refresh the catalog, or explicitly select an available model."
+					} else {
+						message = "unsupported model: " + err.Error() + "; request was not sent upstream. Explicitly select an available model with compatible metadata; relaunch after catalog or launcher metadata updates."
 					}
 					if isDesktopTitle(payload.ClientMetadata) {
 						message = "automatic title generation is unavailable: the desktop requested an unsupported model; request was not sent upstream"
@@ -215,6 +224,17 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 					notice(message)
 					http.Error(writer, "request adapter: "+message, http.StatusBadRequest)
 					return
+				}
+				// The pinned engine preserves stored images but replaces their input
+				// with this explicit marker for a text-only model. Make that native
+				// capability limit visible without modifying conversation history.
+				if !isReview && bytes.Contains(body, []byte("image content omitted because you do not support image input")) {
+					noticeMu.Lock()
+					if !imageNotices[payload.Model] {
+						fmt.Fprintf(a.Out, "Model context notice for %s: saved images remain in history but are omitted for this model. Select an image-capable model to use them again.\n", payload.Model)
+						imageNotices[payload.Model] = true
+					}
+					noticeMu.Unlock()
 				}
 			}
 			titleAdapted := false
@@ -271,6 +291,21 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 		adapter.done <- err
 	}()
 	return adapter, nil
+}
+
+func isDesktopCompaction(raw json.RawMessage) bool {
+	var envelope map[string]json.RawMessage
+	if json.Unmarshal(raw, &envelope) != nil {
+		return false
+	}
+	var encoded string
+	if json.Unmarshal(envelope["x-codex-turn-metadata"], &encoded) != nil {
+		return false
+	}
+	var metadata struct {
+		RequestKind string `json:"request_kind"`
+	}
+	return json.Unmarshal([]byte(encoded), &metadata) == nil && metadata.RequestKind == "compaction"
 }
 
 func (adapter *requestAdapter) close() error {

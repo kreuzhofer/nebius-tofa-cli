@@ -1,5 +1,7 @@
 # Preserve conversation model identity across launches
 
+Superseded for model routing and experimental selection by [ADR 0003](0003-desktop-conversation-model-selection.md).
+
 For the initial selection flow in [#54](https://github.com/kreuzhofer/nebius-tofa-cli/issues/54),
 an existing desktop conversation retains its recorded main model and provider;
 continuing a Token Factory conversation whose main differs from the launch

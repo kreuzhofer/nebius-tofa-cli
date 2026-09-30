@@ -55,35 +55,51 @@ func prepareModelCatalogInDir(model, guardian, dir string) (string, error) {
 	}
 	entries := []any{}
 	for _, identity := range identities {
-		candidate, err := metadataFor(identity)
+		reviewer := ""
+		if identity == model {
+			reviewer = guardian
+		}
+		entry, err := modelCatalogEntry(identity, reviewer)
 		if err != nil {
 			return "", err
 		}
-		entry := map[string]any{
-			"slug":                                 identity,
-			"display_name":                         candidate.DisplayName + " (Token Factory)",
-			"description":                          "Provider catalog snapshot 2026-09-23; experimental Codex integration",
-			"supported_reasoning_levels":           []any{},
-			"shell_type":                           "unified_exec",
-			"visibility":                           "list",
-			"supported_in_api":                     true,
-			"priority":                             0,
-			"include_apps_usage_instructions":      false,
-			"supports_reasoning_summary_parameter": false,
-			"support_verbosity":                    false,
-			"truncation_policy":                    map[string]any{"mode": "bytes", "limit": 10000},
-			"context_window":                       candidate.Context,
-			"max_context_window":                   candidate.Context,
-			"effective_context_window_percent":     95,
-			"experimental_supported_tools":         []any{},
-			"input_modalities":                     candidate.Modalities,
-			"model_messages":                       map[string]any{"instructions_template": codexPrompt},
-		}
-		if identity == model && guardian != "" {
-			entry["auto_review_model_override"] = guardian
-		}
 		entries = append(entries, entry)
 	}
+	return writeModelCatalog(entries, dir)
+}
+
+func modelCatalogEntry(identity, guardian string) (map[string]any, error) {
+	candidate, err := metadataFor(identity)
+	if err != nil {
+		return nil, err
+	}
+	entry := map[string]any{
+		"slug":                                 identity,
+		"display_name":                         candidate.DisplayName + " (Token Factory)",
+		"description":                          "Provider catalog snapshot 2026-09-23; experimental Codex integration",
+		"supported_reasoning_levels":           []any{},
+		"shell_type":                           "unified_exec",
+		"visibility":                           "list",
+		"supported_in_api":                     true,
+		"priority":                             0,
+		"include_apps_usage_instructions":      false,
+		"supports_reasoning_summary_parameter": false,
+		"support_verbosity":                    false,
+		"truncation_policy":                    map[string]any{"mode": "bytes", "limit": 10000},
+		"context_window":                       candidate.Context,
+		"max_context_window":                   candidate.Context,
+		"effective_context_window_percent":     95,
+		"experimental_supported_tools":         []any{},
+		"input_modalities":                     candidate.Modalities,
+		"model_messages":                       map[string]any{"instructions_template": codexPrompt},
+	}
+	if guardian != "" {
+		entry["auto_review_model_override"] = guardian
+	}
+	return entry, nil
+}
+
+func writeModelCatalog(entries []any, dir string) (string, error) {
 	catalog := map[string]any{"models": entries}
 	data, err := json.Marshal(catalog)
 	if err != nil {

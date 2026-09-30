@@ -119,7 +119,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	guardian := fs.String("guardian-model", "zai-org/GLM-5.3-Flash", "")
 	path := fs.String("app-bundle", "", "")
 	project := fs.String("project-id", "", "")
-	allow := fs.Bool("allow-unverified", false, "")
+	fs.Bool("allow-unverified", false, "") // Retained for script compatibility; desktop experimental models are always enabled.
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		return errors.New("specify a valid explicit --model ID; see tofa models")
 	}
 	if !modelSelected && !term.IsTerminal(int(os.Stdin.Fd())) {
-		return errors.New("noninteractive launch requires --model ID; use tofa launch codex-desktop --model ID (and --allow-unverified for experimental selection)")
+		return errors.New("noninteractive launch requires --model ID; use tofa launch codex-desktop --model ID (experimental models are labelled and enabled)")
 	}
 	if !validText(*guardian, 512) {
 		return errors.New("Guardian requires a valid model ID")
@@ -162,19 +162,26 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		if err != nil {
 			return err
 		}
-		*model, err = a.pickMainModel(ctx, choices, "Codex desktop", "adapted", *guardian, *allow)
+		*model, err = a.pickMainModel(ctx, choices, "Codex desktop", "adapted", *guardian, true)
 		if err != nil {
 			return err
 		}
-		// The picker requires explicit consent for experimental selections.
-		*allow = true
 	}
 	if err := validateAvailableRole(models, "main", *model); err != nil {
 		return err
 	}
-	status, err := selectionStatus("codex-desktop", "adapted", *model, *guardian, *allow)
+	status, err := selectionStatus("codex-desktop", "adapted", *model, *guardian, true)
 	if err != nil {
 		return err
+	}
+	// Snapshot the available eligible mains once for the catalog and request route.
+	mainModels := []string{}
+	for _, available := range models {
+		if _, err := metadataFor(available.ID); err != nil {
+			fmt.Fprintf(a.Out, "Desktop model unavailable: %s: %v\n", available.ID, err)
+			continue
+		}
+		mainModels = append(mainModels, available.ID)
 	}
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -233,6 +240,10 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		}
 	}()
 	route := &desktopRoute{Bridge: bridge, Engine: bundle.engine, Home: home, ready: make(chan struct{}), claim: make(chan int, 1)}
+	route.mainModels = make(map[string]bool, len(mainModels))
+	for _, identity := range mainModels {
+		route.mainModels[identity] = true
+	}
 	adapter.desktop.Store(route)
 	shellDir, err := prepareDesktopShell(ctx, root)
 	if err != nil {
@@ -240,7 +251,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	}
 	env := append(desktopEnv(home, profile, adapter.token), "ZDOTDIR="+shellDir, "CODEX_CLI_PATH="+bridge, "TOFA_DESKTOP_CONTEXT="+adapter.endpoint)
 	owned := func(ownerContext context.Context, pid int) error {
-		catalog, err := prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, *model, *guardian, root)
+		catalog, err := prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, mainModels, *guardian, root)
 		if err != nil {
 			return err
 		}
@@ -265,9 +276,10 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 		}
 		close(route.ready)
 		fmt.Fprintln(a.Out, "Native model catalog resolved and merged for this launch. Relaunch after account or catalog changes; only the announced automatic-title contract has an auxiliary route through Token Factory.")
-		fmt.Fprintf(a.Out, "Automatic review for %s conversations uses %s through Token Factory. The engine retains approval decisions, policy and execution gates; native reviewers are unchanged.\n", *model, *guardian)
-		fmt.Fprintf(a.Out, "Launching Codex desktop using ordinary history and profile.\nMain: %s\nGuardian: %s\nRoute: adapted Token Factory connection.\nStatus: %s\nToken Factory history retains its recorded main and provider; relaunch through tofa with its original --model ID --allow-unverified to continue. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; other auxiliary requests and compaction remain unsupported. Keep this terminal open.\n", *model, *guardian, status)
+		fmt.Fprintf(a.Out, "Automatic review for all eligible Token Factory conversations uses %s through Token Factory. The engine retains approval decisions, policy and execution gates; native reviewers are unchanged.\n", *guardian)
+		fmt.Fprintf(a.Out, "Launching Codex desktop using ordinary history and profile.\nMain: %s\nGuardian: %s\nRoute: adapted Token Factory connection.\nStatus: %s\nToken Factory conversations use their selected main independently of this launch default. All eligible available models, including labelled Experimental choices, are enabled in the desktop picker. The Guardian above applies to every Token Factory main. Choosing GPT does not migrate providers.\nAutomatic title generation can fail; other auxiliary requests and compaction remain unsupported. Keep this terminal open.\n", *model, *guardian, status)
 		fmt.Fprintln(a.Out, "Desktop environment probe isolated; coding commands retain normal shell startup.")
+		fmt.Fprintln(a.Out, "Desktop model defaults apply only to this desktop session; CLI model and reasoning defaults are preserved.")
 		return nil
 	}
 	// No deep link or model-selection argument is forwarded to a possible

@@ -104,7 +104,7 @@ func TestDesktopBundledEngineAutomaticApproval(t *testing.T) {
 					emitFixtureResponse(w, fixtureMessage("Fixture complete."))
 				}
 			}, nil)
-			child, stop := liveDesktopFixture(t, app, bundle, capture, "--model", scenario.main, "--guardian-model", scenario.guardian)
+			child, stop := liveDesktopFixture(t, app, bundle, capture, "--model", "deepseek-ai/DeepSeek-V4.1-Flash", "--guardian-model", scenario.guardian)
 			e := openDesktopEngine(t, child)
 			started := e.call("thread/start", map[string]any{
 				"cwd": child.Cwd, "approvalPolicy": "on-request", "approvalsReviewer": "auto_review", "sandbox": "read-only",
@@ -113,6 +113,7 @@ func TestDesktopBundledEngineAutomaticApproval(t *testing.T) {
 				t.Fatalf("desktop approval settings changed: %v", started)
 			}
 			id := started["thread"].(map[string]any)["id"].(string)
+			e.call("thread/settings/update", map[string]any{"threadId": id, "model": scenario.main})
 			turn := e.call("turn/start", map[string]any{"threadId": id, "input": []any{map[string]string{"type": "text", "text": "Run the harmless fixture once. Stop if review fails."}}})
 			var reviewStart time.Time
 			if scenario.status <= 0 {
@@ -174,7 +175,7 @@ func TestDesktopBundledEngineAutomaticApproval(t *testing.T) {
 			if reviewRequests.Load() != wantReviews || executed != scenario.allow || inspected.Load() != scenario.inspect {
 				t.Fatalf("desktop automatic approval did not reach a reviewer and execute its approved action: reviews=%d executed=%v\n%s", reviewRequests.Load(), executed, output.String())
 			}
-			if !strings.Contains(output.String(), "Automatic review for "+scenario.main+" conversations uses "+scenario.guardian) {
+			if !strings.Contains(output.String(), "Automatic review for all eligible Token Factory conversations uses "+scenario.guardian) {
 				t.Fatal("review model selection was not announced")
 			}
 		})

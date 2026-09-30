@@ -281,8 +281,10 @@ class PickerTests(PickerFixture):
         self.read_until('Type to filter')
         self.assertIn('Choose a main model', self.output.decode(errors='replace'))
         os.write(self.master, b'kimi')
-        self.read_until('Filter: kimi')
-        lines = self.screen_lines()
+        # PTY reads can split a redraw after its filter heading. Wait for the
+        # matching result footer before asserting the complete visible list.
+        lines = self.wait_for_screen(lambda lines: 'Filter: kimi' in '\n'.join(lines)
+                                     and '1 match' in '\n'.join(lines))
         self.assertTrue(any('Kimi' in line and line.lstrip().startswith('>') for line in lines), lines)
         self.assertFalse(any('DeepSeek' in line for line in lines), lines)
         self.assertIn('1 match', '\n'.join(lines))

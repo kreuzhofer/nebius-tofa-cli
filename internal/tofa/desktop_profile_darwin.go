@@ -54,10 +54,12 @@ func acquireDesktopLease(profile string) (*os.File, error) {
 
 const legacyDesktopRecovery = "Token Factory is unavailable in ordinary mode. Relaunch through tofa with --model moonshotai/Kimi-K3 --allow-unverified; choosing GPT does not migrate this conversation."
 
+const selectedMainDesktopRecovery = "Token Factory is unavailable in ordinary mode. Relaunch through tofa with the conversation's original main model: --model ID --allow-unverified; choosing GPT does not migrate this conversation."
+
 var inactiveDesktopProvider = map[string]any{
 	"name": "Nebius Token Factory", "base_url": "http://127.0.0.1:0",
 	"env_key": "TOFA_DESKTOP_INACTIVE", "wire_api": "responses",
-	"env_key_instructions": "Token Factory is unavailable in ordinary mode. Relaunch through tofa with the conversation's original main model: --model ID --allow-unverified; choosing GPT does not migrate this conversation.",
+	"env_key_instructions": "Token Factory is unavailable in ordinary mode. Relaunch through tofa with any default main model, then reopen this conversation; choosing GPT does not migrate its provider.",
 	"requires_openai_auth": false, "supports_websockets": false,
 	"request_max_retries": float64(0), "stream_max_retries": float64(0),
 }
@@ -159,7 +161,7 @@ func (client *desktopConfigClient) inspect(workspace string) (string, bool, erro
 			clean[key] = value
 		}
 		// Keep the exact legacy owned entry compatible without changing user settings.
-		if clean["env_key_instructions"] == legacyDesktopRecovery {
+		if clean["env_key_instructions"] == legacyDesktopRecovery || clean["env_key_instructions"] == selectedMainDesktopRecovery {
 			clean["env_key_instructions"] = inactiveDesktopProvider["env_key_instructions"]
 		}
 		if !reflect.DeepEqual(clean, inactiveDesktopProvider) {
