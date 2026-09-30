@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/kreuzhofer/tofa-launcher/internal/tofa"
+	"golang.org/x/mod/semver"
 )
 
 // A real executable fixture exercises the bundle, app-server protocol, environment,
@@ -29,8 +30,8 @@ import (
 func desktopFixture(t *testing.T, mode string) (string, string) {
 	t.Helper()
 	version, err := exec.Command("/usr/bin/sw_vers", "-productVersion").Output()
-	if err != nil || runtime.GOARCH != "arm64" || strings.TrimSpace(string(version)) != "26.6.2" {
-		t.Skip("desktop executable qualification is pinned to macOS 26.6.2 arm64")
+	if err != nil || runtime.GOARCH != "arm64" || semver.Compare("v"+strings.TrimSpace(string(version)), "v26.6.2") < 0 {
+		t.Skip("desktop executable qualification requires macOS 26.6.2 or newer on arm64")
 	}
 	python, err := exec.LookPath("python3")
 	if err != nil {
@@ -61,6 +62,10 @@ import json, os, pathlib, re, sys, time, urllib.request, urllib.error, signal, s
 MODE = %q
 CAPTURE = %q
 if '--version' in sys.argv:
+    discovery = pathlib.Path(__file__).parent / 'native-discovery.json'
+    if discovery.exists():
+        spec = json.loads(discovery.read_text())
+        sys.exit(subprocess.run([spec['engine'], '--version']).returncode)
     print('codex-cli 0.155.0-alpha.16.4')
     sys.exit(0)
 if sys.argv[1:] in [['debug', 'models'], ['debug', 'models', '--bundled'], ['login', 'status']]:
@@ -383,7 +388,11 @@ func TestDesktopInstalledAppShellIsolation(t *testing.T) {
 	if err := os.Remove(engine); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(filepath.Join(installed, "Contents/Resources/codex"), engine); err != nil {
+	installedEngine := filepath.Join(installed, "Contents/Resources/codex")
+	if _, err := os.Stat(filepath.Join(installed, "Contents/Resources/codex-cli")); err == nil {
+		installedEngine = filepath.Join(installed, "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")
+	}
+	if err := os.Symlink(installedEngine, engine); err != nil {
 		t.Fatal(err)
 	}
 	python, err := exec.LookPath("python3")
@@ -1410,7 +1419,7 @@ func TestDesktopStartupAndRoutingFailures(t *testing.T) {
 			case "wrong version":
 				path := filepath.Join(bundle, "Contents/Info.plist")
 				data, _ := os.ReadFile(path)
-				if err := os.WriteFile(path, []byte(strings.ReplaceAll(string(data), "26.917.71314", "99.0.0")), 0600); err != nil {
+				if err := os.WriteFile(path, []byte(strings.ReplaceAll(string(data), "26.917.71314", "26.917.71313")), 0600); err != nil {
 					t.Fatal(err)
 				}
 			case "wrong engine", "effective routing", "extra auth", "state redirect":
@@ -1418,7 +1427,7 @@ func TestDesktopStartupAndRoutingFailures(t *testing.T) {
 				data, _ := os.ReadFile(path)
 				text := string(data)
 				if failure == "wrong engine" {
-					text = strings.ReplaceAll(text, "0.155.0-alpha.16.4", "9.9.9")
+					text = strings.ReplaceAll(text, "0.155.0-alpha.16.4", "0.155.0-alpha.16.3")
 				}
 				if failure == "effective routing" {
 					text = strings.ReplaceAll(text, "        if req['method'] == 'configRequirements/read':", "        if req['method'] == 'config/read': result['config']['model_provider'] = 'openai'\n        if req['method'] == 'configRequirements/read':")

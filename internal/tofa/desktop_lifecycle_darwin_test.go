@@ -256,6 +256,22 @@ func TestDesktopInstalledUpgradeAndStandalonePurge(t *testing.T) {
 			t.Fatalf("upgraded reference unusable: %v %s", err, output)
 		}
 	}
+	// A fleet update may change both the app version and its engine layout.
+	// The real installer must refresh saved references without losing history.
+	flatEngine := filepath.Join(bundle, "Contents/Resources/codex")
+	packagedEngine := filepath.Join(bundle, "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")
+	if err := os.MkdirAll(filepath.Dir(packagedEngine), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(flatEngine, packagedEngine); err != nil {
+		t.Fatal(err)
+	}
+	if output, err := exec.Command("sh", "../../scripts/install.sh", "--version", "v0.0.0-test", "--no-modify-path").CombinedOutput(); err != nil {
+		t.Fatalf("upgrade after engine relocation: %v %s", err, output)
+	}
+	if output, err := exec.Command(bridge, "--version").CombinedOutput(); err != nil || !strings.Contains(string(output), "engine moved") {
+		t.Fatalf("upgraded saved reference lost relocated engine: %v %s", err, output)
+	}
 	// The ordinary desktop does not take the launcher lease. Its native owner
 	// must independently block both scripts, including credential purge.
 	lock := filepath.Join(child.Env["CODEX_ELECTRON_USER_DATA_PATH"], "SingletonLock")
@@ -280,13 +296,13 @@ func TestDesktopInstalledUpgradeAndStandalonePurge(t *testing.T) {
 	if err := os.Remove(lock); err != nil {
 		t.Fatal(err)
 	}
-	// Unsupported client updates fail before changing any saved bridge.
+	// A downgrade below the supported minimum fails before changing any bridge.
 	plist := filepath.Join(bundle, "Contents/Info.plist")
 	metadata, err := os.ReadFile(plist)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(plist, []byte(strings.Replace(string(metadata), "10954", "99999", 1)), 0600); err != nil {
+	if err := os.WriteFile(plist, []byte(strings.Replace(string(metadata), "26.917.71314", "26.917.71313", 1)), 0600); err != nil {
 		t.Fatal(err)
 	}
 	if output, err := exec.Command("sh", "../../scripts/install.sh", "--version", "v0.0.0-test", "--no-modify-path").CombinedOutput(); err == nil || !strings.Contains(string(output), "incompatible") {

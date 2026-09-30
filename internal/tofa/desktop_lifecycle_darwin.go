@@ -67,11 +67,15 @@ func (a *App) desktopLifecycle(ctx context.Context, args []string) error {
 		if err != nil || strings.TrimSpace(string(manifest)) != "tofa-install-v1" {
 			return errors.New("installation has no supported ownership manifest")
 		}
-		// A client update is not automatically supported. Refuse the whole
-		// operation before changing any helper if any recorded bundle differs.
+		// Check every recorded app against the compatibility minimums before
+		// changing any helper, including references to an older engine layout.
 		for _, owner := range bridges {
-			if _, err := discoverDesktop(ctx, filepath.Dir(filepath.Dir(filepath.Dir(owner.Engine)))); err != nil {
-				return fmt.Errorf("desktop upgrade stopped: %w; restore the qualified client or uninstall to detach its integration", err)
+			root, err := desktopBundlePath(owner.Engine)
+			if err != nil {
+				return err
+			}
+			if _, err := discoverDesktop(ctx, root); err != nil {
+				return fmt.Errorf("desktop upgrade stopped: %w; restore a compatible client or uninstall to detach its integration", err)
 			}
 		}
 		for path, owner := range bridges {

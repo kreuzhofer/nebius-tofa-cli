@@ -19,10 +19,29 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/mod/semver"
 	"golang.org/x/term"
 )
 
-type desktopBundle struct{ executable, engine string }
+type desktopBundle struct{ executable, engine, catalogVersion string }
+
+const minimumDesktopVersion = "26.917.71314"
+const minimumDesktopEngineVersion = "0.155.0-alpha.16.4"
+const packagedDesktopEngine = "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
+const legacyDesktopEngine = "Contents/Resources/codex"
+
+func desktopBundlePath(engine string) (string, error) {
+	for _, relative := range []string{packagedDesktopEngine, legacyDesktopEngine} {
+		if root, matched := strings.CutSuffix(engine, "/"+relative); matched && filepath.IsAbs(root) && filepath.Clean(engine) == engine {
+			return root, nil
+		}
+	}
+	return "", errors.New("unrecognized bundled desktop engine path; inspect the desktop integration before retrying")
+}
+
+func desktopVersionAtLeast(actual, minimum string) bool {
+	return semver.IsValid("v"+actual) && semver.Compare("v"+actual, "v"+minimum) >= 0
+}
 
 type desktopOutput struct {
 	mu     sync.Mutex
@@ -38,8 +57,8 @@ func (out *desktopOutput) Write(p []byte) (int, error) {
 func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
 	var bundle desktopBundle
 	version, err := exec.CommandContext(ctx, "/usr/bin/sw_vers", "-productVersion").Output()
-	if err != nil || runtime.GOARCH != "arm64" || strings.TrimSpace(string(version)) != "26.6.2" {
-		return bundle, errors.New("codex-desktop is experimental: tested only on macOS 26.6.2 arm64; use launch codex on other platforms")
+	if err != nil || runtime.GOARCH != "arm64" || !desktopVersionAtLeast(strings.TrimSpace(string(version)), "26.6.2") {
+		return bundle, errors.New("codex-desktop requires macOS 26.6.2 or newer on arm64; use launch codex on other platforms")
 	}
 	if path == "" {
 		home, err := os.UserHomeDir()
@@ -54,7 +73,7 @@ func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
 		}
 	}
 	if path == "" {
-		return bundle, errors.New("ChatGPT desktop with Codex mode is not installed; install the tested app or pass --app-bundle PATH")
+		return bundle, errors.New("ChatGPT desktop with Codex mode is not installed; install a compatible app or pass --app-bundle PATH")
 	}
 	path, err = filepath.Abs(path)
 	if err != nil {
@@ -63,18 +82,31 @@ func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
 	plist := filepath.Join(path, "Contents/Info.plist")
 	for _, field := range []struct{ key, want string }{
 		{"CFBundleIdentifier", "com.openai.codex"}, {"CFBundleName", "ChatGPT"},
-		{"CFBundleShortVersionString", "26.917.71314"}, {"CFBundleVersion", "10954"}, {"CFBundleExecutable", "ChatGPT"},
+		{"CFBundleExecutable", "ChatGPT"},
 	} {
 		value, err := exec.CommandContext(ctx, "/usr/libexec/PlistBuddy", "-c", "Print :"+field.key, plist).Output()
 		if err != nil || strings.TrimSpace(string(value)) != field.want {
-			return bundle, fmt.Errorf("incompatible desktop bundle: expected %s=%s; tested ChatGPT 26.917.71314 (10954), Codex mode; use --app-bundle PATH or launch codex", field.key, field.want)
+			return bundle, fmt.Errorf("incompatible desktop bundle: expected %s=%s; use --app-bundle PATH or launch codex", field.key, field.want)
 		}
 	}
-	bundle = desktopBundle{filepath.Join(path, "Contents/MacOS/ChatGPT"), filepath.Join(path, "Contents/Resources/codex")}
+	version, err = exec.CommandContext(ctx, "/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
+	if err != nil || !desktopVersionAtLeast(strings.TrimSpace(string(version)), minimumDesktopVersion) {
+		return bundle, fmt.Errorf("incompatible desktop version: require %s or newer; update the desktop or use launch codex", minimumDesktopVersion)
+	}
+	// Match the native desktop resolver: packaged macOS engine first, then the
+	// older flat bundle layout. An invalid present package is an error, not a
+	// reason to silently execute a different engine.
+	engine := filepath.Join(path, packagedDesktopEngine)
+	if _, err := os.Lstat(filepath.Join(path, "Contents/Resources/codex-cli")); errors.Is(err, os.ErrNotExist) {
+		engine = filepath.Join(path, legacyDesktopEngine)
+	} else if err != nil {
+		return bundle, fmt.Errorf("could not inspect desktop engine layout: %w", err)
+	}
+	bundle = desktopBundle{executable: filepath.Join(path, "Contents/MacOS/ChatGPT"), engine: engine}
 	for _, executable := range []string{bundle.executable, bundle.engine} {
 		info, err := os.Stat(executable)
 		if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
-			return bundle, errors.New("desktop bundle is missing its executable or bundled Codex engine; reinstall the tested app")
+			return bundle, errors.New("desktop bundle is missing its executable or bundled Codex engine; reinstall a compatible app")
 		}
 	}
 	probe, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -87,9 +119,14 @@ func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
 	command := exec.CommandContext(probe, bundle.engine, "--version")
 	command.Env = desktopEnv(probeHome, probeHome, "")
 	output, err := command.Output()
-	if err != nil || strings.TrimSpace(string(output)) != "codex-cli 0.155.0-alpha.16.4" {
-		return bundle, errors.New("incompatible bundled engine: expected codex-cli 0.155.0-alpha.16.4; use the tested app or launch codex")
+	engineVersion, recognized := strings.CutPrefix(strings.TrimSpace(string(output)), "codex-cli ")
+	if err != nil || !recognized || !desktopVersionAtLeast(engineVersion, minimumDesktopEngineVersion) {
+		return bundle, fmt.Errorf("incompatible bundled engine version: require codex-cli %s or newer; update the desktop or use launch codex", minimumDesktopEngineVersion)
 	}
+	// The native cache uses the engine's release version, without prerelease
+	// or build metadata, and retains the patch component (for example 0.159.2).
+	bundle.catalogVersion, _, _ = strings.Cut(engineVersion, "-")
+	bundle.catalogVersion, _, _ = strings.Cut(bundle.catalogVersion, "+")
 	return bundle, nil
 }
 
@@ -251,7 +288,7 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	}
 	env := append(desktopEnv(home, profile, adapter.token), "ZDOTDIR="+shellDir, "CODEX_CLI_PATH="+bridge, "TOFA_DESKTOP_CONTEXT="+adapter.endpoint)
 	owned := func(ownerContext context.Context, pid int) error {
-		catalog, err := prepareDesktopCatalog(ownerContext, bundle.engine, home, profile, workspace, mainModels, *guardian, root)
+		catalog, err := prepareDesktopCatalog(ownerContext, bundle, home, profile, workspace, mainModels, *guardian, root)
 		if err != nil {
 			return err
 		}

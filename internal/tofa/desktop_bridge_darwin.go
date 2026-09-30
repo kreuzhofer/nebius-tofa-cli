@@ -135,6 +135,7 @@ func runDesktopBridge(args []string) error {
 		return app.desktopLifecycle(context.Background(), args[1:])
 	}
 	env := os.Environ()
+	engine := owner.Engine
 	if endpoint, present := os.LookupEnv("TOFA_DESKTOP_CONTEXT"); present {
 		if owner.Detached {
 			return errors.New("tofa is uninstalled; this saved engine reference supports ordinary history only. Reinstall tofa and relaunch to continue Token Factory conversations")
@@ -166,8 +167,22 @@ func runDesktopBridge(args []string) error {
 		env = slices.DeleteFunc(env, func(entry string) bool {
 			return strings.HasPrefix(entry, "TOFA_API_KEY=") || strings.HasPrefix(entry, "TOFA_DESKTOP_INACTIVE=")
 		})
+		// Saved ordinary references survive known bundle layout changes. Keep the
+		// recorded identity immutable; active launches use their own current bridge.
+		if _, err := os.Stat(engine); errors.Is(err, os.ErrNotExist) {
+			root, err := desktopBundlePath(engine)
+			if err != nil {
+				return err
+			}
+			bundle, err := discoverDesktop(context.Background(), root)
+			if err != nil {
+				return fmt.Errorf("saved desktop engine moved but its replacement is incompatible: %w", err)
+			}
+			engine = bundle.engine
+			fmt.Fprintln(os.Stderr, "tofa: desktop engine moved; saved reference now uses the compatible engine in the same app bundle")
+		}
 	}
-	if err := syscall.Exec(owner.Engine, append([]string{owner.Engine}, args...), env); err != nil {
+	if err := syscall.Exec(engine, append([]string{engine}, args...), env); err != nil {
 		return fmt.Errorf("desktop bridge could not execute the installed bundled engine: %w", err)
 	}
 	return nil

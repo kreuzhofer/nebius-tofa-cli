@@ -212,7 +212,7 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 In a terminal, `tofa` and `tofa --allow-unverified` first show **Codex CLI** and
 **Codex desktop**. Choose the app with Up/Down and Enter, then choose its main
 model. App selection happens before credential lookup or catalog discovery;
-Escape/Ctrl-C cancels either stage. Desktop requires the pinned macOS ARM64 app.
+Escape/Ctrl-C cancels either stage. Desktop requires the [minimum compatible macOS ARM64 app and engine](docs/codex-desktop.md#compatibility).
 
 Explicit `tofa launch codex [OPTIONS]` and `tofa launch codex-desktop [OPTIONS]`
 skip app selection. Omitting `--model` opens the shared model picker. Its screen

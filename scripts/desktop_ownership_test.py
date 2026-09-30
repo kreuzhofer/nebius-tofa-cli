@@ -26,16 +26,17 @@ import unittest
 
 APP = os.environ.get("TOFA_TEST_DESKTOP_APP")
 COLLISION_TIMEOUT = 5
-QUALIFIED_VERSION = "26.917.71314"
-QUALIFIED_BUILD = "10954"
-QUALIFIED_ENGINE = "codex-cli 0.155.0-alpha.16.4"
+# These pins identify the qualification fixture, not product admission policy.
+QUALIFIED_VERSION = "26.928.21956"
+QUALIFIED_BUILD = "12404"
+QUALIFIED_ENGINE = "codex-cli 0.159.2"
 QUALIFIED_FILES = {
     "Contents/Resources/app.asar":
-        "03108a728bdb1616958ab89587c5495cab0cf4cd1bbe109bdfb186df0a113804",
-    "Contents/Resources/codex":
-        "93169e745735930598e867ad837abf3fdc50774a3ad7e7aa89c0d0c51b0189a5",
-    "Contents/Frameworks/Codex Framework.framework/Versions/153.0.8010.53/Codex Framework":
-        "fac56b9423fe81e6c206a8ca4e755d5dfbc698bef7bbbb3a4fc19cfa6c3e6ca2",
+        "3bda98f2265ad23677dfe0163d1cc7855beade6bef11d27f830f6663d7658406",
+    "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex":
+        "50ac633af64851511f9bbc71032cdae7f1ba20b3234c189687d61ba846c354c5",
+    "Contents/Frameworks/Codex Framework.framework/Versions/154.0.8037.57/Codex Framework":
+        "07c1ac7cbeee1746745ce9bb5ea308825d8bbb51922403a912ff9ddcc9d97012",
 }
 
 
@@ -82,7 +83,7 @@ class DesktopOwnershipTests(unittest.TestCase):
         with (self.app / "Contents" / "Info.plist").open("rb") as source:
             metadata = plistlib.load(source)
         self.executable = self.app / "Contents" / "MacOS" / metadata["CFBundleExecutable"]
-        self.engine = self.app / "Contents" / "Resources" / "codex"
+        self.engine = self.app / "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
         self.assertTrue(self.executable.is_file())
         self.assertTrue(self.engine.is_file())
         (self.codex / "auth.json").write_text(

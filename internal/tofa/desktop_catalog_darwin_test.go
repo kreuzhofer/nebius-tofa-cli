@@ -78,6 +78,17 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 				discovery["catalog"] = map[string]any{"models": []any{descriptor}}
 			}
 			if scenario == "unavailable with foreign cache" {
+				// Keep the cache version valid for the selected real engine so the
+				// foreign identity remains the reason it must reject this cache.
+				versionCommand := exec.Command(installed, "--version")
+				versionCommand.Env, versionCommand.Dir = command.Env, command.Dir
+				version, err := versionCommand.Output()
+				if err != nil {
+					t.Fatal(err)
+				}
+				cacheVersion := strings.TrimPrefix(strings.TrimSpace(string(version)), "codex-cli ")
+				cacheVersion, _, _ = strings.Cut(cacheVersion, "-")
+				cacheVersion, _, _ = strings.Cut(cacheVersion, "+")
 				var shipped struct{ Models []map[string]any }
 				if err := json.Unmarshal(raw, &shipped); err != nil {
 					t.Fatal(err)
@@ -85,7 +96,7 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 				for _, model := range shipped.Models {
 					delete(model, "base_instructions")
 				}
-				discovery["cache"] = map[string]any{"models": shipped.Models, "fetched_at": time.Now().UTC().Format(time.RFC3339), "client_version": "0.155.0", "identity": "another-synthetic-account"}
+				discovery["cache"] = map[string]any{"models": shipped.Models, "fetched_at": time.Now().UTC().Format(time.RFC3339), "client_version": cacheVersion, "identity": "another-synthetic-account"}
 			}
 			spec, err := json.Marshal(discovery)
 			if err != nil {
@@ -129,6 +140,9 @@ func TestDesktopUsesAuthenticatedNativeCatalog(t *testing.T) {
 			if unavailable || bundledOnly {
 				if err == nil || !strings.Contains(err.Error(), "freshness") {
 					t.Fatalf("authenticated discovery silently fell back to shipped metadata: %v", err)
+				}
+				if scenario == "unavailable with foreign cache" && !strings.Contains(err.Error(), "ambiguous") {
+					t.Fatalf("foreign cache did not exercise bundled-fallback ambiguity: %v", err)
 				}
 				if _, err := os.Stat(capture); !os.IsNotExist(err) {
 					t.Fatal("desktop started after authenticated discovery failure")

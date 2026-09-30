@@ -17,10 +17,10 @@ import (
 // Export before applying Token Factory overrides. The engine owns native auth,
 // policy, cache freshness and descriptor resolution; model/list is a lossy
 // picker projection and cannot be used to reconstruct these descriptors.
-func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspace string, models []string, guardian, runtimeDir string) (string, error) {
+func prepareDesktopCatalog(ctx context.Context, bundle desktopBundle, home, electron, workspace string, models []string, guardian, runtimeDir string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	command := exec.CommandContext(ctx, engine, "debug", "models")
+	command := exec.CommandContext(ctx, bundle.engine, "debug", "models")
 	command.Env, command.Dir = desktopEnv(home, electron, ""), workspace
 	data, err := desktopCatalogOutput(command)
 	if err != nil {
@@ -32,7 +32,7 @@ func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspac
 	if json.Unmarshal(data, &native) != nil || len(native.Models) == 0 {
 		return "", errors.New("native model catalog is invalid or empty; launch cancelled")
 	}
-	if err := checkDesktopCatalogFreshness(ctx, engine, home, electron, workspace, data); err != nil {
+	if err := checkDesktopCatalogFreshness(ctx, bundle, home, electron, workspace, data); err != nil {
 		return "", err
 	}
 	seen := make(map[string]bool)
@@ -79,8 +79,8 @@ func prepareDesktopCatalog(ctx context.Context, engine, home, electron, workspac
 // reliably to stderr). For ChatGPT accounts, require its result to agree with a
 // fresh engine cache. Do not parse or copy auth.json: login status is the pinned
 // engine's public auth boundary. The engine owns cache identity validation.
-func checkDesktopCatalogFreshness(ctx context.Context, engine, home, electron, workspace string, exported []byte) error {
-	command := exec.CommandContext(ctx, engine, "login", "status")
+func checkDesktopCatalogFreshness(ctx context.Context, bundle desktopBundle, home, electron, workspace string, exported []byte) error {
+	command := exec.CommandContext(ctx, bundle.engine, "login", "status")
 	command.Env, command.Dir = desktopEnv(home, electron, ""), workspace
 	status, err := command.CombinedOutput()
 	message := strings.TrimSpace(string(status))
@@ -119,13 +119,13 @@ func checkDesktopCatalogFreshness(ctx context.Context, engine, home, electron, w
 		delete(descriptor, "base_instructions")
 	}
 	age := time.Since(cache.FetchedAt)
-	if age < 0 || age > 5*time.Minute || cache.Identity == "" || cache.Version != "0.155.0" || !reflect.DeepEqual(cache.Models, catalog.Models) {
+	if age < 0 || age > 5*time.Minute || cache.Identity == "" || cache.Version != bundle.catalogVersion || !reflect.DeepEqual(cache.Models, catalog.Models) {
 		return unavailable
 	}
 	// A rejected foreign cache can happen to contain the same descriptors as
 	// the bundled fallback. The export has no refresh-success attestation, so
 	// refuse this ambiguous case even if a real account catalog is identical.
-	command = exec.CommandContext(ctx, engine, "debug", "models", "--bundled")
+	command = exec.CommandContext(ctx, bundle.engine, "debug", "models", "--bundled")
 	command.Env, command.Dir = desktopEnv(home, electron, ""), workspace
 	data, err = desktopCatalogOutput(command)
 	var bundled struct {

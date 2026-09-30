@@ -153,14 +153,34 @@ compatibility for experimental choices.
 
 ### Compatibility
 
-The gate accepts macOS **26.6.2 arm64**, ChatGPT **26.917.71314 (10954)**,
-bundle ID `com.openai.codex`, and bundled engine **0.155.0-alpha.16.4**. The target is
-the application's **Codex mode**. The target requires `/bin/zsh` as the account's login shell;
-other shells need separate qualification and should use `launch codex`.
-Discovery checks `/Applications` then `~/Applications`, with ChatGPT/Codex bundle
-names. For another location, pass `--app-bundle '/path/to/ChatGPT.app'`; its identity
-and versions still must match. An incompatible client fails with an actionable
-error. Windows, Intel Macs, and other app/engine/OS versions require qualification.
+The launcher requires macOS **26.6.2 or newer on arm64**, ChatGPT desktop
+**26.917.71314 or newer** with bundle ID `com.openai.codex`, and bundled engine
+**0.155.0-alpha.16.4 or newer**. Desktop build numbers are not admission gates.
+Versions are compared numerically, including engine prereleases. Newer versions
+are accepted without a launcher update when the required integration contracts
+still work; malformed or below-minimum versions fail with update guidance.
+
+The target is the application's **Codex mode** and requires `/bin/zsh` as the
+account's login shell. Discovery checks `/Applications` then `~/Applications`,
+with ChatGPT/Codex bundle names. For another location, pass
+`--app-bundle '/path/to/ChatGPT.app'`. Discovery supports the older flat engine
+and the packaged `codex-cli/CodexCLI.app/Contents/MacOS/codex` layout. An incomplete
+package fails explicitly. The native account catalog must match the selected
+engine's cache version and freshness requirements.
+
+Identity, executable, configuration, managed-policy, ownership and routing
+checks still apply. Exact app/engine versions and hashes identify qualification
+evidence; they do not form a fleet-wide version allowlist. Passing admission is
+not a claim that every future client or experimental model has been qualified.
+The current update investigation is recorded in
+[minimum-version compatibility evidence](research/desktop-minimum-version-2026-09-30.md).
+Windows and Intel desktop support require separate implementation and qualification.
+
+When a compatible app update moves its engine between these layouts, an ordinary
+saved launcher reference resolves the replacement in the same app bundle and
+announces the move. Installer upgrades validate the current bundle before
+refreshing those references. Their ownership records and shared history remain
+intact, including after uninstall.
 
 ## Ownership and routing
 
