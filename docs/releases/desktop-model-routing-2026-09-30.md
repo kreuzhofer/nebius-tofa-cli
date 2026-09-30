@@ -62,15 +62,23 @@ events, zero failures and three skipped opt-in tests. Those skips were the two
 separate installed Codex CLI inference/review checks and the installed Electron
 shell-isolation check. `go vet ./...` and `git diff --check` also passed.
 
+The first macOS CI run exposed a CLI picker test reading a partial terminal
+redraw. The test now waits for the current filter and result footer. The existing
+test failed with eight-byte PTY reads before the correction, then passed ten
+fragmented-read repetitions; all 27 CLI picker checks also passed. Production
+picker behavior was unchanged.
+
 A separate local package, `v0.1.0-issue55.1`, builds for Darwin, Linux and Windows
 on amd64 and arm64. All four native macOS lifecycle checks pass through the real
 installer and uninstaller with disposable homes. They cover fresh-shell PATH
 discovery, repeated install, uninstall, reinstall, purge and failure preservation.
 Cross-compilation does not establish native Linux or Windows execution.
 
-Before #55 is complete, verify the actual desktop picker, session-local default
-selection, concurrent CLI isolation and conversation switching in Electron, then
-perform bounded live qualification. No new build has been installed into the
+Release qualification remains tracked in [#35](https://github.com/kreuzhofer/tofa-launcher/issues/35):
+verify the actual desktop picker, session-local default selection, concurrent CLI
+isolation and conversation switching in Electron, then perform bounded live
+qualification. Closing the #55 implementation does not establish those results.
+No new build has been installed into the
 user's ordinary environment during these checks. Existing automatic naming is
 unchanged: only the captured Kimi launch-default contract has a title route;
 DeepSeek launch defaults still report unsupported automatic titles explicitly.
