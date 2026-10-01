@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "candidate": {
+    "source_commit": "c4601ee60f0bd29932cb194f241b7e694fb6ecff",
+    "version": "v0.1.0-rc.12",
+    "created_utc": "2026-10-01T08:56:58.546599+00:00",
+    "assets_sha256": {
+      "LICENSE": "796a0cd7abc80802b9d2692b7b5a606f14babdd4fed054903af045b56d7997f6",
+      "LICENSE-CODEX.txt": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+      "LICENSE-GO.txt": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "NOTICE-CODEX.txt": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+      "PATENTS-GO.txt": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+      "README.md": "f20db5efa652b6da9de340ba19fba26adf0650098eb7829bf3b7e63dda2eb5d8",
+      "SHA256SUMS": "167a91d177ed119f27a8759d8b2b23c1e1a974c2aaac341da00edaf073b9ba26",
+      "THIRD_PARTY_NOTICES.txt": "dad7f088af26b7c74156dbf9c46d51a8da22eec4f1a4048e75a357058fbee468",
+      "install.ps1": "950b62b3266ef2d1dc4dc395f21c5e2140b14b5eaa48a7a0b9ca689a2ea81c9b",
+      "install.sh": "1a288a20700dfbb7e57272e94730ae1f08ee73641eb3b5854d95ed7f481fc724",
+      "tofa_v0.1.0-rc.12_darwin_amd64": "8a700378439724617e53e424bd173cffec2b95cc52f2df0b5090fe5463ecc931",
+      "tofa_v0.1.0-rc.12_darwin_arm64": "d840a4df2a2a9ef3e6ae49d693ee39f719040afcded67c0ac002ff8538f76763",
+      "tofa_v0.1.0-rc.12_linux_amd64": "0f883f8c82ec54dbd2731219dd85f7edda25ae552cda85337c92866fa750c02f",
+      "tofa_v0.1.0-rc.12_linux_arm64": "fc0e3030d0b484f0603742aaa2e1803590d8662344315263ee0659da65d56a6b",
+      "tofa_v0.1.0-rc.12_windows_amd64.exe": "95fbbcc940ea4e2350d240f914b460c743b6b934790dba5439b7d0786e663464",
+      "tofa_v0.1.0-rc.12_windows_arm64.exe": "f788de98989c26b76f23e3c4a9090bc30b602beab6c5c18e123f301abcd593c8",
+      "uninstall.ps1": "0b0a63484262720ecd8f38e748c9fac9913c8cf2d39ac945729e9c66c846a82b",
+      "uninstall.sh": "692fd1469d5d03d9fb1bbefbb829cb0b4c3bb2437be67feb87d2ec4745d00089"
+    },
+    "desktop": {
+      "version": "26.928.21956",
+      "build": "12404",
+      "bundle_id": "com.openai.codex",
+      "engine_relative_path": "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+      "engine_version": "0.159.2",
+      "engine_sha256": "50ac633af64851511f9bbc71032cdae7f1ba20b3234c189687d61ba846c354c5",
+      "asar_sha256": "3bda98f2265ad23677dfe0163d1cc7855beade6bef11d27f830f6663d7658406"
+    },
+    "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "guardian": "zai-org/GLM-5.3-Flash",
+    "platform": "macOS 26.6.2 arm64",
+    "native_baseline": {
+      "existing_conversations_visible": true,
+      "native_chat_responded": true,
+      "source": "explicit user observation",
+      "attribution": "Retained pre-rc12 ordinary-desktop baseline, originally observed during #35 qualification; not a new rc12 UI result"
+    },
+    "candidate_installed": false,
+    "published": false
+  },
+  "validation": {
+    "candidate": "v0.1.0-rc.12",
+    "source": "c4601ee60f0bd29932cb194f241b7e694fb6ecff",
+    "recorded_utc": "2026-10-01T08:59:19.846450+00:00",
+    "targeted_image_race_native": {
+      "status": "passed",
+      "seconds": 6.098
+    },
+    "vet": "passed",
+    "reviews": {
+      "standards_remaining": 0,
+      "spec_remaining": 0
+    },
+    "packaging": {
+      "passed": 6,
+      "seconds": 12.325
+    },
+    "native_distribution_lifecycle": {
+      "passed": 4,
+      "seconds": 3.898
+    },
+    "terminal": {
+      "passed": 2,
+      "seconds": 0.637
+    },
+    "actual_installer_lifecycle": "passed",
+    "ci_run": 36839421736,
+    "ci_status": "success",
+    "full_race": {
+      "status": "passed",
+      "test_and_subtest_entries": 497,
+      "skips": 0,
+      "failures": 0,
+      "package_seconds": 688.941,
+      "timeout_minutes": 20,
+      "cli": "0.158.0",
+      "desktop_engine": "0.159.2",
+      "installed_app_opt_in": true
+    },
+    "retained_earlier_run": {
+      "status": "timed_out",
+      "seconds": 600.447,
+      "assertion_failures": 0,
+      "test_entries_passed": 278,
+      "reason": "observer omitted established 20-minute suite budget; Go default ten-minute timeout"
+    },
+    "qualification_complete": false,
+    "published": false
+  },
+  "ui_observations": [],
+  "qualification_complete": false,
+  "published": false,
+  "candidate_snapshot_scope": "Original pre-install freeze; candidate_installed is the state at freeze time, not current state",
+  "current_installation": {
+    "candidate_installed": true,
+    "installed_matches_frozen_asset": true,
+    "real_installer_lifecycle": "passed"
+  },
+  "documentation_review": {
+    "standards_remaining": 0,
+    "spec_remaining": 0,
+    "corrections": "freeze/current-install distinction, historical baseline attribution, historical bundled README guidance, pending qualification tense and HTTP-test attribution"
+  }
+}
