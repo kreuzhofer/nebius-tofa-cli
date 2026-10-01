@@ -1,0 +1,16 @@
+{
+  "source": "6dcea2483b50efa7c6cd5e30b0a1ac997136cc36",
+  "version": "v0.1.0-issue74",
+  "sha256": "a53212526770457ca0b91be5691602cbe37afce366c2a667b997d25c1e7ef5c5",
+  "checks": [
+    "real installer checksum and installed identity",
+    "fresh terminal authenticates before app picker",
+    "same-invocation synthetic client start with real catalog",
+    "second fresh terminal reuses login"
+  ],
+  "inference_requests": 0,
+  "status": "passed",
+  "cleanup_exit": 0,
+  "original_config_unchanged": true,
+  "original_key_unchanged": true
+}

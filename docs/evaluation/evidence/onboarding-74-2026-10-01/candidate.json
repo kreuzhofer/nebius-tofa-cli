@@ -1,0 +1,25 @@
+{
+  "version": "v0.1.0-issue74",
+  "source_commit": "6dcea2483b50efa7c6cd5e30b0a1ac997136cc36",
+  "publication": "local only; not published",
+  "assets": {
+    "LICENSE": "796a0cd7abc80802b9d2692b7b5a606f14babdd4fed054903af045b56d7997f6",
+    "LICENSE-CODEX.txt": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+    "LICENSE-GO.txt": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "NOTICE-CODEX.txt": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+    "PATENTS-GO.txt": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+    "README.md": "2d888c6804dc2fda4235f744e58523b3f117ada7294013584cca358308c9f193",
+    "SHA256SUMS": "6431e8b4e02183e95ac885c2aaa62d6618ae4de969cdf2f3607529eb9d6bc96a",
+    "THIRD_PARTY_NOTICES.txt": "dad7f088af26b7c74156dbf9c46d51a8da22eec4f1a4048e75a357058fbee468",
+    "install.ps1": "950b62b3266ef2d1dc4dc395f21c5e2140b14b5eaa48a7a0b9ca689a2ea81c9b",
+    "install.sh": "1a288a20700dfbb7e57272e94730ae1f08ee73641eb3b5854d95ed7f481fc724",
+    "tofa_v0.1.0-issue74_darwin_amd64": "63fd494f26a49112527a9e1f38484c3181e8a8c9e59291e9d298bebbfae0fc14",
+    "tofa_v0.1.0-issue74_darwin_arm64": "a53212526770457ca0b91be5691602cbe37afce366c2a667b997d25c1e7ef5c5",
+    "tofa_v0.1.0-issue74_linux_amd64": "59e99a03aefb87a9d27330771f32c9acb98300dc5e53e06e3ce5a2760ccfdebf",
+    "tofa_v0.1.0-issue74_linux_arm64": "ac0b24242bf609062940856ef41747eddd5a8147e89808330cb4cf1c4eb84dfc",
+    "tofa_v0.1.0-issue74_windows_amd64.exe": "25bea0488975b3a17f8f377b16c25a519e311f52689978c0515d8ee1630947d0",
+    "tofa_v0.1.0-issue74_windows_arm64.exe": "398a627ca73d9341ce8b8add73807788954cf578f27d8fd5cc82c648662e5af6",
+    "uninstall.ps1": "0b0a63484262720ecd8f38e748c9fac9913c8cf2d39ac945729e9c66c846a82b",
+    "uninstall.sh": "692fd1469d5d03d9fb1bbefbb829cb0b4c3bb2437be67feb87d2ec4745d00089"
+  }
+}

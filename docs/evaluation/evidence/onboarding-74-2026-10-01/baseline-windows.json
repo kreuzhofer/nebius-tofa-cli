@@ -1,0 +1,10 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "arch": "ARM64",
+  "checks": [
+    "baseline shows app picker before authentication",
+    "selecting CLI fails instead of onboarding"
+  ],
+  "status": "reproduced",
+  "no_credential_input": true
+}

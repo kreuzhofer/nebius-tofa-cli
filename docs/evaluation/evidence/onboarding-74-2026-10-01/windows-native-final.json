@@ -1,0 +1,13 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "arch": "ARM64",
+  "checks": [
+    "authentication before app picker",
+    "same-invocation continuation",
+    "native Credential Manager storage",
+    "saved-login reuse in second fresh terminal"
+  ],
+  "fixture_sha256": "b0cfb7029fd844740ad82b06649bb4556368bdce79c29e14b28ec90fa610617d",
+  "status": "passed",
+  "cleanup_exit": 0
+}

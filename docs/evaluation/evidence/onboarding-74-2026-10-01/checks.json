@@ -1,0 +1,74 @@
+{
+  "source_commit": "6dcea2483b50efa7c6cd5e30b0a1ac997136cc36",
+  "baseline_commit": "df9f8055f229338a74a3c0f49fb559754c7ee08a",
+  "go_version": "go1.27.1",
+  "host": "macOS 26.6.2 (25G83), ARM64",
+  "guest": "Windows 11 ARM64 UTM, 10.0.26200, SabreTest",
+  "go_race": "passed: go test -race -timeout 20m ./..., installed engine enabled",
+  "go_vet": "passed",
+  "cli_terminal_tests": 38,
+  "desktop_terminal_tests": 21,
+  "windows_storage_unit_tests": "passed natively with synthetic storage fixtures",
+  "macos_native_storage": "first-use, same-invocation launch, saved-login reuse, cleanup passed",
+  "execution_policy": {
+    "user": "SabreTest",
+    "scope": "CurrentUser",
+    "value": "RemoteSigned",
+    "authorization": "explicit user request during implementation"
+  },
+  "review": {
+    "standards": {
+      "hard_findings": 0,
+      "optional_findings": 1,
+      "optional": "First-use filesystem classification could be moved into Store."
+    },
+    "spec": {
+      "initial_findings": 2,
+      "resolved_findings": 2,
+      "remaining_source_findings": 0
+    }
+  },
+  "optional_engine_evaluation": {
+    "status": "failed",
+    "failures": 14,
+    "baseline_reproduced_test": "DesktopEvaluationTests.test_command_to_report_checks_tools_resume_approvals_and_preservation",
+    "note": "Unchanged starting commit reproduces client_error after completed synthetic work. Outside first-use orchestration."
+  },
+  "fixtures": {
+    "picker-launcher.exe": "b0cfb7029fd844740ad82b06649bb4556368bdce79c29e14b28ec90fa610617d",
+    "baseline-picker.exe": "76d1f2ac96f35dc98b01229ef3d239e6326343816284c8c4634c93783d63a9e7",
+    "codex.exe": "16964ad0ec7c704d2869af343e49010aa5eb1daa37b9bc33709234ba379fb3b7",
+    "codex-macos": "39aa7a79173c5bfbba8b2726203bca660ccc1541bc76cf5373f06325b540da9b"
+  },
+  "python_standard": {
+    "scripts": {
+      "build_test.py": 0,
+      "desktop_evaluation_test.py": 0,
+      "desktop_history_test.py": 0,
+      "desktop_ownership_test.py": 0,
+      "desktop_picker_test.py": 0,
+      "evaluation_client_test.py": 0,
+      "evaluation_proxy_test.py": 0,
+      "install_test.py": 0,
+      "lifecycle_test.py": 0,
+      "live_compat_test.py": 0,
+      "model_evaluation_test.py": 0,
+      "picker_test.py": 0,
+      "qualify_macos_test.py": 0,
+      "qualify_windows_test.py": 0,
+      "release_test.py": 0,
+      "terminal_test.py": 0,
+      "trace_codex_test.py": 0,
+      "windows_process_test.py": 0
+    },
+    "note": "Run each script with its documented arguments; optional engine and platform-specific skips retained. Desktop picker integration also ran within Go with the installed engine."
+  },
+  "logs": {
+    "go-test-final.log": "39f90197adba19ab333243b752895e5b3641a24cdffad8baa090118388e48307",
+    "picker-final.log": "409d1d19b0afda62d2aa58f196991c60cbc3ae2cdf76724ad481fdcc11a9ad90",
+    "desktop-final.log": "fb268f6e36b15a8b2ca06186fede23d0e5abda2818fd2adf33de72e2109b610a",
+    "windows-unit-tests.log": "5c3b3f12ef9f5aa1e07a64ca98274eb4ae569c910b3c783f7a85da3d964dc3fa",
+    "python-standard.log": "6b65a847888857cdfc18d2607e50017c585e0ff081fabe3379c560dd6cf93e05",
+    "baseline-evaluation.log": "289a71090499e3510524ce1ac9eae6f234b7d8c06da8e203e02562e2475bdede"
+  }
+}

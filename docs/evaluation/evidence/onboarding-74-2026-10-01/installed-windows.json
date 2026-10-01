@@ -1,0 +1,13 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "arch": "ARM64",
+  "checks": [
+    "real installer checksum and installed ARM64 identity",
+    "fresh terminal setup saves natively and catalog connection failure prevents selection",
+    "second fresh terminal reuses saved login and preserves connection error"
+  ],
+  "sha256": "398a627ca73d9341ce8b8add73807788954cf578f27d8fd5cc82c648662e5af6",
+  "status": "passed",
+  "cleanup_exit": 0,
+  "live_catalog": "connection failed; no live Windows authentication success claimed"
+}
