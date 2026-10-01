@@ -263,8 +263,8 @@ launcher preserves complete native descriptors, including account-dependent
 availability, reasoning choices, instructions and unknown fields. It appends every
 eligible Token Factory main, displayed with `(Token Factory)` for supported
 choices and `(TF Experimental)` for experimental choices. Nemotron uses the
-short desktop name `Nemotron 3 Ultra`, retaining its full model ID; it neither reconstructs descriptors from the
-lossy `model/list` picker response nor ships a frozen native snapshot. Empty,
+short desktop name `Nemotron 3 Ultra`, retaining its full model ID. The launcher
+neither reconstructs descriptors from the lossy `model/list` picker response nor ships a frozen native snapshot. Empty,
 malformed, duplicate or conflicting model identities cancel the launch.
 
 The qualified engine's export uses `OnlineIfUncached`: eligible signed-in accounts

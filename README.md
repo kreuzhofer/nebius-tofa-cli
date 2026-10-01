@@ -1,45 +1,45 @@
 # tofa — Token Factory launcher
 
-A standalone CLI that launches an **already installed Codex CLI** against
-Nebius Token Factory. It does not run models locally or install Codex.
+A standalone launcher that connects an **already installed Codex CLI or the tested
+macOS Codex desktop app** to Nebius Token Factory. It does not run models locally
+or install the target client.
 
-The current release is [v0.1.0-rc.2](https://github.com/kreuzhofer/tofa-launcher/releases/tag/v0.1.0-rc.2),
-an experimental prerelease. The repository and release downloads are public;
-no GitHub account is needed to install.
+The current release is [v0.1.0-rc.13](https://github.com/kreuzhofer/tofa-launcher/releases/tag/v0.1.0-rc.13),
+an experimental prerelease with the macOS desktop integration. Release downloads
+are public; no GitHub account is needed to install.
 
-- Kimi-K3 with Codex 0.155.1 on macOS ARM64 passed recorded live streaming,
-  tool execution and continued-conversation checks. In rc.2 all models require
-  `--allow-unverified`; current source has two supported desktop pairs below.
-- rc.2 addresses the observed automatic-review request-format rejection while
-  preserving Codex's approval decisions. The maintainer reports a successful live
-  app build with **Approve for me**, including installation and dev-server startup
-  without manual intervention. Codex 0.155.1's fixed 90-second review deadline can
-  still expire during slow Token Factory responses.
-- Release CI passed native checks on macOS ARM64, Linux amd64 and Windows amd64.
-  Full real-account macOS and Windows release qualification remains pending.
+- The desktop qualification covers ChatGPT 26.928.21956 (12404), Codex mode,
+  bundled engine 0.159.2 on macOS 26.6.2 ARM64. Compatible newer clients are
+  accepted above documented minimums, subject to protocol and ownership checks.
+- Conversations keep their own Token Factory model and history. Eligible choices
+  remain available, using `(Token Factory)` or `(TF Experimental)` labels.
+  Desktop model/reasoning defaults remain isolated from concurrent CLI sessions.
+- Release CI checks native installation and execution on macOS ARM64, Linux amd64
+  and Windows amd64 using synthetic state. Windows desktop and the separate
+  real-account CLI platform qualification in #23 are not established by those checks.
 
-See [rc.2 evidence and qualification status](docs/releases/v0.1.0-rc.2.md),
-[conversation validation](docs/prototype/VALIDATION.md#request-adapter-validation)
-and [the adapter investigation](docs/research/codex-kimi-followup.md).
-Source builds also include an [experimental macOS Codex desktop target](docs/codex-desktop.md).
-It is not part of rc.2. Claude, other desktop modes, broader protocol translation
-and browser OAuth remain outside the current scope.
+See the [rc13 qualification report and limitations](docs/releases/v0.1.0-rc.13.md)
+for exact artifacts, evidence carried forward from rc12's unchanged behavior,
+and the fresh rc13 checks. [Desktop setup](docs/codex-desktop.md) explains the
+supported boundary, including explicit naming and compaction limitations.
+Historical CLI evidence remains in the [rc2 report](docs/releases/v0.1.0-rc.2.md).
+Claude, other desktop modes and browser OAuth remain outside the current scope.
 
 ## Installation
 
-Use the version-pinned commands below to install **v0.1.0-rc.2** directly from
+Use the version-pinned commands below to install **v0.1.0-rc.13** directly from
 GitHub. The installer downloads only the binary matching your operating system
 and CPU.
 
 Installation is per user and needs no administrator privileges. The installer
 verifies the binary's SHA-256 checksum, updates your PATH and prints the exact
-command to activate tofa in your current terminal. An already installed Codex CLI
-and a Token Factory API key and project ID are required to launch Codex.
+command to activate tofa in your current terminal. An already installed target client
+and a Token Factory API key and project ID are required to launch it.
 
 ### macOS and Linux
 
 ```sh
-version=v0.1.0-rc.2
+version=v0.1.0-rc.13
 curl -fsSL "https://github.com/kreuzhofer/tofa-launcher/releases/download/$version/install.sh" -o install.sh &&
   sh install.sh --version "$version"
 ```
@@ -58,7 +58,7 @@ Requires Windows 10 version 1709 or later. The installer detects the native
 AMD64 or ARM64 host, including when PowerShell runs under emulation.
 
 ```powershell
-$Version = 'v0.1.0-rc.2'
+$Version = 'v0.1.0-rc.13'
 $Installer = Invoke-RestMethod "https://github.com/kreuzhofer/tofa-launcher/releases/download/$Version/install.ps1" -ErrorAction Stop
 & ([scriptblock]::Create($Installer)) -Version $Version
 ```
@@ -80,11 +80,11 @@ tofa auth login
 tofa launch codex --model 'moonshotai/Kimi-K3' --allow-unverified
 ```
 
-`tofa --version` should print `tofa v0.1.0-rc.2`. Login is needed for first setup;
+`tofa --version` should print `tofa v0.1.0-rc.13`. Login is needed for first setup;
 when upgrading, rerun the installer and reuse your saved login.
 
 To exercise automatic approval review, select **Approve for me** in Codex's
-`/permissions` menu. rc.2 preserves the approval gate; it does not select a review
+`/permissions` menu. The launcher preserves the approval gate; it does not select a review
 mode for you. See the [automatic-review limitations](#automatic-approval-review)
 below before interpreting a timeout as a request-format failure.
 
@@ -102,7 +102,7 @@ On macOS/Linux, download the complete bundle, verify it, then use the matching
 installer with the downloaded assets:
 
 ```sh
-version=v0.1.0-rc.2
+version=v0.1.0-rc.13
 release_dir=$(mktemp -d)
 gh release download "$version" --repo kreuzhofer/tofa-launcher --dir "$release_dir" &&
   (cd "$release_dir" && shasum -a 256 -c SHA256SUMS) &&
@@ -115,7 +115,7 @@ are finished using this executable; replace `amd64` with `arm64` for Windows ARM
 (cross-build evidence only).
 
 ```powershell
-$Version = 'v0.1.0-rc.2'
+$Version = 'v0.1.0-rc.13'
 $Asset = "tofa_${Version}_windows_amd64.exe"
 $Download = Join-Path $env:TEMP ([guid]::NewGuid().ToString('N'))
 gh release download $Version --repo kreuzhofer/tofa-launcher --dir $Download --pattern $Asset --pattern SHA256SUMS
@@ -135,7 +135,7 @@ are verified separately from live Token Factory qualification.
 ### Building a distribution
 
 ```sh
-sh scripts/build.sh v0.1.0-rc.2
+sh scripts/build.sh v0.1.0-dev.1
 ```
 
 An explicit version is required. A successful build replaces the generated
@@ -156,7 +156,7 @@ execution or real-machine qualification on every target.
 
 ### Publishing a prerelease
 
-Push a new explicit prerelease tag such as `v0.1.0-rc.2` to the intended source
+Push a new explicit prerelease tag such as `v0.1.0-rc.14` to the intended source
 commit. Tags must use `vMAJOR.MINOR.PATCH-PRERELEASE`; stable tags and malformed
 versions fail validation. Ordinary branch pushes and manual CI runs never publish.
 
@@ -266,7 +266,8 @@ Desktop launches default to GLM-5.3-Flash Guardian; `--guardian-model ID` overri
 it. The picker marks **DeepSeek V4.1 Flash and GLM 5.3** with that Guardian
 as supported when available. Their [five-model comparison](docs/evaluation/desktop-comparison-2026-09-29.md)
 pins headless bundled-engine support to the tested macOS desktop configuration;
-Electron UI and fresh release qualification remain separate. Other eligible desktop
+the [rc13 release report](docs/releases/v0.1.0-rc.13.md) records the Electron and
+release qualification. Other eligible desktop
 pairs are always enabled and marked Experimental. The launcher sets the default;
 the desktop picker offers all eligible available models, and each conversation
 keeps its own selected main across relaunches. The configured Guardian applies
@@ -338,7 +339,8 @@ Codex 0.155.1 still has a fixed 90-second total review deadline. In the earlier
 live diagnostic, the adapted request reached HTTP 200 only after about 242
 seconds, after Codex had already stopped waiting; no complete assessment was
 observed in that diagnostic. The format adjustment does not extend that deadline
-or resolve slow provider responses. Full release qualification remains pending.
+or resolve slow provider responses. Separate CLI platform qualification in #23
+remains open.
 See [the rc.2 evidence](docs/releases/v0.1.0-rc.2.md).
 
 ### Connection and client settings
@@ -558,7 +560,7 @@ the completion result or cleanup errors.
 This works even if the installed binary is broken:
 
 ```sh
-version=v0.1.0-rc.2 # use the installed version, shown by tofa --version
+version=v0.1.0-rc.13 # use the installed version, shown by tofa --version
 curl -fsSL "https://github.com/kreuzhofer/tofa-launcher/releases/download/$version/uninstall.sh" -o uninstall.sh &&
   sh uninstall.sh
 ```
@@ -572,7 +574,7 @@ the script retains recovery references and reports incomplete cleanup.
 This works even if the installed binary is broken:
 
 ```powershell
-$Version = 'v0.1.0-rc.2' # use the installed version, shown by tofa --version
+$Version = 'v0.1.0-rc.13' # use the installed version, shown by tofa --version
 $Uninstaller = Invoke-RestMethod "https://github.com/kreuzhofer/tofa-launcher/releases/download/$Version/uninstall.ps1" -ErrorAction Stop
 & ([scriptblock]::Create($Uninstaller))
 ```

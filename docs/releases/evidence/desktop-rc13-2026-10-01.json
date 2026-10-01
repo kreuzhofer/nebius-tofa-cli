@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "candidate_freeze_snapshot": {
+    "source_commit": "a6e65a2ae6e8d96f2399ef572902be6acad3c401",
+    "version": "v0.1.0-rc.13",
+    "created_utc": "2026-10-01T10:05:32.296313+00:00",
+    "assets_sha256": {
+      "LICENSE": "796a0cd7abc80802b9d2692b7b5a606f14babdd4fed054903af045b56d7997f6",
+      "LICENSE-CODEX.txt": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+      "LICENSE-GO.txt": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "NOTICE-CODEX.txt": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+      "PATENTS-GO.txt": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+      "README.md": "f20db5efa652b6da9de340ba19fba26adf0650098eb7829bf3b7e63dda2eb5d8",
+      "SHA256SUMS": "cbc6107112506b9149e29d4afce1f7e20000b4010d1d0729d0066a9550cafb37",
+      "THIRD_PARTY_NOTICES.txt": "dad7f088af26b7c74156dbf9c46d51a8da22eec4f1a4048e75a357058fbee468",
+      "install.ps1": "950b62b3266ef2d1dc4dc395f21c5e2140b14b5eaa48a7a0b9ca689a2ea81c9b",
+      "install.sh": "1a288a20700dfbb7e57272e94730ae1f08ee73641eb3b5854d95ed7f481fc724",
+      "tofa_v0.1.0-rc.13_darwin_amd64": "3c5c9865cba83e5aef75e46e8930a1f7b9dcb9f2ccfa1ca0c44f3042702497da",
+      "tofa_v0.1.0-rc.13_darwin_arm64": "57b23a23281e925e744f66ebdda2be193617eea75b6519a654f0fb0643e3f1df",
+      "tofa_v0.1.0-rc.13_linux_amd64": "18b72a1005c36b1962bc1d44b92b3c4315e154c4b482faa3bb0fe1295b826316",
+      "tofa_v0.1.0-rc.13_linux_arm64": "8ed1ad3a6433aa5020e71ee34a6f4ee3503b56f7c74fc78ac938c94d2f478bec",
+      "tofa_v0.1.0-rc.13_windows_amd64.exe": "54ca5685aab5fc9c23b086dbc8228158f8a0d18a774e6163eb046d2474203f22",
+      "tofa_v0.1.0-rc.13_windows_arm64.exe": "1b53b373b5d374f0234c00ff2bad5dd7c760e45e13713e9c653f607002024d9c",
+      "uninstall.ps1": "0b0a63484262720ecd8f38e748c9fac9913c8cf2d39ac945729e9c66c846a82b",
+      "uninstall.sh": "692fd1469d5d03d9fb1bbefbb829cb0b4c3bb2437be67feb87d2ec4745d00089"
+    },
+    "desktop": {
+      "version": "26.928.21956",
+      "build": "12404",
+      "bundle_id": "com.openai.codex",
+      "engine_relative_path": "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+      "engine_version": "0.159.2",
+      "engine_sha256": "50ac633af64851511f9bbc71032cdae7f1ba20b3234c189687d61ba846c354c5",
+      "asar_sha256": "3bda98f2265ad23677dfe0163d1cc7855beade6bef11d27f830f6663d7658406"
+    },
+    "main": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "guardian": "zai-org/GLM-5.3-Flash",
+    "platform": "macOS 26.6.2 arm64",
+    "native_baseline": {
+      "existing_conversations_visible": true,
+      "native_chat_responded": true,
+      "source": "explicit user observation",
+      "attribution": "Retained pre-rc13 ordinary-desktop baseline, not a fresh rc13 UI observation"
+    },
+    "candidate_installed": false,
+    "published": false,
+    "qualification_basis": "Display-only delta from rc12; prior behavioral checks retained with explicit candidate attribution. Fresh installer, automated checks and visible labels required."
+  },
+  "current_installation": {
+    "installed": true,
+    "matches_frozen_asset": true
+  },
+  "validation": {
+    "candidate": "v0.1.0-rc.13",
+    "source": "a6e65a2ae6e8d96f2399ef572902be6acad3c401",
+    "recorded_utc": "2026-10-01T10:31:42.466505+00:00",
+    "targeted_catalog_race": {
+      "status": "passed",
+      "seconds": 8.177
+    },
+    "vet": "passed",
+    "reviews": {
+      "standards_remaining": 0,
+      "spec_remaining": 0
+    },
+    "packaging": {
+      "passed": 6,
+      "seconds": 9.382
+    },
+    "native_distribution_lifecycle": {
+      "passed": 4,
+      "seconds": 4.019
+    },
+    "terminal": {
+      "passed": 2,
+      "seconds": 0.486
+    },
+    "full_race": {
+      "status": "passed",
+      "test_and_subtest_entries": 497,
+      "skips": 0,
+      "failures": 0,
+      "package_seconds": 706.802,
+      "timeout_minutes": 20,
+      "cli": "0.158.0",
+      "desktop_engine": "0.159.2",
+      "installed_app_opt_in": true
+    },
+    "ci_run": 36846827310,
+    "ci_status": "success",
+    "qualification_complete": true,
+    "published": true,
+    "actual_installer_lifecycle": "passed",
+    "label_ui": "passed",
+    "normal_quit": "exit_zero_all_preservation",
+    "cli_defaults_preserved": true,
+    "effective_settings_preserved": true,
+    "tag_ci_run": 36848039681,
+    "tag_ci_status": "success",
+    "release_published": true,
+    "public_download_verification": "passed_18_matching_assets",
+    "public_installer": "passed"
+  },
+  "qualification_basis": {
+    "predecessor": "v0.1.0-rc.12",
+    "predecessor_source": "c4601ee60f0bd29932cb194f241b7e694fb6ecff",
+    "predecessor_report": "docs/releases/v0.1.0-rc.12.md",
+    "production_delta": "Desktop display_name only: shorter Experimental suffix and Nemotron name. Canonical IDs, eligibility/status, routing, model defaults, history, reasoning, approvals and lifecycle unchanged.",
+    "review_decision": "Carry forward explicitly attributed rc12 behavioral evidence; fresh rc13 automated checks, real installation lifecycle and visible labels."
+  },
+  "ui_observations": [
+    {
+      "check": "Short desktop labels and normal quit",
+      "result": "passed_user_confirmation_and_observer",
+      "scope": "TF Experimental and Token Factory suffixes readable; Nemotron 3 Ultra name correct; user quit with CmdQ and CLI unchanged",
+      "recorded_utc": "2026-10-01T10:11:01.389401+00:00",
+      "launch": "launch-20261001T100729Z-2042ad89"
+    }
+  ],
+  "qualification_complete": true,
+  "published": true,
+  "normal_quit": {
+    "launcher_exit_code": 0,
+    "preservation": {
+      "cli_config": true,
+      "native_auth": true,
+      "launcher_config": true,
+      "launcher_credentials": true,
+      "workspace_sentinel": true
+    },
+    "cli_defaults_preserved": true,
+    "ordinary_effective_settings_preserved": true,
+    "changed_effective_setting_names": []
+  },
+  "tag_ci_artifact_comparison": {
+    "tag_ci_run": 36848039681,
+    "asset_count": 18,
+    "all_assets_match_frozen_candidate": true,
+    "checked_utc": "2026-10-01T10:27:04.643345+00:00"
+  },
+  "publication_verification": {
+    "candidate": "v0.1.0-rc.13",
+    "source_commit": "a6e65a2ae6e8d96f2399ef572902be6acad3c401",
+    "release_url": "https://github.com/kreuzhofer/tofa-launcher/releases/tag/v0.1.0-rc.13",
+    "public_prerelease": true,
+    "downloaded_asset_count": 18,
+    "all_downloaded_hashes_match_freeze": true,
+    "public_installer": "passed",
+    "installer_exit_code": 0,
+    "preservation": {
+      "cli_config": true,
+      "native_auth": true,
+      "launcher_config": true,
+      "launcher_credentials": true,
+      "shell_startup": true,
+      "workspace_sentinel": true
+    },
+    "installed_matches_frozen_asset": true,
+    "completed_utc": "2026-10-01T10:29:58.928641+00:00"
+  },
+  "documentation_review": {
+    "standards_remaining": 0,
+    "spec_remaining": 0,
+    "scope": "release report/evidence and post-publication README"
+  }
+}
