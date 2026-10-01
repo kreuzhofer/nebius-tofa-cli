@@ -213,6 +213,167 @@ open(os.environ['FIXTURE_MARKER'],'w').write(json.dumps({'model':model,'args':ar
 
 
 class PickerTests(PickerFixture):
+    def test_first_launch_authenticates_before_app_and_continues(self):
+        for path in self.store.iterdir():
+            path.unlink()
+        self.saved = {}
+        self.start(['--allow-unverified'])
+        self.read_until('API key:')
+        self.assertNotIn(b'Choose an app', self.output)
+        time.sleep(.05)
+        os.write(self.master, b'synthetic-key\r')
+        self.read_until('Project ID:')
+        os.write(self.master, b'synthetic-project\n')
+        self.read_until('Choose an app')
+        self.assertIn(b'First-use setup', self.output)
+        self.assertIn(b'Catalog authentication succeeded', self.output)
+        self.assertEqual(self.requests[0][1], 'Bearer synthetic-key')
+        os.write(self.master, b'\r')
+        self.read_until('Choose a main model')
+        os.write(self.master, b'\r')
+        self.finish()
+        self.assertEqual(json.loads(self.marker.read_text())['model'], DEEPSEEK)
+        self.assertNotIn(b'synthetic-key', self.output)
+
+    def fresh_store(self):
+        for path in self.store.iterdir():
+            path.unlink()
+        self.saved = {}
+
+    def enter_login(self):
+        self.read_until('API key:')
+        time.sleep(.05)
+        os.write(self.master, b'synthetic-key\r')
+        self.read_until('Project ID:')
+        os.write(self.master, b'synthetic-project\n')
+
+    def test_first_explicit_launch_preserves_selections_and_client_args(self):
+        self.fresh_store()
+        self.start(['launch', 'codex', '--model', KIMI, '--guardian-model', DEEPSEEK,
+                    '--project-id', 'override-project', '--allow-unverified', '--', 'exec', 'hello'])
+        self.enter_login()
+        self.finish()
+        launch = json.loads(self.marker.read_text())
+        self.assertEqual(launch['model'], KIMI)
+        self.assertEqual(launch['args'][-2:], ['exec', 'hello'])
+        self.assertIn(('Guardian: ' + DEEPSEEK).encode(), self.output)
+        self.assertTrue(all('ai_project_id=override-project' in r[0] for r in self.requests))
+        self.assertNotIn(b'Choose an app', self.output)
+        self.assertNotIn(b'Choose a main model', self.output)
+
+    def test_invalid_launch_arguments_never_collect_credentials(self):
+        self.fresh_store()
+        for args in (['--bogus'], ['--model='], ['--project-id=bad project'],
+                     ['--direct', '--guardian-model', KIMI], ['--', '--config=x'],
+                     ['launch', 'unknown'], ['launch', 'codex', '--model='],
+                     ['launch', 'codex-desktop', '--model=']):
+            with self.subTest(args=args):
+                self.start(args)
+                self.finish(1)
+                self.assertNotIn(b'API key:', self.output)
+                self.assertNotIn(b'Choose an app', self.output)
+                self.assertFalse((self.store / 'config.yml').exists())
+
+    def test_onboarding_cancel_and_eof_do_not_write_or_launch(self):
+        self.fresh_store()
+        for label, key in [('API key:', b'\x03'), ('API key:', b'\x04'), ('Project ID:', b'\x04')]:
+            with self.subTest(label=label, key=key):
+                self.start([])
+                self.read_until('API key:')
+                time.sleep(.05)
+                if label == 'Project ID:':
+                    os.write(self.master, b'synthetic-key\r')
+                    self.read_until(label)
+                os.write(self.master, key)
+                self.finish(1)
+                self.assertFalse((self.store / 'config.yml').exists())
+                self.assertFalse((self.store / 'credentials.yml').exists())
+                self.assertFalse(self.marker.exists())
+                self.assertEqual(self.requests, [])
+
+    def test_remote_rejection_keeps_saved_login_but_stops_setup(self):
+        self.fresh_store()
+        self.catalog_status = 401
+        self.start([])
+        self.enter_login()
+        self.finish(1)
+        self.assertIn(b'Remote authentication has not been tested', self.output)
+        self.assertNotIn(b'Catalog authentication succeeded', self.output)
+        self.assertNotIn(b'Choose an app', self.output)
+        self.assertFalse(self.marker.exists())
+        self.assertTrue((self.store / 'credentials.yml').exists())
+
+    def test_logout_then_launch_onboards(self):
+        result = subprocess.run([str(self.binary), 'auth', 'logout'], env=self.env, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.saved = {}
+        self.start(['launch', 'codex', '--model', KIMI, '--allow-unverified'])
+        self.enter_login()
+        self.finish()
+        self.assertTrue(self.marker.exists())
+
+    def test_unreadable_or_missing_saved_credentials_never_onboard(self):
+        for broken in ('missing file', 'malformed config', 'missing vault entry'):
+            with self.subTest(broken=broken):
+                for name, data in self.saved.items():
+                    (self.store / name).write_bytes(data)
+                if broken == 'missing file':
+                    (self.store / 'credentials.yml').unlink()
+                elif broken == 'malformed config':
+                    (self.store / 'config.yml').write_text('not: [valid')
+                else:
+                    config = self.store / 'config.yml'
+                    config.write_text(config.read_text().replace('backend: file', 'backend: keyring'))
+                snapshot = {p.name: p.read_bytes() for p in self.store.iterdir()}
+                self.start(['launch', 'codex', '--model', KIMI, '--allow-unverified'])
+                original, self.saved = self.saved, snapshot
+                self.finish(1)
+                self.saved = original
+                self.assertNotIn(b'API key:', self.output)
+                self.assertFalse(self.marker.exists())
+
+    def test_vault_failures_never_fall_back_or_claim_success(self):
+        self.fresh_store()
+        for mode in ('locked', 'denied', 'failed', 'write-failed'):
+            with self.subTest(mode=mode):
+                self.env['FIXTURE_VAULT'] = mode
+                self.start([])
+                if mode == 'write-failed':
+                    self.enter_login()
+                self.finish(1)
+                self.assertFalse((self.store / 'credentials.yml').exists())
+                self.assertFalse((self.store / 'config.yml').exists())
+                self.assertNotIn(b'Catalog authentication succeeded', self.output)
+                self.assertNotIn(b'Choose an app', self.output)
+                self.assertFalse(self.marker.exists())
+                self.assertEqual(self.requests, [])
+
+    def test_orphaned_credentials_require_recovery_before_input(self):
+        (self.store / 'config.yml').unlink()
+        self.saved.pop('config.yml')
+        self.start([])
+        self.finish(1)
+        self.assertNotIn(b'API key:', self.output)
+        self.assertNotIn(b'Choose an app', self.output)
+        self.assertIn(b'recovery', self.output)
+
+    def test_fresh_nonterminal_without_model_has_login_guidance(self):
+        self.fresh_store()
+        result = subprocess.run([str(self.binary)], env=self.env, capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b'tofa auth login', result.stderr)
+        self.assertIn(b'--model ID', result.stderr)
+        self.assertFalse((self.store / 'config.yml').exists())
+
+    def test_fresh_nonterminal_has_actionable_login_error(self):
+        self.fresh_store()
+        result = subprocess.run([str(self.binary), 'launch', 'codex', '--model', KIMI,
+                                 '--allow-unverified'], env=self.env, capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b'tofa auth login', result.stderr)
+        self.assertNotIn(b'API key:', result.stdout)
+        self.assertFalse((self.store / 'config.yml').exists())
+
     def test_app_picker_cancel_restores_terminal_before_catalog_discovery(self):
         for key in (b'\x1b', b'\x03'):
             with self.subTest(key=key):

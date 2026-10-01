@@ -193,11 +193,22 @@ go build -o tofa ./cmd/tofa
 ./tofa launch codex --model '<catalog-model-id>' --allow-unverified
 ```
 
-`auth login` asks for an API key (displayed as `*` while typing or pasting), followed
-by the project ID. It saves locally;
-it does not claim that the service accepted those credentials. `models` checks the
-remote catalog with the selected project. Launch performs catalog discovery before
-starting Codex. Launching Codex can incur inference charges.
+On a fresh interactive launch, `tofa` announces first-use setup before the app
+picker. The same setup runs for explicit `launch codex` and supported
+`launch codex-desktop` commands. It asks for an API key (displayed as `*` while typing or pasting), followed
+by the project ID, using the same vault-first storage flow as `auth login`.
+After saving locally, onboarding checks the selected project’s remote catalog and
+continues the original launch with its arguments intact. Saved credentials alone
+do not establish successful authentication. A rejected catalog check stops setup;
+use `tofa auth login` explicitly to replace incorrect credentials.
+
+Existing logins skip setup. Locked or denied vault access, missing saved keys, and
+malformed or interrupted storage require explicit recovery; they never trigger a
+new login or a silent storage switch. Ctrl-C or EOF during credential entry stops
+without saving credentials. Noninteractive launches never prompt: run
+`tofa auth login` in a terminal first and supply `--model ID` when scripting.
+Standalone `auth login` saves locally without testing remote authentication;
+`models` checks the remote catalog. Launching Codex can incur inference charges.
 
 Use `./tofa` for interactive selection, `--project-id ID` for a one-session override,
 and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` and
@@ -209,9 +220,10 @@ and `--` to pass Codex arguments. Routing flags such as `--config`, `--profile` 
 ./tofa auth logout
 ```
 
-In a terminal, `tofa` and `tofa --allow-unverified` first show **Codex CLI** and
+In a terminal, `tofa` and `tofa --allow-unverified` show **Codex CLI** and
 **Codex desktop**. Choose the app with Up/Down and Enter, then choose its main
-model. App selection happens before credential lookup or catalog discovery;
+model. Fresh setup and its catalog authentication happen before app selection;
+with a saved login, catalog discovery happens after app selection;
 Escape/Ctrl-C cancels either stage. Desktop requires the [minimum compatible macOS ARM64 app and engine](docs/codex-desktop.md#compatibility).
 
 Explicit `tofa launch codex [OPTIONS]` and `tofa launch codex-desktop [OPTIONS]`

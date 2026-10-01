@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -55,11 +54,18 @@ func (out *desktopOutput) Write(p []byte) (int, error) {
 	return out.writer.Write(p)
 }
 
-func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
-	var bundle desktopBundle
+func validateDesktopPlatform(ctx context.Context) error {
 	version, err := exec.CommandContext(ctx, "/usr/bin/sw_vers", "-productVersion").Output()
 	if err != nil || runtime.GOARCH != "arm64" || !desktopVersionAtLeast(strings.TrimSpace(string(version)), "26.6.2") {
-		return bundle, errors.New("codex-desktop requires macOS 26.6.2 or newer on arm64; use launch codex on other platforms")
+		return errors.New("codex-desktop requires macOS 26.6.2 or newer on arm64; use launch codex on other platforms")
+	}
+	return nil
+}
+
+func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
+	var bundle desktopBundle
+	if err := validateDesktopPlatform(ctx); err != nil {
+		return bundle, err
 	}
 	if path == "" {
 		home, err := os.UserHomeDir()
@@ -76,7 +82,7 @@ func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
 	if path == "" {
 		return bundle, errors.New("ChatGPT desktop with Codex mode is not installed; install a compatible app or pass --app-bundle PATH")
 	}
-	path, err = filepath.Abs(path)
+	path, err := filepath.Abs(path)
 	if err != nil {
 		return bundle, err
 	}
@@ -90,7 +96,7 @@ func discoverDesktop(ctx context.Context, path string) (desktopBundle, error) {
 			return bundle, fmt.Errorf("incompatible desktop bundle: expected %s=%s; use --app-bundle PATH or launch codex", field.key, field.want)
 		}
 	}
-	version, err = exec.CommandContext(ctx, "/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
+	version, err := exec.CommandContext(ctx, "/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
 	if err != nil || !desktopVersionAtLeast(strings.TrimSpace(string(version)), minimumDesktopVersion) {
 		return bundle, fmt.Errorf("incompatible desktop version: require %s or newer; update the desktop or use launch codex", minimumDesktopVersion)
 	}
@@ -152,28 +158,24 @@ func (a *App) launchDesktop(ctx context.Context, s Store, args []string) (result
 	launch := *a
 	launch.Out = &desktopOutput{writer: a.Out}
 	a = &launch
-	fs := flags("launch codex-desktop")
-	model := fs.String("model", "", "")
-	guardian := fs.String("guardian-model", "zai-org/GLM-5.3-Flash", "")
-	path := fs.String("app-bundle", "", "")
-	project := fs.String("project-id", "", "")
-	fs.Bool("allow-unverified", false, "") // Retained for script compatibility; desktop experimental models are always enabled.
-	if err := fs.Parse(args); err != nil {
+	options, err := parseLaunchOptions("codex-desktop", args)
+	if err != nil {
 		return err
 	}
-	if fs.NArg() != 0 {
-		return errors.New("codex-desktop does not accept client arguments or routing overrides")
-	}
-	modelSelected := false
-	fs.Visit(func(f *flag.Flag) { modelSelected = modelSelected || f.Name == "model" })
-	if modelSelected && !validText(*model, 512) {
-		return errors.New("specify a valid explicit --model ID; see tofa models")
-	}
+	model, guardian, project, path := &options.model, &options.guardian, &options.project, &options.bundle
+	modelSelected := options.modelSelected
+
 	if !modelSelected && !term.IsTerminal(int(os.Stdin.Fd())) {
-		return errors.New("noninteractive launch requires --model ID; use tofa launch codex-desktop --model ID (experimental models are labelled and enabled)")
+		return errors.New("noninteractive launch requires --model ID; use tofa launch codex-desktop --model ID (experimental models are labelled and enabled); for first use, run tofa auth login in a terminal")
 	}
 	if !validText(*guardian, 512) {
 		return errors.New("Guardian requires a valid model ID")
+	}
+	if err := validateDesktopPlatform(ctx); err != nil {
+		return err
+	}
+	if err := a.onboard(ctx, s, *project); err != nil {
+		return err
 	}
 	c, key, err := s.Credentials()
 	if err != nil {

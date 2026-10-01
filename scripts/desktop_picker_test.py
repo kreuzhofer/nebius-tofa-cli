@@ -57,6 +57,25 @@ class DesktopPickerTests(PickerFixture):
                 process.wait(timeout=10)
         self.addCleanup(stop)
 
+    def test_first_explicit_desktop_launch_retains_roles_and_project(self):
+        for path in self.store.iterdir():
+            path.unlink()
+        self.saved = {}
+        self.start(['--model', KIMI, '--guardian-model', KIMI,
+                    '--project-id', 'desktop-override'])
+        self.read_until('API key:')
+        time.sleep(.05)
+        os.write(self.master, b'synthetic-key\r')
+        self.read_until('Project ID:')
+        os.write(self.master, b'synthetic-project\n')
+        child = self.launched()
+        self.read_until('Main: ' + KIMI)
+        self.read_until('Guardian: ' + KIMI)
+        self.assertIn(b'Catalog authentication succeeded', self.output)
+        self.assertNotIn(b'Choose a main model', self.output)
+        self.assertTrue(all('ai_project_id=desktop-override' in r[0] for r in self.requests))
+        self.stop_desktop(child)
+
     def test_bare_launch_selects_desktop_before_supported_model(self):
         self.start([], bare=True)
         self.read_until('Choose an app')

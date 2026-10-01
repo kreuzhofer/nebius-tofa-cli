@@ -5,8 +5,10 @@ must provide their own validation and evidence; implementing Claude remains in
 [#30](https://github.com/kreuzhofer/tofa-launcher/issues/30) and
 [#31](https://github.com/kreuzhofer/tofa-launcher/issues/31).
 
-1. Interactive bare launches first select a target client (Codex CLI or Codex
-   desktop) through the same terminal UI, before credentials/catalog discovery.
+1. Unconfigured interactive launches first run the existing API-key/project-ID
+   login flow and authenticate the catalog. Interactive bare launches then select
+   a target client (Codex CLI or Codex desktop) through the same terminal UI.
+   Saved logins skip onboarding; their catalog discovery follows app selection.
    Explicit `launch TARGET` skips this step. Desktop is disabled outside macOS
    ARM64; detailed installation/version checks still run at launch. Noninteractive
    bare calls retain their existing CLI behavior; scripts should name the target.

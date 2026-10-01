@@ -55,7 +55,8 @@ and labelled Experimental. The desktop picker offers every eligible available mo
 CLI pairs need experimental consent: confirm Y in the picker, or pass
 --allow-unverified for explicit/scripted models.
 Models in the catalog are not certified by availability.
-Interactive bare launches choose Codex CLI or Codex desktop first.
+Fresh interactive launches run first-use setup and authenticate the catalog before selection.
+Existing logins skip setup. Interactive bare launches choose Codex CLI or Codex desktop.
 Omit --model to choose its main model next; Up/Down and Enter select, Escape/Ctrl-C cancels.
 Scripts must supply --model ID. Saved model preferences never bypass the picker.
 Both selected roles must be available in the project and have compatible model metadata.
@@ -106,7 +107,13 @@ func (a *App) RunContext(ctx context.Context, args []string) error {
 	if len(args) == 0 || strings.HasPrefix(args[0], "--") {
 		target := "codex"
 		if term.IsTerminal(int(os.Stdin.Fd())) {
-			var err error
+			options, err := parseLaunchOptions("", args)
+			if err != nil {
+				return err
+			}
+			if err := a.onboard(ctx, s, options.project); err != nil {
+				return err
+			}
 			target, err = a.pickTargetClient(ctx)
 			if err != nil {
 				return err
@@ -131,68 +138,7 @@ func (a *App) RunContext(ctx context.Context, args []string) error {
 		if args[1] != "login" {
 			return errors.New("use tofa auth login or tofa auth logout")
 		}
-		fs := flags("auth login")
-		backend := fs.String("storage", "", "")
-		if err := fs.Parse(args[2:]); err != nil {
-			return err
-		}
-		if fs.NArg() != 0 {
-			return errors.New("unexpected login argument")
-		}
-		explicit := false
-		fs.Visit(func(f *flag.Flag) { explicit = explicit || f.Name == "storage" })
-		if explicit && *backend != "keyring" && *backend != "file" {
-			return errors.New("storage must be keyring or file")
-		}
-		if !explicit {
-			c, err := s.Config()
-			if err != nil {
-				return err
-			}
-			*backend = c.Backend
-			if *backend == "" {
-				*backend = "keyring"
-				probe, ok := a.Vault.(interface{ Availability() error })
-				if !ok {
-					return errors.New("credential vault availability is unknown; choose --storage keyring or --storage file explicitly")
-				}
-				if err := probe.Availability(); errors.Is(err, ErrVaultAbsent) {
-					*backend = "file"
-					if _, err := fmt.Fprintln(a.Out, "Credential vault facility absent or unsupported; file storage selected automatically."); err != nil {
-						return err
-					}
-				} else if err != nil {
-					return errors.New("cannot determine credential vault availability; check the vault is unlocked and access is allowed, or explicitly choose --storage file")
-				}
-			} else {
-				if _, err := fmt.Fprintf(a.Out, "Reusing saved %s storage choice.\n", *backend); err != nil {
-					return err
-				}
-			}
-		}
-		if *backend == "file" {
-			if explicit {
-				if _, err := fmt.Fprintln(a.Out, "Plaintext storage explicitly selected."); err != nil {
-					return err
-				}
-			}
-			if _, err := fmt.Fprintf(a.Out, "Credentials file: %s (unencrypted). File permissions restrict access; they do not encrypt the key.\n", filepath.Join(s.Dir, "credentials.yml")); err != nil {
-				return err
-			}
-		}
-		key, err := a.ask("API key", true)
-		if err != nil {
-			return err
-		}
-		project, err := a.ask("Project ID", false)
-		if err != nil {
-			return err
-		}
-		if err = s.Login(project, key, *backend); err != nil {
-			return err
-		}
-		fmt.Fprintf(a.Out, "Credentials saved using %s. Remote authentication has not been tested.\n", *backend)
-		return nil
+		return a.login(s, args[2:])
 	case "models":
 		fs := flags("models")
 		project := fs.String("project-id", "", "")
@@ -286,8 +232,8 @@ func (a *App) ask(label string, secret bool) (string, error) {
 	var b strings.Builder
 	for {
 		one := make([]byte, 1)
-		_, err := os.Stdin.Read(one)
-		if err != nil {
+		n, err := os.Stdin.Read(one)
+		if err != nil || n == 0 {
 			return "", errors.New("input cancelled")
 		}
 		if one[0] == '\n' {
@@ -307,39 +253,19 @@ func (a *App) launch(ctx context.Context, s Store, args []string) (result error)
 	if len(args) == 0 || args[0] != "codex" {
 		return errors.New("only Codex CLI is available in this prototype")
 	}
-	fs := flags("launch codex")
-	model := fs.String("model", "", "")
-	guardian := fs.String("guardian-model", "", "")
-	fs.StringVar(guardian, "evaluation-guardian-model", "", "")
-	project := fs.String("project-id", "", "")
-	allow := fs.Bool("allow-unverified", false, "")
-	direct := fs.Bool("direct", false, "")
-	if err := fs.Parse(args[1:]); err != nil {
+	options, err := parseLaunchOptions("codex", args[1:])
+	if err != nil {
 		return err
 	}
-	extra := fs.Args()
-	modelSelected := false
-	guardianSelected := false
-	guardianFlags := 0
-	fs.Visit(func(f *flag.Flag) {
-		modelSelected = modelSelected || f.Name == "model"
-		if f.Name == "evaluation-guardian-model" || f.Name == "guardian-model" {
-			guardianSelected = true
-			guardianFlags++
-		}
-	})
-	if guardianFlags > 1 {
-		return errors.New("use only one of --guardian-model and --evaluation-guardian-model")
-	}
-	if guardianSelected && (!validText(*guardian, 512) || *direct) {
-		return errors.New("Guardian requires a valid model ID and the adapted connection")
-	}
-	if !*direct && !guardianSelected {
-		*guardian = "zai-org/GLM-5.3-Flash"
-	}
+	model, guardian, project := &options.model, &options.guardian, &options.project
+	allow, direct := &options.allow, &options.direct
+	modelSelected, extra := options.modelSelected, options.extra
 
 	if !modelSelected && !term.IsTerminal(int(os.Stdin.Fd())) {
-		return errors.New("noninteractive launch requires --model ID; use tofa launch codex --model ID (and --allow-unverified for experimental selection)")
+		return errors.New("noninteractive launch requires --model ID; use tofa launch codex --model ID (and --allow-unverified for experimental selection); for first use, run tofa auth login in a terminal")
+	}
+	if err := a.onboard(ctx, s, *project); err != nil {
+		return err
 	}
 	c, key, err := s.Credentials()
 	if err != nil {
