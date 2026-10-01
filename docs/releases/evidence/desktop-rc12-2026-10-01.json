@@ -92,9 +92,97 @@
       "reason": "observer omitted established 20-minute suite budget; Go default ten-minute timeout"
     },
     "qualification_complete": false,
-    "published": false
+    "published": false,
+    "image_ui": "passed_user_confirmation"
   },
-  "ui_observations": [],
+  "ui_observations": [
+    {
+      "check": "DeepSeek image question retry",
+      "result": "passed",
+      "source": "explicit user confirmation: it answered correctly",
+      "recorded_utc": "2026-10-01T09:41:11.445113+00:00",
+      "launch": "launch-20261001T093824Z-6486c2b5",
+      "adapter_output_limit_notice_count": 1,
+      "scope": "Correct visible image answer; no claim of image-model quality beyond this check"
+    },
+    {
+      "check": "DeepSeek to GLM 5.3 same-chat tool and history",
+      "result": "passed_user_confirmation",
+      "scope": "Marker printed, thinking separate, earlier messages and image retained; native call omitted elevated permission so Guardian not exercised",
+      "recorded_utc": "2026-10-01T09:44:37.356524+00:00",
+      "launch": "launch-20261001T093824Z-6486c2b5"
+    },
+    {
+      "check": "Switch back to DeepSeek with earlier image",
+      "result": "passed_user_confirmation",
+      "scope": "Correct image answer and retained history",
+      "recorded_utc": "2026-10-01T09:44:37.356524+00:00",
+      "launch": "launch-20261001T093824Z-6486c2b5"
+    },
+    {
+      "check": "Desktop new-chat default GLM 5.3 with concurrent CLI isolation",
+      "result": "passed_user_confirmation",
+      "scope": "New chat uses GLM 5.3 and responds; concurrent CLI model and reasoning unchanged",
+      "recorded_utc": "2026-10-01T09:44:37.356524+00:00",
+      "launch": "launch-20261001T093824Z-6486c2b5"
+    },
+    {
+      "check": "Guardian after main-model switch",
+      "result": "passed_user_confirmation_and_native_records",
+      "scope": "Explicit elevated call completed; configured GLM 5.3 Flash Guardian returned allow; earlier non-elevated turn remains separate",
+      "recorded_utc": "2026-10-01T09:47:26.468911+00:00",
+      "launch": "launch-20261001T093824Z-6486c2b5"
+    },
+    {
+      "check": "Stop and successful next turn",
+      "result": "passed_user_confirmation_and_native_record",
+      "actual_main": "zai-org/GLM-5.3",
+      "scope": "One cancelled turn and subsequent assistant RC12_RECOVERY_OK marker; requested GLM Flash selection not observed, so its label/main check remains pending",
+      "recorded_utc": "2026-10-01T09:50:17.819131+00:00",
+      "launch": "launch-20261001T093824Z-6486c2b5"
+    },
+    {
+      "check": "Normal desktop quit and CLI isolation",
+      "result": "passed_user_confirmation_and_observer",
+      "scope": "Exit zero; all protected files, CLI defaults and complete effective settings unchanged; fresh CLI Astra/high",
+      "recorded_utc": "2026-10-01T09:50:17.819131+00:00",
+      "launch": "launch-20261001T093824Z-6486c2b5"
+    },
+    {
+      "check": "Ordinary desktop shared history and native continuation",
+      "result": "passed_user_confirmation",
+      "scope": "Both rc12 chats and messages retained; existing native chat responded; user quit desktop",
+      "recorded_utc": "2026-10-01T09:52:03.301194+00:00"
+    },
+    {
+      "check": "Relaunch under GLM 5.3 launch default",
+      "result": "passed_user_confirmation",
+      "scope": "Original image/approval chat retains selected model, title and history; continued reply works",
+      "recorded_utc": "2026-10-01T09:55:36.873284+00:00",
+      "launch": "launch-20261001T095202Z-c9c50857"
+    },
+    {
+      "check": "GLM 5.3 Flash ordinary main and independent conversations",
+      "result": "passed_user_confirmation",
+      "scope": "Flash chat responds; Experimental label shown; original chat retains its own main",
+      "recorded_utc": "2026-10-01T10:03:49.312628+00:00",
+      "launch": "launch-20261001T095202Z-c9c50857"
+    },
+    {
+      "check": "All eligible Token Factory picker choices",
+      "result": "passed_user_confirmation",
+      "scope": "All five eligible mains present and Experimental labels shown; user later reported clipping of long labels",
+      "recorded_utc": "2026-10-01T10:03:49.312745+00:00",
+      "launch": "launch-20261001T095202Z-c9c50857"
+    },
+    {
+      "check": "Final normal quit",
+      "result": "passed_user_confirmation_and_observer",
+      "scope": "Exit zero and CLI model/reasoning preserved; plugin/MCP settings changed during native automatic runtime setup",
+      "recorded_utc": "2026-10-01T10:03:49.312748+00:00",
+      "launch": "launch-20261001T095202Z-c9c50857"
+    }
+  ],
   "qualification_complete": false,
   "published": false,
   "candidate_snapshot_scope": "Original pre-install freeze; candidate_installed is the state at freeze time, not current state",
@@ -107,5 +195,117 @@
     "standards_remaining": 0,
     "spec_remaining": 0,
     "corrections": "freeze/current-install distinction, historical baseline attribution, historical bundled README guidance, pending qualification tense and HTTP-test attribution"
-  }
+  },
+  "retained_launch_attempts": [
+    {
+      "outcome": "observer_timeout_after_30_minutes",
+      "launcher_exit_code": 130,
+      "all_watched_files_preserved": true,
+      "cli_defaults_preserved": true,
+      "effective_settings_preserved": true,
+      "not_counted_as_normal_quit": true
+    },
+    {
+      "outcome": "reopened_without_automatic_timeout",
+      "image_question": "passed_user_confirmation",
+      "normal_quit": "passed_exit_zero_all_preservation"
+    }
+  ],
+  "switch_tool_metadata": {
+    "scope": "Synthetic RC12_POST_SWITCH_OK marker matched native stored tool call; no raw conversation exported",
+    "main_models": [
+      "deepseek-ai/DeepSeek-V4.1-Flash",
+      "zai-org/GLM-5.3"
+    ],
+    "marker_in_tool_output": true,
+    "matching_tool_call_requested_elevated_permissions": false,
+    "guardian_after_switch": "not_exercised_in_this_turn",
+    "text_only_image_omission_notice": true,
+    "provider_managed_thinking_notice": true,
+    "followup": "Subsequent explicit elevated retry passed; see guardian_after_switch_metadata"
+  },
+  "guardian_after_switch_metadata": {
+    "scope": "RC12_GUARDIAN_OK matched native records; only model names, counts and structured outcomes exported",
+    "checks": [
+      {
+        "models": [
+          "zai-org/GLM-5.3-Flash"
+        ],
+        "elevated_marker_calls": 0,
+        "matching_elevated_marker_results": 0,
+        "structured_review_outcomes": [
+          "allow"
+        ]
+      },
+      {
+        "models": [
+          "deepseek-ai/DeepSeek-V4.1-Flash",
+          "zai-org/GLM-5.3"
+        ],
+        "elevated_marker_calls": 1,
+        "matching_elevated_marker_results": 1,
+        "structured_review_outcomes": []
+      }
+    ]
+  },
+  "fresh_cli_after_default_selection_unchanged": true,
+  "normal_quit": {
+    "launcher_exit_code": 0,
+    "preservation": {
+      "cli_config": true,
+      "native_auth": true,
+      "launcher_config": true,
+      "launcher_credentials": true,
+      "workspace_sentinel": true
+    },
+    "cli_defaults_preserved": true,
+    "ordinary_effective_settings_preserved": true,
+    "changed_effective_setting_names": []
+  },
+  "cancel_recovery_metadata": {
+    "models": [
+      "zai-org/GLM-5.3"
+    ],
+    "cancelled_turns": 1,
+    "completed_turns": 1,
+    "assistant_recovery_marker_items": 1
+  },
+  "fresh_cli_after_quit_unchanged": true,
+  "final_relaunch_quit": {
+    "launcher_exit_code": 0,
+    "preservation": {
+      "cli_config": false,
+      "native_auth": true,
+      "launcher_config": true,
+      "launcher_credentials": true,
+      "workspace_sentinel": true
+    },
+    "cli_defaults_preserved": true,
+    "ordinary_effective_settings_preserved": false,
+    "changed_effective_setting_names": [
+      "mcp_servers",
+      "plugins"
+    ]
+  },
+  "native_settings_observation": {
+    "user_intentionally_changed_plugins": false,
+    "changed_effective_setting_names": [
+      "mcp_servers",
+      "plugins"
+    ],
+    "cli_defaults_preserved": true,
+    "native_app_log": {
+      "trigger": "startup_missing",
+      "runtime_version": "26.930.11008",
+      "install_started_utc": "2026-10-01T09:52:09.698Z",
+      "install_outcome_utc": "2026-10-01T09:53:08.698Z",
+      "install_outcome": "installed",
+      "validation_outcome": "passed"
+    },
+    "config_file_modified_utc": "2026-10-01T09:53:09.036478Z",
+    "local_native_source": "Native runtime setup sends config/batchWrite for mcp_servers; native plugin manager sends plugins.<id>.enabled edits. Launcher intercepts only model-default writes, forwarding unrelated configuration writes.",
+    "attribution": "Timing and native source support automatic desktop runtime/plugin management; no before/after plugin values retained, so the exact settings delta is not reconstructed.",
+    "restoration_performed": false
+  },
+  "superseded_by": "v0.1.0-rc.13 for requested shorter desktop labels"
 }

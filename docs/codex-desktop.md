@@ -261,8 +261,9 @@ Each launch asks the qualified bundled engine for `debug models` **before**
 applying Token Factory overrides, in the target engine home and workspace. The
 launcher preserves complete native descriptors, including account-dependent
 availability, reasoning choices, instructions and unknown fields. It appends every
-eligible Token Factory main, displayed with a `(Token Factory)` suffix and an
-Experimental label where applicable; it neither reconstructs descriptors from the
+eligible Token Factory main, displayed with `(Token Factory)` for supported
+choices and `(TF Experimental)` for experimental choices. Nemotron uses the
+short desktop name `Nemotron 3 Ultra`, retaining its full model ID; it neither reconstructs descriptors from the
 lossy `model/list` picker response nor ships a frozen native snapshot. Empty,
 malformed, duplicate or conflicting model identities cancel the launch.
 

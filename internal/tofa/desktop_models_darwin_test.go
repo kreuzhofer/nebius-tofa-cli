@@ -35,7 +35,13 @@ func TestDesktopCatalogOffersAllEligibleModelsRegardlessOfDefault(t *testing.T) 
 			for _, entry := range catalog.Models {
 				entries[entry["slug"].(string)] = entry
 			}
-			for _, id := range []string{"deepseek-ai/DeepSeek-V4.1-Flash", "zai-org/GLM-5.3", "zai-org/GLM-5.3-Flash", "moonshotai/Kimi-K3", "nvidia/Nemotron-3-Ultra-550b-a55b"} {
+			for id, name := range map[string]string{
+				"deepseek-ai/DeepSeek-V4.1-Flash":   "DeepSeek V4.1 Flash (Token Factory)",
+				"zai-org/GLM-5.3":                   "GLM-5.3 (Token Factory)",
+				"zai-org/GLM-5.3-Flash":             "GLM-5.3-Flash (TF Experimental)",
+				"moonshotai/Kimi-K3":                "Kimi-K3 (TF Experimental)",
+				"nvidia/Nemotron-3-Ultra-550b-a55b": "Nemotron 3 Ultra (TF Experimental)",
+			} {
 				entry := entries[id]
 				if entry == nil {
 					t.Errorf("available main %s missing from desktop picker", id)
@@ -44,9 +50,8 @@ func TestDesktopCatalogOffersAllEligibleModelsRegardlessOfDefault(t *testing.T) 
 				if entry["visibility"] != "list" || entry["auto_review_model_override"] != "zai-org/GLM-5.3-Flash" {
 					t.Errorf("main %s is not selectable with configured Guardian", id)
 				}
-				experimental := id != "deepseek-ai/DeepSeek-V4.1-Flash" && id != "zai-org/GLM-5.3"
-				if strings.Contains(entry["display_name"].(string), "Experimental") != experimental {
-					t.Errorf("incorrect support label for %s: %v", id, entry["display_name"])
+				if entry["display_name"] != name {
+					t.Errorf("incorrect picker name for %s: got %v, want %s", id, entry["display_name"], name)
 				}
 			}
 			stop()

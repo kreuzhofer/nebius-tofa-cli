@@ -1538,7 +1538,7 @@ func TestDesktopPreservesFreshNativeCatalog(t *testing.T) {
 				break
 			}
 		}
-		if descriptor["slug"] != "moonshotai/Kimi-K3" || descriptor["display_name"] != "Kimi-K3 (Token Factory) — Experimental" {
+		if descriptor["slug"] != "moonshotai/Kimi-K3" || descriptor["display_name"] != "Kimi-K3 (TF Experimental)" {
 			t.Fatalf("missing qualified Token Factory choice: %v", descriptor["slug"])
 		}
 	}

@@ -63,8 +63,11 @@ func prepareDesktopCatalog(ctx context.Context, bundle desktopBundle, home, elec
 			return "", err
 		}
 		entry["description"] = "Token Factory main; " + status + "; Guardian: " + guardian
+		if identity == "nvidia/Nemotron-3-Ultra-550b-a55b" {
+			entry["display_name"] = "Nemotron 3 Ultra (Token Factory)"
+		}
 		if status != "supported" {
-			entry["display_name"] = entry["display_name"].(string) + " — Experimental"
+			entry["display_name"] = strings.TrimSuffix(entry["display_name"].(string), " (Token Factory)") + " (TF Experimental)"
 		}
 		entries = append(entries, entry)
 	}
