@@ -1,0 +1,15 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "arch": "ARM64",
+  "checks": [
+    "real installer checksum and installed ARM64 identity",
+    "live catalog authentication precedes app selection and same-invocation continuation",
+    "second fresh ConPTY reuses saved native login and starts target"
+  ],
+  "sha256": "1b0a2e7aa7aafc515391e221a16bee5124cf5b09aedf89af779796fae15bdd77",
+  "inference_requests": 0,
+  "status": "passed",
+  "cleanup_exit": 0,
+  "candidate": "v0.1.0-rc.14",
+  "candidate_commit": "14134d43df4cca00bcdf10e49b3dc5ef3122f8d7"
+}

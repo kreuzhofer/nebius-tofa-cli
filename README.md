@@ -4,7 +4,7 @@ A standalone launcher that connects an **already installed Codex CLI or the test
 macOS Codex desktop app** to Nebius Token Factory. It does not run models locally
 or install the target client.
 
-The current release is [v0.1.0-rc.13](https://github.com/kreuzhofer/tofa-launcher/releases/tag/v0.1.0-rc.13),
+The current release is [v0.1.0-rc.14](https://github.com/kreuzhofer/tofa-launcher/releases/tag/v0.1.0-rc.14),
 an experimental prerelease with the macOS desktop integration. Release downloads
 are public; no GitHub account is needed to install.
 
@@ -18,16 +18,15 @@ are public; no GitHub account is needed to install.
   and Windows amd64 using synthetic state. Windows desktop and the separate
   real-account CLI platform qualification in #23 are not established by those checks.
 
-See the [rc13 qualification report and limitations](docs/releases/v0.1.0-rc.13.md)
-for exact artifacts, evidence carried forward from rc12's unchanged behavior,
-and the fresh rc13 checks. [Desktop setup](docs/codex-desktop.md) explains the
+See the [rc14 release report](docs/releases/v0.1.0-rc.14.md) for published artifacts,
+first-use verification on macOS and Windows ARM64, and remaining CLI acceptance gates. [Desktop setup](docs/codex-desktop.md) explains the
 supported boundary, including explicit naming and compaction limitations.
 Historical CLI evidence remains in the [rc2 report](docs/releases/v0.1.0-rc.2.md).
 Claude, other desktop modes and browser OAuth remain outside the current scope.
 
 ## Installation
 
-Use the version-pinned commands below to install **v0.1.0-rc.13** directly from
+Use the version-pinned commands below to install **v0.1.0-rc.14** directly from
 GitHub. The installer downloads only the binary matching your operating system
 and CPU.
 
@@ -39,7 +38,7 @@ and a Token Factory API key and project ID are required to launch it.
 ### macOS and Linux
 
 ```sh
-version=v0.1.0-rc.13
+version=v0.1.0-rc.14
 curl -fsSL "https://github.com/kreuzhofer/tofa-launcher/releases/download/$version/install.sh" -o install.sh &&
   sh install.sh --version "$version"
 ```
@@ -58,7 +57,7 @@ Requires Windows 10 version 1709 or later. The installer detects the native
 AMD64 or ARM64 host, including when PowerShell runs under emulation.
 
 ```powershell
-$Version = 'v0.1.0-rc.13'
+$Version = 'v0.1.0-rc.14'
 $Installer = Invoke-RestMethod "https://github.com/kreuzhofer/tofa-launcher/releases/download/$Version/install.ps1" -ErrorAction Stop
 & ([scriptblock]::Create($Installer)) -Version $Version
 ```
@@ -80,7 +79,7 @@ tofa auth login
 tofa launch codex --model 'moonshotai/Kimi-K3' --allow-unverified
 ```
 
-`tofa --version` should print `tofa v0.1.0-rc.13`. Login is needed for first setup;
+`tofa --version` should print `tofa v0.1.0-rc.14`. Login is needed for first setup;
 when upgrading, rerun the installer and reuse your saved login.
 
 To exercise automatic approval review, select **Approve for me** in Codex's
@@ -102,7 +101,7 @@ On macOS/Linux, download the complete bundle, verify it, then use the matching
 installer with the downloaded assets:
 
 ```sh
-version=v0.1.0-rc.13
+version=v0.1.0-rc.14
 release_dir=$(mktemp -d)
 gh release download "$version" --repo kreuzhofer/tofa-launcher --dir "$release_dir" &&
   (cd "$release_dir" && shasum -a 256 -c SHA256SUMS) &&
@@ -115,7 +114,7 @@ are finished using this executable; replace `amd64` with `arm64` for Windows ARM
 (cross-build evidence only).
 
 ```powershell
-$Version = 'v0.1.0-rc.13'
+$Version = 'v0.1.0-rc.14'
 $Asset = "tofa_${Version}_windows_amd64.exe"
 $Download = Join-Path $env:TEMP ([guid]::NewGuid().ToString('N'))
 gh release download $Version --repo kreuzhofer/tofa-launcher --dir $Download --pattern $Asset --pattern SHA256SUMS
@@ -572,7 +571,7 @@ the completion result or cleanup errors.
 This works even if the installed binary is broken:
 
 ```sh
-version=v0.1.0-rc.13 # use the installed version, shown by tofa --version
+version=v0.1.0-rc.14 # use the installed version, shown by tofa --version
 curl -fsSL "https://github.com/kreuzhofer/tofa-launcher/releases/download/$version/uninstall.sh" -o uninstall.sh &&
   sh uninstall.sh
 ```
@@ -586,7 +585,7 @@ the script retains recovery references and reports incomplete cleanup.
 This works even if the installed binary is broken:
 
 ```powershell
-$Version = 'v0.1.0-rc.13' # use the installed version, shown by tofa --version
+$Version = 'v0.1.0-rc.14' # use the installed version, shown by tofa --version
 $Uninstaller = Invoke-RestMethod "https://github.com/kreuzhofer/tofa-launcher/releases/download/$Version/uninstall.ps1" -ErrorAction Stop
 & ([scriptblock]::Create($Uninstaller))
 ```
