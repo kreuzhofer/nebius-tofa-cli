@@ -1,0 +1,7 @@
+{
+  "os": "Windows-11-10.0.26200-SP0",
+  "python_arch": "ARM64",
+  "codex_version": "codex-cli 0.156.1",
+  "codex_pe_machine": "0xaa64",
+  "codex_sha256": "91307bba889f5bf6238267f148651dfc4cc980fee966aafb48eb5f7f8a3ab61a"
+}

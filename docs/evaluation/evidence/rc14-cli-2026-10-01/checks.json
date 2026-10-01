@@ -1,0 +1,19 @@
+{
+  "macos": {
+    "qualification_runner": 22,
+    "live_compat": 19,
+    "evaluation_proxy": 14,
+    "model_evaluation": 35,
+    "installed_codex_synthetic_pair": 1
+  },
+  "windows_arm64_utm": {
+    "qualification_runner": 17,
+    "windows_process": 10,
+    "evaluation_proxy": 14,
+    "actual_candidate_lifecycle": "passed",
+    "installed_codex_synthetic_pair": "blocked_workspace_permission",
+    "live_inference": "not_attempted"
+  },
+  "status": "all_listed_regression_suites_passed; Windows installed-client prerequisite remains blocked",
+  "runner_commit": "de946cde56cf22d9c3ec5e39ba941d4b4dd457d8"
+}

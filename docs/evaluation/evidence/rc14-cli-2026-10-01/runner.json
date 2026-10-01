@@ -1,0 +1,15 @@
+{
+  "source_commit": "da4b8dd914d21e0a134b73f467eab8a54f204701",
+  "client": "codex-cli 0.158.0",
+  "client_sha256": "788a818fbb9596869c7a487554507cb8bdca17584b8671112b23f9e225ba35c8",
+  "harness": {
+    "qualify_macos.py": "5998c6a36b53cc7362a82d37f50033100e4c87d96dd3dd0ad6b2b025714402aa",
+    "qualify_windows.py": "463401ad0ddd262813c61bd4500115c72b9b1a30341d3b74f72478caf97b4d77",
+    "live_compat.py": "4e9ab8ca3972da145270e5486ef5a0be62bbec6c4856d3b8b40d5bcc1e7486e8",
+    "qualification_pair.py": "6ada3c7e2a7887a83ae48dab91dfdb6377e93291646c3b8ea3e5ef8ee7adc14a",
+    "model_evaluation.py": "72fb91e654ab3745e5b7f34135f47623e95a15632d2aec2b054982fe60700f14",
+    "evaluation_proxy.py": "d22b1ae838dac39a96a6fb5af6933cb8c207d00fb7cfc067bfb403753341bcc0",
+    "windows_process.py": "2cfd5d132feecdb23beefc2ca6285ddc0673cff70432d7d7159272edc8d5b8dd",
+    "windows_process.cs": "2d82a8a187bb1461c12ef4ec7aea23f143eda67581ea7c625ce592677980de2c"
+  }
+}
