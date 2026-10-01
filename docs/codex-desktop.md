@@ -137,6 +137,16 @@ images in that model's inference input with an explicit omission marker; the
 launcher prints a context notice. Switching back to an image-capable model makes
 the saved images available again. This does not convert or discard attachments.
 
+DeepSeek V4.1 Flash image requests with no `max_output_tokens` receive an explicit
+32,768-token limit, announced once in the launcher terminal. It covers reasoning
+and answer output combined, including later requests that retain the image in
+history. This is a launcher workaround for a reproduced provider default-handling
+failure, not the provider's published maximum or the conversation context size.
+Explicit limits (including null), text-only requests and other models are
+preserved. Native incomplete/error responses remain unchanged. The
+[diagnosis](research/deepseek-image-output-limit-2026-10-01.md) retains failed and
+successful controls; rc11 does not contain this later correction.
+
 If a smaller context window requires automatic compaction, the launcher rejects
 the recognized compaction request before inference. The turn fails explicitly
 and saved history remains intact. Select a model with enough context or start a

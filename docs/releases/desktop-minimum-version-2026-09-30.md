@@ -121,3 +121,45 @@ failure and passing rerun are recorded separately.
 
 The full suite for this additional repair is running. Fresh-candidate live
 qualification remains necessary; rc9 is not published or claimed complete.
+
+## rc10 history repair and rc11 reasoning correction
+
+The rc10 history-ID suite subsequently passed 454 test/subtest entries with two
+CLI opt-in skips in 692.618 seconds; CI run 36733524521 passed. Its actual
+installer lifecycle passed. The user resumed the existing GLM 5.3 Flash chat
+under a GLM 5.3 launch default with its model, title and history intact. An actual
+GLM 5.3 elevated print request received a GLM 5.3 Flash Guardian `allow` decision
+and executed, but the user observed a closing thinking tag in the answer.
+
+Investigation reproduced the provider behavior twice with explicit reasoning
+effort `none`; omitting effort produced native reasoning events. The user chose
+the provider-default behavior with a terminal notice. The shared adapter now
+omits only GLM 5.3's `none` effort, preserving other fields, efforts and models.
+Response bytes are unchanged. Native desktop and CLI regressions cover distinct
+reasoning and answer channels, retained reasoning history and resumed turns.
+The initial CLI observer incorrectly expected raw thinking in `exec --json`
+displayed items; its corrected assertion follows native usage/history behavior.
+That observer failure is retained. See the
+[protocol investigation](../research/desktop-cli-reasoning-2026-09-30.md).
+
+rc11 is frozen from `3ce3edbe0f91707af4b58aa83c3c8704684bb6c2`. All 478 local
+race-test/subtest entries passed, with no skips and every installed-client opt-in,
+in 708.670 seconds. CI run 36737814054 passed. Packaging, native distribution
+lifecycle, terminal and actual installer upgrade/repeat/uninstall-without-purge/
+reinstall checks passed. The user confirmed separate thinking, successful elevated
+printing, cancellation/recovery and clean quit with unchanged concurrent CLI
+defaults. Saved metadata independently confirms the Guardian's allow decision,
+tool result, separate reasoning and cancelled/completed turns. Full watched-file
+preservation passed for this launch; effective settings during versus after exit
+and a fresh CLI probe were unchanged.
+
+The subsequent ordinary desktop check retained shared history and native chat
+continuation. The next harness relaunch was refused by the existing-profile
+ownership guard with all preservation checks true. Another tofa process, using
+the exact rc11 installed binary, was found running from an interactive terminal.
+The user confirmed that separate launch was theirs; its initial model was not
+recorded. After they quit it, a fresh owned rc11 launch was verified with DeepSeek
+as default, and the user confirmed GLM 5.3 model/history and marker recall remained
+intact. The failed harness attempt is not counted as a successful relaunch. Final
+qualification and publication remain incomplete; follow the
+[rc11 report](v0.1.0-rc.11.md) for the current boundary and status.

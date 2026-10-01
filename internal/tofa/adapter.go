@@ -105,6 +105,7 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 	var approvalNotice sync.Once
 	var titleNotice sync.Once
 	var reasoningNotice sync.Once
+	var imageLimitNotice sync.Once
 	imageNotices := map[string]bool{}
 	adapter.server = &http.Server{
 		ReadHeaderTimeout: 5 * time.Second,
@@ -283,6 +284,14 @@ func (a *App) startAdapter(ctx context.Context, project, key, selectedModel, gua
 					fmt.Fprintln(a.Out, "GLM 5.3 thinking: using the provider default; native None is not a supported off switch. Reasoning stays separate from answer text.")
 				})
 			}
+			if adjusted, changed := adaptImageOutputDefault(body); changed {
+				body = adjusted
+				imageLimitNotice.Do(func() {
+					noticeMu.Lock()
+					defer noticeMu.Unlock()
+					fmt.Fprintln(a.Out, "DeepSeek image output: using a 32768-token limit for reasoning and answer combined when no output limit is supplied; workaround for the provider's image-request default failure. Explicit limits are preserved.")
+				})
+			}
 			request.Body = io.NopCloser(bytes.NewReader(body))
 			request.ContentLength = int64(len(body))
 			proxy.ServeHTTP(writer, request)
@@ -349,6 +358,45 @@ func adaptReasoningDefault(body []byte) ([]byte, bool) {
 	}
 	adjusted, _ := json.Marshal(payload)
 	return adjusted, true
+}
+
+// DeepSeek image requests fail upstream when max_output_tokens is omitted.
+// This is an announced launcher policy, not a claimed provider default/ceiling.
+func adaptImageOutputDefault(body []byte) ([]byte, bool) {
+	var payload map[string]json.RawMessage
+	var model string
+	if json.Unmarshal(body, &payload) != nil || json.Unmarshal(payload["model"], &model) != nil || model != "deepseek-ai/DeepSeek-V4.1-Flash" {
+		return body, false
+	}
+	if _, present := payload["max_output_tokens"]; present {
+		return body, false
+	}
+	var items []struct {
+		Type    string
+		Content json.RawMessage
+		Output  json.RawMessage
+	}
+	if json.Unmarshal(payload["input"], &items) != nil {
+		return body, false
+	}
+	for _, item := range items {
+		content := item.Content
+		if item.Type == "function_call_output" || item.Type == "custom_tool_call_output" {
+			content = item.Output
+		}
+		var parts []struct{ Type string }
+		if json.Unmarshal(content, &parts) != nil {
+			continue
+		}
+		for _, part := range parts {
+			if part.Type == "input_image" {
+				payload["max_output_tokens"] = json.RawMessage(`32768`)
+				adjusted, _ := json.Marshal(payload)
+				return adjusted, true
+			}
+		}
+	}
+	return body, false
 }
 
 func normalizeHistory(body []byte) ([]byte, error) {

@@ -301,6 +301,14 @@ Other explicit effort settings and models remain unchanged. Reasoning, summaries
 answers and tool calls retain their native event channels; response text is never
 stripped. Codex retains its normal controls for displaying raw reasoning.
 
+For DeepSeek V4.1 Flash requests containing images, the adapter supplies
+`max_output_tokens: 32768` only when that field is absent. Token Factory currently
+fails these requests when the limit is omitted. This announced launcher default
+covers reasoning and answer tokens combined; it is not a provider maximum or a
+context-window limit. Explicit values, including null, remain unchanged, as do
+text-only requests and other models. Provider incomplete/error responses remain
+native and are not retried. See the [image-request diagnosis](docs/research/deepseek-image-output-limit-2026-10-01.md).
+
 ### Automatic approval review
 
 For Kimi-K3, the adapter also handles the exact non-strict automatic approval

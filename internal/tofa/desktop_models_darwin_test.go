@@ -125,12 +125,19 @@ func TestDesktopBundledEngineTextOnlySwitchPreservesImageHistory(t *testing.T) {
 	var inputs []bool
 	app, output := adapterFixture(t, func(w http.ResponseWriter, r *http.Request) {
 		var request struct {
-			Model string
-			Input json.RawMessage
+			Model           string
+			Input           json.RawMessage
+			MaxOutputTokens int `json:"max_output_tokens"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			t.Error(err)
 			return
+		}
+		if request.Model == "deepseek-ai/DeepSeek-V4.1-Flash" && request.MaxOutputTokens != 32768 {
+			t.Error("native image request omitted the qualified output-limit workaround")
+		}
+		if request.Model == "zai-org/GLM-5.3" && request.MaxOutputTokens != 0 {
+			t.Error("text-only switch received an unrelated output limit")
 		}
 		mu.Lock()
 		inputs = append(inputs, bytes.Contains(request.Input, []byte("input_image")))

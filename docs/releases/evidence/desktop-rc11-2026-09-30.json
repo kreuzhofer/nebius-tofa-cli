@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "candidate": {
+    "version": "v0.1.0-rc.11",
+    "source_commit": "3ce3edbe0f91707af4b58aa83c3c8704684bb6c2",
+    "assets_sha256": {
+      "LICENSE": "796a0cd7abc80802b9d2692b7b5a606f14babdd4fed054903af045b56d7997f6",
+      "LICENSE-CODEX.txt": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+      "LICENSE-GO.txt": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "NOTICE-CODEX.txt": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+      "PATENTS-GO.txt": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+      "README.md": "16df161f726c167e1d01596a612edbf9729072cfdb33800212449805fa0f51bf",
+      "SHA256SUMS": "dbe82c5fb9ca8b1f42f33116ad31b215157b7585447c56a1a00e9cd56c37df10",
+      "THIRD_PARTY_NOTICES.txt": "dad7f088af26b7c74156dbf9c46d51a8da22eec4f1a4048e75a357058fbee468",
+      "install.ps1": "950b62b3266ef2d1dc4dc395f21c5e2140b14b5eaa48a7a0b9ca689a2ea81c9b",
+      "install.sh": "1a288a20700dfbb7e57272e94730ae1f08ee73641eb3b5854d95ed7f481fc724",
+      "tofa_v0.1.0-rc.11_darwin_amd64": "87a65759a7c31c4b63c5b0e3872d2006fec8dac540b40016b4c6dbf07fb8fb99",
+      "tofa_v0.1.0-rc.11_darwin_arm64": "05655e6c7e308ae7c0a88ee8d49f762ec6e111b4141759c741006350ba0a3c78",
+      "tofa_v0.1.0-rc.11_linux_amd64": "cf54ce85cb5fc763b9e264bcb89fa7a3adb1038b7a51e049cf8f32dd49fb829b",
+      "tofa_v0.1.0-rc.11_linux_arm64": "9e3bfe6219ae39751012073870bac1370904ca3924c8f51b3a9b12da982fa148",
+      "tofa_v0.1.0-rc.11_windows_amd64.exe": "52c8d24eeaf18fb25a2999eaf3e8fcc989ca7896cc7d54c8af1cef565b6be115",
+      "tofa_v0.1.0-rc.11_windows_arm64.exe": "7107c29b27abbd7b044a22f0cb876f0416dadacabfea799e79a528e1638a64ab",
+      "uninstall.ps1": "0b0a63484262720ecd8f38e748c9fac9913c8cf2d39ac945729e9c66c846a82b",
+      "uninstall.sh": "692fd1469d5d03d9fb1bbefbb829cb0b4c3bb2437be67feb87d2ec4745d00089"
+    },
+    "desktop": {
+      "version": "26.928.21956",
+      "build": "12404",
+      "bundle_id": "com.openai.codex",
+      "engine_relative_path": "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+      "engine_version": "0.159.2",
+      "engine_sha256": "50ac633af64851511f9bbc71032cdae7f1ba20b3234c189687d61ba846c354c5",
+      "asar_sha256": "3bda98f2265ad23677dfe0163d1cc7855beade6bef11d27f830f6663d7658406"
+    },
+    "platform": "macOS 26.6.2 arm64"
+  },
+  "route": "per-launch Responses request adapter; ordinary desktop history/profile",
+  "validation": {
+    "candidate": "v0.1.0-rc.11",
+    "source": "3ce3edbe0f91707af4b58aa83c3c8704684bb6c2",
+    "recorded_utc": "2026-09-30T15:56:30.668460+00:00",
+    "full_race": {
+      "status": "passed",
+      "test_and_subtest_entries": 478,
+      "skips": 0,
+      "failures": 0,
+      "package_seconds": 708.67,
+      "cli": "0.158.0",
+      "desktop_engine": "0.159.2",
+      "installed_app_opt_in": true
+    },
+    "reviews": {
+      "standards_remaining": 0,
+      "spec_remaining": 0
+    },
+    "packaging": {
+      "passed": 6,
+      "seconds": 9.679
+    },
+    "native_distribution_lifecycle": {
+      "passed": 4,
+      "seconds": 4.374
+    },
+    "terminal": {
+      "passed": 2,
+      "seconds": 0.487
+    },
+    "actual_installer_lifecycle": "passed",
+    "ci_run": 36737814054,
+    "ci_status": "success",
+    "desktop_reasoning_ui": "passed_user_confirmation",
+    "release_published": false,
+    "qualification_complete": false,
+    "desktop_print_ui": "passed_user_confirmation",
+    "desktop_cancel_recovery_ui": "passed_user_confirmation",
+    "desktop_normal_quit_ui": "passed_user_confirmation",
+    "launcher_exit_code": 0,
+    "fresh_cli_defaults_after_quit": "unchanged",
+    "effective_settings_during_to_after_quit": "unchanged",
+    "desktop_relaunch": "verified_owned_startup_and_user_resume_pass",
+    "desktop_switch_tool_picker_ui": "passed_user_confirmation",
+    "desktop_compaction_limitation_ui": "passed_user_confirmation",
+    "second_owned_launch_effective_settings_preserved": true,
+    "desktop_image_ui": "failed_twice_native_reproduction_confirmed"
+  },
+  "first_owned_launch": {
+    "main": "zai-org/GLM-5.3",
+    "guardian": "zai-org/GLM-5.3-Flash",
+    "launcher_exit_code": 0,
+    "preservation": {
+      "cli_config": true,
+      "native_auth": true,
+      "launcher_config": true,
+      "launcher_credentials": true,
+      "workspace_sentinel": true
+    },
+    "cli_defaults_preserved": true
+  },
+  "effective_settings_during_to_after_first_launch_preserved": true,
+  "fresh_cli_defaults_after_first_launch_unchanged": true,
+  "live_metadata": [
+    {
+      "models": [
+        "zai-org/GLM-5.3-Flash"
+      ],
+      "response_item_counts": {
+        "message": 4,
+        "reasoning": 1
+      },
+      "event_counts": {
+        "task_started": 1,
+        "item_completed": 2,
+        "token_count": 1,
+        "task_complete": 1
+      },
+      "elevated_calls": 0,
+      "expected_marker_in_tool_results": 0,
+      "separate_reasoning_items": 1,
+      "assistant_items_with_closing_think_tag": 0
+    },
+    {
+      "models": [
+        "zai-org/GLM-5.3"
+      ],
+      "response_item_counts": {
+        "message": 12,
+        "reasoning": 5,
+        "function_call": 1,
+        "function_call_output": 1
+      },
+      "event_counts": {
+        "thread_settings_applied": 7,
+        "task_started": 5,
+        "item_completed": 16,
+        "token_count": 6,
+        "task_complete": 4,
+        "turn_aborted": 1
+      },
+      "elevated_calls": 1,
+      "expected_marker_in_tool_results": 1,
+      "separate_reasoning_items": 5,
+      "assistant_items_with_closing_think_tag": 0
+    }
+  ],
+  "guardian_metadata": [
+    {
+      "model": "zai-org/GLM-5.3-Flash",
+      "structured_review_outcomes": [
+        "allow"
+      ]
+    }
+  ],
+  "user_observations": [
+    {
+      "check": "GLM 5.3 reasoning remains separate",
+      "result": "passed"
+    },
+    {
+      "check": "elevated approval marker printed",
+      "result": "passed"
+    },
+    {
+      "check": "Stop then successful follow-up",
+      "result": "passed"
+    },
+    {
+      "check": "normal quit and concurrent CLI unchanged",
+      "result": "passed"
+    },
+    {
+      "check": "ordinary desktop shared history and native conversation continuation",
+      "result": "passed"
+    },
+    {
+      "check": "verified DeepSeek-default relaunch; GLM 5.3 model/history and prior marker retained",
+      "result": "passed"
+    },
+    {
+      "check": "DeepSeek elevated tool then GLM5.3Flash same-chat recall; Experimental labels",
+      "result": "passed"
+    },
+    {
+      "check": "explicit compaction refusal with history retention and successful next turn",
+      "result": "passed"
+    }
+  ],
+  "retained_attempts": [
+    {
+      "check": "first relaunch after ordinary mode",
+      "result": "refused_existing_profile_ownership",
+      "launcher_exit_code": 1,
+      "all_watched_preservation": true,
+      "effective_settings_preserved": true
+    },
+    {
+      "check": "first relaunch observation attribution",
+      "result": "corrected",
+      "reason": "user manually started a separate verified rc11 binary; initial model not recorded; later owned DeepSeek-default launch and UI check passed"
+    },
+    {
+      "check": "initial metadata observer",
+      "result": "no_matches",
+      "reason": "current-date-only scan omitted resumed conversations created earlier; corrected scan retained separately"
+    },
+    {
+      "check": "second owned launch observer completion",
+      "result": "incomplete_exit_130",
+      "launcher_exit_code": 130,
+      "scope": "bounded observer timeout/interruption path; not counted as a normal desktop quit",
+      "all_watched_preservation": true,
+      "effective_settings_preserved": true
+    },
+    {
+      "check": "October1 DeepSeek image UI",
+      "result": "failed",
+      "native_error": "stream disconnected before completion: response.failed event received",
+      "duration_ms": 2550,
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "image": "synthetic32x32redPNG",
+      "native_effort": "none"
+    }
+  ],
+  "pending": [
+    "desktop new-chat default selection and concurrent CLI isolation on rc11",
+    "Guardian approval after main-model switching",
+    "visible image-capability guidance",
+    "tag CI and immutable publication",
+    "downloaded asset comparison"
+  ],
+  "qualification_complete": false,
+  "published": false,
+  "switched_tool_metadata": [
+    {
+      "models": [
+        "deepseek-ai/DeepSeek-V4.1-Flash",
+        "zai-org/GLM-5.3-Flash"
+      ],
+      "response_item_counts": {
+        "message": 10,
+        "function_call": 1,
+        "function_call_output": 1,
+        "reasoning": 1
+      },
+      "elevated_calls": 1,
+      "marker_in_tool_results": 1,
+      "structured_review_outcomes": []
+    },
+    {
+      "models": [
+        "zai-org/GLM-5.3-Flash"
+      ],
+      "response_item_counts": {
+        "message": 4,
+        "reasoning": 1
+      },
+      "elevated_calls": 0,
+      "marker_in_tool_results": 0,
+      "structured_review_outcomes": [
+        "allow"
+      ]
+    }
+  ],
+  "documentation_review": {
+    "standards_findings": 0,
+    "spec_remaining_ui_checks": [
+      "image-capability guidance",
+      "Guardian after switching",
+      "new-chat default and CLI isolation"
+    ],
+    "scope": "uncommitted qualification report and evidence"
+  },
+  "image_diagnostic": {
+    "status": "workaround_approved_native_development_probe_passed_rc12_required",
+    "trigger": "DeepSeek image request with omitted max_output_tokens",
+    "provider_error": "internal_error: Failed to process the request",
+    "native_request": {
+      "without_output_limit": "response.failed",
+      "without_tools": "response.failed",
+      "with_output_limit_2048": "completed; red identified",
+      "with_output_limit_32768": "completed; red identified",
+      "without_image": "completed; colour assertion inapplicable"
+    },
+    "minimal_request": {
+      "with_limit_2048": "completed; red identified",
+      "without_limit": "response.failed"
+    },
+    "production_changed": false,
+    "evidence": "docs/research/deepseek-image-output-limit-2026-10-01.md",
+    "corrected_development_adapter": "native image probe completed in 37.657 seconds; absent from frozen rc11"
+  },
+  "final_owned_launch": {
+    "launcher_exit_code": 0,
+    "all_watched_preservation": true,
+    "cli_defaults_preserved": true,
+    "effective_settings_preserved": true,
+    "user_confirmed_clean_quit_and_cli_unchanged": true
+  },
+  "superseded_reason": "image qualification failed; approved correction requires fresh rc12"
+}
