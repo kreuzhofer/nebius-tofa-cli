@@ -1,0 +1,562 @@
+{
+  "scope": "Windows 11 ARM64 UTM guest, unauthenticated network diagnosis",
+  "certificate_verification": true,
+  "hostname_verification": true,
+  "interface": "Ethernet",
+  "original_ipv4_mtu": 1500,
+  "final_ipv4_mtu": 1200,
+  "policy_stores": [
+    "ActiveStore",
+    "PersistentStore"
+  ],
+  "probes": {
+    "windows-network_probe": [
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "default",
+        "tcp": true,
+        "error": "TimeoutError: _ssl.c:1015: The handshake operation timed out",
+        "seconds": 6.23
+      },
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "TLS1.2",
+        "tcp": true,
+        "error": "TimeoutError: _ssl.c:1015: The handshake operation timed out",
+        "seconds": 6.23
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.41
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.41
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.42
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.4
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.42
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.42
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.41
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.38
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.3",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.34
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.3",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.34
+      }
+    ],
+    "mtu-probe": [
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 401 Unauthorized",
+        "seconds": 0.61
+      },
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 401 Unauthorized",
+        "seconds": 0.58
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.29
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.27
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.29
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.29
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.27
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.27
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.29
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.25
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.3",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.4
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.3",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.4
+      }
+    ],
+    "mtu-baseline-repeat": [
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "default",
+        "tcp": true,
+        "error": "TimeoutError: _ssl.c:1015: The handshake operation timed out",
+        "seconds": 6.15
+      },
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "TLS1.2",
+        "tcp": true,
+        "error": "TimeoutError: _ssl.c:1015: The handshake operation timed out",
+        "seconds": 6.17
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.36
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.34
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.36
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.37
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.36
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.36
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.34
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.35
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.4",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.54
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.4",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.54
+      }
+    ],
+    "mtu1400": [
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "default",
+        "tcp": true,
+        "error": "TimeoutError: _ssl.c:1015: The handshake operation timed out",
+        "seconds": 6.14
+      },
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "TLS1.2",
+        "tcp": true,
+        "error": "TimeoutError: _ssl.c:1015: The handshake operation timed out",
+        "seconds": 6.16
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.22
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.21
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.21
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.22
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.22
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.18
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.22
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.22
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.4",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.19
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.4",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.16
+      }
+    ],
+    "network-final": [
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 401 Unauthorized",
+        "seconds": 0.52
+      },
+      {
+        "host": "api.tokenfactory.nebius.com",
+        "ip": "213.239.161.19",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 401 Unauthorized",
+        "seconds": 0.53
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.45
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.0.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.43
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.45
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.128.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.44
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.43
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.192.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.44
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.43
+      },
+      {
+        "host": "pypi.org",
+        "ip": "151.101.64.223",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.43
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.4",
+        "version": "default",
+        "tcp": true,
+        "tls": "TLSv1.3",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.37
+      },
+      {
+        "host": "github.com",
+        "ip": "140.82.121.4",
+        "version": "TLS1.2",
+        "tcp": true,
+        "tls": "TLSv1.2",
+        "http": "HTTP/1.1 404 Not Found",
+        "seconds": 0.36
+      }
+    ]
+  },
+  "original_repro_after_fix": {
+    "result": "reachable",
+    "status": 401
+  }
+}
