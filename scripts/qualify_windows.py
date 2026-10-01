@@ -385,6 +385,8 @@ def main():
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--human-timeout", type=int, default=900)
     options = parser.parse_args()
+    if options.agent_state_root and options.storage:
+        parser.error("agent onboarding uses the native vault-first selection; --storage requires the manual login mode")
     if options.check_pair and not options.guardian_model:
         parser.error("--check-pair requires --guardian-model")
     for identity in (options.model, options.guardian_model):

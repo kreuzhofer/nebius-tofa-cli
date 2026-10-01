@@ -21,8 +21,8 @@ VERSION = "v0.1.0-rc.1"
 class WindowsQualificationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if os.environ.get("GITHUB_ACTIONS") != "true":
-            raise unittest.SkipTest("disposable CI only: tests change persistent user PATH")
+        if os.environ.get("GITHUB_ACTIONS") != "true" and os.environ.get("TOFA_TEST_DISPOSABLE_VM") != "1":
+            raise unittest.SkipTest("use disposable CI or explicit TOFA_TEST_DISPOSABLE_VM=1; tests restore user PATH")
         cls.compiled = tempfile.TemporaryDirectory(prefix="tofa native fixtures ")
         root = Path(cls.compiled.name)
         # A real .exe boundary exercises Go/Python Windows executable discovery.
@@ -81,6 +81,14 @@ class Fixture {
                     except FileNotFoundError: pass
                 else: winreg.SetValueEx(key, "Path", 0, self.original_path[1], self.original_path[0])
         self.addCleanup(restore)
+        if os.environ.get('TOFA_TEST_DISPOSABLE_VM') == '1' and self.original_path:
+            # Match disposable CI discovery while preserving the normal installation.
+            # Only PATH entries resolving another tofa are excluded during this test;
+            # the exact original registry value/type is restored by cleanup above.
+            entries = [entry for entry in self.original_path[0].split(';')
+                       if not (Path(os.path.expandvars(entry)) / 'tofa.exe').is_file()]
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment', 0, winreg.KEY_ALL_ACCESS) as key:
+                winreg.SetValueEx(key, 'Path', 0, self.original_path[1], ';'.join(entries))
         self.report = self.root / "report.json"
         # Windows launcher/installers discover state through LOCALAPPDATA, not
         # HOME. Leave HOME untouched: no uninstall or purge is run with a

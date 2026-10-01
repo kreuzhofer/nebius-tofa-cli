@@ -60,6 +60,9 @@ def main():
     for name in ('launcher', 'codex', 'model', 'guardian-model', 'output'):
         parser.add_argument('--' + name, required=True)
     options = parser.parse_args()
+    output = Path(options.output)
+    if output.exists() or output.is_symlink() or not output.parent.is_dir():
+        parser.error("output must be a new file in an existing directory")
     candidate(options.model); candidate(options.guardian_model)
     if os.name == 'nt':
         import windows_process

@@ -1,6 +1,8 @@
 """Local HTTP seam tests; synthetic credentials and model output only."""
 import http.server
 import json
+import os
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -17,6 +19,25 @@ ASSESSMENT = {'required': ['outcome'], 'properties': {'outcome': {'type': 'strin
 
 
 class ProxyTests(unittest.TestCase):
+    def test_approval_proposal_executes_a_benign_marker_in_the_native_shell(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / 'observations.json'
+            with EvaluationProxy('http://127.0.0.1:1', 'fixture-token', report,
+                                 None, 'allow', 1) as proxy:
+                request = urllib.request.Request(proxy.url + '/responses',
+                    data=b'{"model":"moonshotai/Kimi-K3","stream":true,"input":[]}',
+                    headers={'Authorization': 'Bearer fixture-token'})
+                with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request) as response:
+                    events = [json.loads(line[6:]) for line in response.read().decode().splitlines() if line.startswith('data: ')]
+            completed = next(event for event in events if event['type'] == 'response.completed')
+            arguments = json.loads(completed['response']['output'][0]['arguments'])
+            self.assertEqual(arguments['sandbox_permissions'], 'require_escalated')
+            shell = ['powershell.exe', '-NoProfile', '-NonInteractive', '-Command'] if os.name == 'nt' else ['/bin/sh', '-c']
+            result = subprocess.run(shell + [arguments['cmd']], capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), 'tofa-evaluation-benign-marker')
+            self.assertTrue(all(not record['paid_inference'] for record in json.loads(report.read_text())))
+
     def test_unlimited_observations_survive_restart_without_replacing_attempts(self):
         with tempfile.TemporaryDirectory() as directory:
             report = Path(directory) / 'observations.json'
@@ -35,7 +56,8 @@ class ProxyTests(unittest.TestCase):
             records = json.loads(report.read_text())
             self.assertEqual(len(records), 52)
             self.assertEqual(len({r['request_id'] for r in records}), 52)
-            self.assertTrue(all(r['failure'] == 'transport_failure' for r in records))
+            # A refused loopback connection can exceed this one-second budget on Windows.
+            self.assertTrue(all(r['failure'] in ('transport_failure', 'deadline_incomplete') for r in records))
 
     def test_unrecognized_auxiliary_traffic_is_counted_and_sanitized(self):
         with tempfile.TemporaryDirectory() as directory:

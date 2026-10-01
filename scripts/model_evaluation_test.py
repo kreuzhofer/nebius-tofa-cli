@@ -419,5 +419,18 @@ class EvaluationTests(unittest.TestCase):
         self.assertIn('response_incomplete', report['runs'][0]['failures'])
 
 
+class QualificationPairInputTests(unittest.TestCase):
+    def test_existing_report_is_rejected_before_running_a_client(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory)/'report.json'; report.write_text('preserve me')
+            result = subprocess.run([sys.executable, str(SCRIPT.with_name('qualification_pair.py')),
+                '--launcher', 'must-not-run', '--codex', 'must-not-run',
+                '--model', 'deepseek-ai/DeepSeek-V4.1-Flash', '--guardian-model', 'zai-org/GLM-5.3-Flash',
+                '--output', str(report)], capture_output=True, text=True, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('output must be a new file', result.stderr)
+            self.assertEqual(report.read_text(), 'preserve me')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -93,6 +93,17 @@ class InstalledEvaluationTests(unittest.TestCase):
                         item = {'id': 'fc_coding', 'type': 'function_call', 'call_id': 'call_coding_' + str(len(seen)),
                                 'name': 'exec_command', 'status': 'completed',
                                 'arguments': json.dumps({'cmd': ('& \"' + sys.executable + '\" -c \"' + code.replace('\"', '`\"') + '\"') if os.name == 'nt' else 'python3 -c ' + shlex.quote(code), 'max_output_tokens': 100})}
+                        if os.name == 'nt':
+                            import re
+                            declared = re.search(r'<cwd>([^<]+)</cwd>', json.dumps(body))
+                            if not declared: raise AssertionError('client omitted workspace context')
+                            workspace = os.path.normpath(json.loads('"' + declared[1] + '"'))
+                            absolute_code = code.replace("Path('input.json')", 'Path(' + repr(str(Path(workspace)/'input.json')) + ')').replace(
+                                "Path('summary.json')", 'Path(' + repr(str(Path(workspace)/'summary.json')) + ')')
+                            arguments = json.loads(item['arguments'])
+                            arguments['workdir'] = workspace
+                            arguments['cmd'] = '& "' + sys.executable + '" -c "' + absolute_code.replace('"', '`"') + '"'
+                            item['arguments'] = json.dumps(arguments)
                     else:
                         item = message('Fixture complete.')
                     self.wfile.write(b'data: {"type":"response.output_text.delta","delta":"Done."}\n\n')

@@ -7,6 +7,7 @@ import hmac
 import http.client
 import http.server
 import json
+import os
 from pathlib import Path
 import socket
 import select
@@ -21,6 +22,7 @@ from evaluation_candidates import candidate
 BODY_LIMIT = 1024 * 1024
 OUTPUT_LIMIT = 4096
 MARKER = 'tofa-evaluation-benign-marker'
+MARKER_COMMAND = ('Write-Output ' if os.name == 'nt' else 'printf ') + MARKER
 
 
 def fixture_response(item, model=MODEL, usage=None):
@@ -117,7 +119,7 @@ class EvaluationProxy:
                     if number == 1:
                         item = {'id': 'fc_eval', 'type': 'function_call', 'call_id': 'call_eval',
                                 'name': 'exec_command', 'status': 'completed',
-                                'arguments': json.dumps({'cmd': 'printf ' + MARKER,
+                                'arguments': json.dumps({'cmd': MARKER_COMMAND,
                                     'sandbox_permissions': 'require_escalated',
                                     'justification': 'Run the harmless evaluation marker command.',
                                     'max_output_tokens': 100})}

@@ -1,5 +1,68 @@
 # Local prerelease qualification
 
+## Agent-operated rc14 qualification (2026-10-01)
+
+Required targets are macOS ARM64 and Windows 11 ARM64 in UTM. Existing hosted
+Windows CI remains supplementary by maintainer authorization. The agent operates
+the lifecycle; only credentials and unavoidable OS/account consent require the
+maintainer. Historical manual commands below remain available, but are not the
+current #23 execution plan.
+
+The current candidate is `v0.1.0-rc.14`, commit
+`14134d43df4cca00bcdf10e49b3dc5ef3122f8d7`. Download its assets without modifying
+previous candidates. With `gh release download`, also save the exact release API
+response as `release.json` and commit API response as `commit.json`. Transfer that
+verified bundle to UTM; the runner rechecks all relevant SHA-256 entries locally.
+`--downloaded-assets` accepts an explicitly trusted host download, not arbitrary
+untrusted release metadata. This avoids transferring GitHub authentication.
+
+Run the platform's existing runner with a **new**, nonexistent disposable state
+directory (its parent must already exist):
+
+```text
+python scripts/qualify_macos.py --version v0.1.0-rc.14 --output REPORT.json
+  --downloaded-assets ASSETS --agent-state-root NEW_STATE --codex CODEX
+  --model deepseek-ai/DeepSeek-V4.1-Flash --guardian-model zai-org/GLM-5.3-Flash
+  --check-pair
+```
+
+Use `qualify_windows.py` and native Python in UTM. Supply those arguments as one
+command, with normal platform quoting. Agent mode retains normal HOME for native
+vault access, isolates launcher configuration/installation and macOS shell files,
+and refuses an existing state root. It authorizes purge only for the newly owned
+state. The interactive login stage runs bare `tofa` through first-use onboarding
+and launches the actual client with `--version`; drive its secret/project/app
+prompts through a real PTY/ConPTY. Never put the key in command arguments or logs.
+The saved-login lifecycle then runs live checks without another credential prompt.
+
+The agent checks fresh process discovery directly, installs twice, preserves
+login during uninstall, reinstalls the identical release, repeats the bounded
+pair check, and purges only test state. Windows uses the installer's documented
+session activation for a custom disposable installation when an ordinary tofa
+already appears earlier in PATH; persistent entry counts and unrelated PATH
+preservation are still checked independently. Final normal-account installation
+and fresh-shell discovery are verified separately after test cleanup.
+
+`--check-pair` requires an explicit Guardian and uses the existing capped observer:
+one two-turn coding session plus one native allow/deny pair per lifecycle stage;
+12 upstream requests, 1 MiB input/request, 4,096 output tokens/request, 180-second
+coding turns and 120-second approval turns. Native Guardian/request deadlines
+remain 90 seconds. A failed coding/approval stage stops acceptance. This is a
+release sample, **not** the three-repeat support-promotion campaign in #75.
+Models remain Experimental. Reports preserve numeric/category evidence only.
+
+Native Windows fixture suites can be explicitly authorized in the owned VM with
+`windows_lifecycle_test.ps1 -DisposableVM` and
+`TOFA_TEST_DISPOSABLE_VM=1` for `qualify_windows_test.py`. These retain restoration
+and synthetic-state checks; do not misrepresent the VM as GitHub Actions.
+
+Current result: macOS full live lifecycle passed; Windows published onboarding
+and synthetic lifecycle passed. The Windows installed-client fixture is blocked
+by native sandbox access to the private scratch workspace. No live Windows
+inference is claimed. Sandbox account/policy setup requires separate OS consent;
+do not disable the sandbox to manufacture a pass. See the dated rc14 report.
+
+
 These runners qualify the **Codex CLI** release lifecycle. They do not qualify the
 shared desktop UI or ordinary desktop account continuity. The separate
 [#50 shared-history qualification](desktop-shared-history-final-2026-09-24.md) records
