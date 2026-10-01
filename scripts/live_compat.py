@@ -288,7 +288,7 @@ def turn(command, env, workspace, prompt, timeout):
                 if env.get("TOFA_EVAL_MARKER"):
                     summary["evaluation_marker_executed"] = (
                         summary.get("evaluation_marker_executed", False) or
-                        item.get("aggregated_output") == env["TOFA_EVAL_MARKER"])
+                        str(item.get("aggregated_output", "")).rstrip("\r\n") == env["TOFA_EVAL_MARKER"])
 
     readers = [threading.Thread(target=consume, args=(process.stdout, True), daemon=True),
                threading.Thread(target=consume, args=(process.stderr, False), daemon=True)]
@@ -324,6 +324,9 @@ def run_one(options, root):
     config = client_home / "config.toml"
     config.write_text('allow_login_shell = false\n\n[projects.' + json.dumps(str(workspace))
                       + ']\ntrust_level = "trusted"\n')
+    if os.name == 'nt':
+        # A new isolated client home has no selected native sandbox backend.
+        with config.open('a') as stream: stream.write('\n[windows]\nsandbox = "unelevated"\n[sandbox_workspace_write]\nexclude_slash_tmp = true\nexclude_tmpdir_env_var = true\n')
     before = digest(config)
     (workspace / "input.json").write_text('{"numbers":[4,-2,7,9]}\n')
     original_input = digest(workspace / "input.json")
@@ -344,7 +347,7 @@ def run_one(options, root):
                TOFA_LIVE_HOME=str(scratch_home), TOFA_LIVE_CODEX_HOME=str(client_home),
                TOFA_LIVE_CODEX=json.dumps(options.codex) if os.name == "nt" else options.codex)
     if os.name == "nt":
-        env.update(TOFA_LIVE_PYTHON=sys.executable, TOFA_LIVE_HARNESS=str(Path(__file__).resolve()),
+        env.update(TOFA_LIVE_PYTHON=sys.executable, TOFA_LIVE_HARNESS=str(Path(getattr(options, "observer_harness", Path(__file__).resolve())).resolve()),
                    TOFA_LIVE_SUPERVISOR=str(supervisor))
     base = [options.launcher, "launch", "codex", "--model", getattr(options, "model", MODEL), "--allow-unverified", "--",
             "--ask-for-approval", "never", "--sandbox", "workspace-write", "exec"]

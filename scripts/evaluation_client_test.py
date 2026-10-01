@@ -45,7 +45,11 @@ class InstalledEvaluationTests(unittest.TestCase):
     def test_distinct_failed_guardian_retains_main_pass(self):
         self.candidate_run('moonshotai/Kimi-K3', guardian='zai-org/GLM-5.3-Flash', coding_pass=True, guardian_pass=False)
 
-    def candidate_run(self, model, explicit=True, coding_pass=False, guardian_pass=True, disappear=False, guardian=None, unreadable_settings=False):
+    def test_release_qualification_pair_uses_native_tools_and_approval_gates(self):
+        self.candidate_run('deepseek-ai/DeepSeek-V4.1-Flash', guardian='zai-org/GLM-5.3-Flash',
+                           coding_pass=True, program='qualification_pair.py')
+
+    def candidate_run(self, model, explicit=True, coding_pass=False, guardian_pass=True, disappear=False, guardian=None, unreadable_settings=False, program="model_evaluation.py"):
         reviewer = guardian or model
         seen = []
         optional_controls = []
@@ -88,7 +92,7 @@ class InstalledEvaluationTests(unittest.TestCase):
                         import shlex
                         item = {'id': 'fc_coding', 'type': 'function_call', 'call_id': 'call_coding_' + str(len(seen)),
                                 'name': 'exec_command', 'status': 'completed',
-                                'arguments': json.dumps({'cmd': 'python3 -c ' + shlex.quote(code), 'max_output_tokens': 100})}
+                                'arguments': json.dumps({'cmd': ('& \"' + sys.executable + '\" -c \"' + code.replace('\"', '`\"') + '\"') if os.name == 'nt' else 'python3 -c ' + shlex.quote(code), 'max_output_tokens': 100})}
                     else:
                         item = message('Fixture complete.')
                     self.wfile.write(b'data: {"type":"response.output_text.delta","delta":"Done."}\n\n')
@@ -100,10 +104,15 @@ class InstalledEvaluationTests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
-                launcher = root / 'launcher'
-                build = subprocess.run(['go', 'build', '-o', str(launcher), './scripts/fixtures/evaluation_launcher'],
-                    cwd=Path(__file__).resolve().parent.parent, capture_output=True, text=True)
-                self.assertEqual(build.returncode, 0, build.stderr)
+                launcher = root / ('launcher.exe' if os.name == 'nt' else 'launcher')
+                supplied = os.environ.get('TOFA_TEST_EVALUATION_LAUNCHER')
+                if supplied:
+                    import shutil
+                    shutil.copyfile(supplied, launcher)
+                else:
+                    build = subprocess.run(['go', 'build', '-o', str(launcher), './scripts/fixtures/evaluation_launcher'],
+                        cwd=Path(__file__).resolve().parent.parent, capture_output=True, text=True)
+                    self.assertEqual(build.returncode, 0, build.stderr)
                 output = root / 'report.json'
                 scratch = root / 'temporary'; scratch.mkdir()
                 env = dict(os.environ, HOME=str(root), CODEX_HOME=str(root / 'normal-codex'),
@@ -113,10 +122,20 @@ class InstalledEvaluationTests(unittest.TestCase):
                 (root / 'normal-codex').mkdir()
                 sentinel = root / 'normal-codex' / 'config.toml'
                 sentinel.write_text('model = "ordinary-model"\n')
-                result = subprocess.run([sys.executable, str(Path(__file__).with_name('model_evaluation.py')),
+                result = subprocess.run([sys.executable, str(Path(__file__).with_name(program)),
                     '--launcher', str(launcher), '--codex', os.environ['TOFA_TEST_CODEX'],
                     '--output', str(output)] + (['--model', model] if explicit else []) + (['--guardian-model', guardian] if guardian else []), env=env, capture_output=True, text=True, timeout=120)
+                self.assertTrue(output.is_file(), result.stderr)
                 report = json.loads(output.read_text())
+                if program == 'qualification_pair.py':
+                    self.assertEqual(result.returncode, 0, json.dumps(report))
+                    self.assertTrue(report['passed'], json.dumps(report))
+                    self.assertTrue(report['coding']['passed'])
+                    self.assertEqual([case['decisions'] for case in report['approvals']], [['allow'], ['deny']])
+                    self.assertEqual([case['command_executed'] for case in report['approvals']], [True, False])
+                    self.assertEqual(set(seen), {('coding', model), ('review', reviewer)})
+                    self.assertLessEqual(report['used_requests'], report['request_limit'])
+                    return
                 # Optional sanitized evidence capture also retains failed attempts.
                 evidence_dir = os.environ.get('TOFA_TEST_EVIDENCE_DIR')
                 if evidence_dir:

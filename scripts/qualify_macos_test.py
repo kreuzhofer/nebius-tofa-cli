@@ -154,10 +154,10 @@ sys.exit(0 if (pathlib.Path(os.environ['HOME'])/'synthetic-vault').exists() else
             hashlib.sha256(path.read_bytes()).hexdigest() + "  " + path.name + "\n"
             for path in self.assets.iterdir() if path.name != "SHA256SUMS"))
 
-    def run_runner(self, answers="READY\nFOUND\nPURGE\n", timeout=10):
+    def run_runner(self, answers="READY\nFOUND\nPURGE\n", timeout=10, extra=()):
         result = subprocess.run([sys.executable, str(SCRIPTS / "qualify_macos.py"),
                                  "--version", VERSION, "--output", str(self.report),
-                                 "--timeout", str(timeout)], input=answers, text=True, capture_output=True,
+                                 "--timeout", str(timeout), *extra], input=answers, text=True, capture_output=True,
                                 env=self.env, timeout=50)
         self.assertTrue(self.report.is_file(), result.stdout + result.stderr)
         evidence = json.loads(self.report.read_text())
@@ -187,6 +187,54 @@ sys.exit(0 if (pathlib.Path(os.environ['HOME'])/'synthetic-vault').exists() else
         stages = {stage["name"]: stage["status"] for stage in report["stages"]}
         for stage in ("preflight", "recovery", "download", "install", "login", "fresh_terminal", "live", "uninstall", "reinstall", "saved_login_reuse", "purge"):
             self.assertEqual(stages[stage], "passed")
+
+    def test_host_downloaded_assets_are_checked_before_login(self):
+        (self.assets/'release.json').write_text(json.dumps({'tag_name': VERSION, 'draft': False, 'prerelease': True}))
+        (self.assets/'commit.json').write_text(json.dumps({'sha': COMMIT}))
+        (self.assets/self.asset).write_text('corrupt candidate')
+        result, report = self.run_runner(extra=('--downloaded-assets', str(self.assets)))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(report['reason'], 'checksum_mismatch')
+        self.assertFalse((self.home/'login-count').exists())
+
+    def test_agent_runs_disposable_lifecycle_without_fabricated_confirmations(self):
+        candidate = self.assets / self.asset
+        candidate.write_text(candidate.read_text().replace(
+            "config = home/'.config/tofa'", "config = pathlib.Path(os.environ['XDG_CONFIG_HOME'])/'tofa'").replace(
+            "sys.argv[1:3] == ['auth','login']", "sys.argv[1:2] == ['--model']"))
+        self.checksums()
+        result, report = self.run_runner(answers='', extra=('--agent-state-root', str(self.home/'agent-state')))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(all(report['cleanup'].values()))
+        self.assertEqual(report['operator'], 'agent')
+        self.assertNotIn('Type READY', result.stdout)
+        self.assertNotIn('Type FOUND', result.stdout)
+        self.assertNotIn('Type PURGE', result.stdout)
+        self.assertEqual(self.unrelated.read_text(), 'private-unrelated-value')
+
+    def test_agent_rejects_existing_state_root_before_mutation(self):
+        result = subprocess.run([sys.executable, str(SCRIPTS/'qualify_macos.py'), '--version', VERSION,
+            '--output', str(self.report), '--agent-state-root', str(self.home)], env=self.env,
+            input='', text=True, capture_output=True, timeout=5)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('state root must be new', result.stderr)
+        self.assertFalse(self.install.exists())
+
+    def test_selected_pair_is_recorded_and_used_for_both_live_stages(self):
+        candidate = self.assets / self.asset
+        candidate.write_text(candidate.read_text().replace(
+            "provider='model_providers.nebius-tofa=",
+            "assert sys.argv[sys.argv.index('--model')+1] == 'deepseek-ai/DeepSeek-V4.1-Flash'\n"
+            "assert sys.argv[sys.argv.index('--evaluation-guardian-model')+1] == 'zai-org/GLM-5.3-Flash'\n"
+            "provider='model_providers.nebius-tofa="))
+        self.checksums()
+        result, report = self.run_runner(extra=('--model', 'deepseek-ai/DeepSeek-V4.1-Flash',
+                                                '--guardian-model', 'zai-org/GLM-5.3-Flash'))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(report['model'], 'deepseek-ai/DeepSeek-V4.1-Flash')
+        self.assertEqual(report['guardian_model'], 'zai-org/GLM-5.3-Flash')
+        self.assertTrue(report['live']['passed'])
+        self.assertTrue(report['saved_login_reuse']['passed'])
 
     def test_invalid_startup_file_reports_preflight_failure_without_mutation(self):
         (self.home / ".zshrc").unlink()

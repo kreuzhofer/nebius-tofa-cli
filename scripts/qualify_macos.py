@@ -123,12 +123,18 @@ def vault_absent(refs, timeout):
     return absent
 
 
-def download(version, directory, timeout, evidence):
-    _, raw = command(["gh", "api", f"repos/{REPOSITORY}/releases/tags/{version}"], timeout)
-    metadata = json.loads(raw)
+def download(version, directory, timeout, evidence, assets=None):
+    if assets:
+        metadata = json.loads((assets / 'release.json').read_text())
+    else:
+        _, raw = command(["gh", "api", f"repos/{REPOSITORY}/releases/tags/{version}"], timeout)
+        metadata = json.loads(raw)
     if metadata.get("tag_name") != version or metadata.get("draft") is not False or metadata.get("prerelease") is not True:
         raise Failure("not_a_published_prerelease")
-    _, raw = command(["gh", "api", f"repos/{REPOSITORY}/commits/{version}"], timeout)
+    if assets:
+        raw = (assets / 'commit.json').read_text()
+    else:
+        _, raw = command(["gh", "api", f"repos/{REPOSITORY}/commits/{version}"], timeout)
     commit = json.loads(raw).get("sha", "")
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise Failure("invalid_candidate_commit")
@@ -142,7 +148,14 @@ def download(version, directory, timeout, evidence):
     args = ["gh", "release", "download", version, "--repo", REPOSITORY, "--dir", str(directory)]
     for name in (*names, "SHA256SUMS"):
         args.extend(["--pattern", name])
-    command(args, timeout)
+    if assets:
+        for name in (*names, 'SHA256SUMS'):
+            source = assets / name
+            if source.is_symlink() or not source.is_file(): raise Failure('invalid_downloaded_asset')
+            shutil.copyfile(source, directory / name)
+    else:
+        command(args, timeout)
+    evidence['candidate']['download_boundary'] = 'host-downloaded transfer' if assets else 'authenticated gh'
     checksums = {}
     for line in (directory / "SHA256SUMS").read_text().splitlines():
         match = re.fullmatch(r"([0-9a-fA-F]{64})  (\S+)", line)
@@ -181,6 +194,31 @@ def save_report(reports, evidence):
     summary.flush()
 
 
+def prepare_agent_state(options, parser):
+    """Explicit operator authorization applies only to a newly owned state tree."""
+    if not options.agent_state_root:
+        return
+    root = options.agent_state_root.absolute()
+    if root.exists() or root.is_symlink() or not root.parent.is_dir():
+        parser.error("agent state root must be new, in an existing directory")
+    root.mkdir(mode=0o700)
+    for name in ('config', 'local', 'shell'):
+        (root / name).mkdir(mode=0o700)
+    options.agent_state_root = root
+    # Native vaults need the real HOME. Only owned launcher and shell state move.
+    os.environ.update(XDG_CONFIG_HOME=str(root / 'config'), LOCALAPPDATA=str(root / 'local'),
+                      TOFA_INSTALL_DIR=str(root / 'install'), ZDOTDIR=str(root / 'shell'))
+    if os.name != 'nt':
+        os.environ['SHELL'] = '/bin/zsh'
+
+
+def onboarding_command(binary, options):
+    args = [str(binary), '--model', options.model, '--allow-unverified']
+    if options.guardian_model:
+        args += ['--evaluation-guardian-model', options.guardian_model]
+    return args + ['--', '--version']
+
+
 def qualify(options, reports):
     home = Path.home()
     config = Path(os.environ.get("XDG_CONFIG_HOME", str(home / ".config"))) / "tofa"
@@ -194,7 +232,8 @@ def qualify(options, reports):
     refs = set()
     evidence = {"schema_version": 1, "candidate": {"tag": options.version},
                 "host": {"os": platform.system(), "arch": platform.machine(), "release": platform.mac_ver()[0] or platform.release()},
-                "client": {}, "backend": "unknown", "model": live_compat.MODEL,
+                "operator": "agent" if options.agent_state_root else "human",
+                "client": {}, "backend": "unknown", "model": options.model, "guardian_model": options.guardian_model,
                 "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "stages": [{"name": name, "status": "pending"} for name in STAGES],
                 "preservation": {name: None for name in ("baseline_recorded", "codex_config", "codex_auth",
@@ -225,7 +264,7 @@ def qualify(options, reports):
         snapshots_ready = True
         if os.name != "posix" or platform.system() not in ("Darwin", "Linux"):
             raise Failure("unsupported_platform")
-        for program in ("gh", "curl", "sh", options.codex):
+        for program in (("gh",) if not options.downloaded_assets else ()) + ("curl", "sh", options.codex):
             if not program or not shutil.which(program):
                 raise Failure("missing_prerequisite")
         if config.is_symlink() or install.is_symlink() or (config / ".auth-lock").exists():
@@ -253,8 +292,8 @@ def qualify(options, reports):
     def login():
         nonlocal refs
         print("Enter the real Token Factory credentials in the launcher's interactive prompt. OS prompts may appear.", flush=True)
-        args = [str(binary), "auth", "login"]
-        if options.storage:
+        args = onboarding_command(binary, options) if options.agent_state_root else [str(binary), "auth", "login"]
+        if options.storage and not options.agent_state_root:
             args += ["--storage", options.storage]
         command(args, options.human_timeout, interactive=True)
         _, doctor = command([str(binary), "doctor"], options.timeout)
@@ -268,7 +307,12 @@ def qualify(options, reports):
 
     def live(name):
         with tempfile.TemporaryDirectory(prefix="live-", dir=scratch.name) as directory:
-            result = live_compat.run_one(SimpleNamespace(launcher=str(binary), codex=options.codex, timeout=options.timeout), Path(directory).resolve())
+            settings = SimpleNamespace(launcher=str(binary), codex=options.codex, timeout=options.timeout, model=options.model, guardian_model=options.guardian_model)
+            if options.check_pair:
+                import qualification_pair
+                result = qualification_pair.run(settings, Path(directory).resolve())
+            else:
+                result = live_compat.run_one(settings, Path(directory).resolve())
         evidence[name] = result
         if any(before[name] != file_state(path) for name, path in watched.items()):
             raise Failure("preservation_failed")
@@ -285,7 +329,7 @@ def qualify(options, reports):
             raise Failure("saved_state_changed")
 
     def purge():
-        confirm("The live checks passed. Purge removes local tofa preferences and credentials; it does not revoke remote tokens. Confirm your recovery is ready.", "PURGE", options.human_timeout)
+        if not options.agent_state_root: confirm("The live checks passed. Purge removes local tofa preferences and credentials; it does not revoke remote tokens. Confirm your recovery is ready.", "PURGE", options.human_timeout)
         command([str(binary), "uninstall", "--purge"], options.timeout)
         if not vault_absent(refs, options.timeout):
             raise Failure("vault_cleanup_incomplete")
@@ -295,12 +339,19 @@ def qualify(options, reports):
         downloads = Path(scratch.name).resolve() / "download"
         downloads.mkdir()
         stage("preflight", preflight)
-        stage("recovery", lambda: confirm("This run replaces the installed launcher and login, then uninstalls and explicitly purges local tofa state. Existing state: " + json.dumps(evidence["existing_state"]) + ". Prepare any credential backup/recovery or token reissue yourself before continuing. Close other launcher/Codex sessions.", "READY", options.human_timeout))
-        stage("download", lambda: download(options.version, downloads, options.timeout, evidence))
+        stage("recovery", lambda: None if options.agent_state_root else confirm("This run replaces the installed launcher and login, then uninstalls and explicitly purges local tofa state. Existing state: " + json.dumps(evidence["existing_state"]) + ". Prepare any credential backup/recovery or token reissue yourself before continuing. Close other launcher/Codex sessions.", "READY", options.human_timeout))
+        stage("download", lambda: download(options.version, downloads, options.timeout, evidence, options.downloaded_assets))
         stage("install", install_candidate)
+        if options.agent_state_root: install_candidate()
         shells |= startup_files(home, install)
         stage("login", login)
-        stage("fresh_terminal", lambda: confirm("Open a NEW terminal. Run `command -v tofa` and `tofa --version`. Confirm they show the installation at " + str(binary) + " and tofa " + options.version + ". Record any signing or OS prompts separately in the validation issue.", "FOUND", options.human_timeout))
+        def fresh_terminal():
+            if not options.agent_state_root:
+                return confirm("Open a NEW terminal, verify tofa location/version, and record OS prompts.", "FOUND", options.human_timeout)
+            _, output = command(['/bin/zsh', '-ic', 'command -v tofa; tofa --version'], options.timeout)
+            if output.splitlines() != [str(binary), 'tofa ' + options.version]:
+                raise Failure('fresh_terminal_discovery_failed')
+        stage("fresh_terminal", fresh_terminal)
         stage("live", lambda: live("live"))
         stage("uninstall", uninstall)
         stage("reinstall", install_candidate)
@@ -359,11 +410,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True, type=prerelease)
     parser.add_argument("--output", required=True, type=Path, help="new .json file; a matching .md summary is also created")
+    parser.add_argument("--downloaded-assets", type=Path, help="trusted host-downloaded release assets plus release.json and commit.json; checksums are reverified locally")
+    parser.add_argument("--agent-state-root", type=Path, help="authorize automated lifecycle/purge only in this NEW disposable directory; login remains interactive")
     parser.add_argument("--codex", default=shutil.which("codex"))
+    parser.add_argument("--check-pair", action="store_true", help="bounded coding plus native Guardian allow/deny checks; requires --guardian-model")
+    parser.add_argument("--model", default=live_compat.MODEL, help="exact main model; remains Experimental")
+    parser.add_argument("--guardian-model", help="exact Guardian model; no implicit substitution")
     parser.add_argument("--storage", choices=("file", "keyring"), help="explicit override; normally respect the launcher's selection")
     parser.add_argument("--timeout", type=int, default=180, help="seconds per command or live turn (1–600)")
     parser.add_argument("--human-timeout", type=int, default=900, help="seconds per human step (1–3600)")
     options = parser.parse_args()
+    if options.check_pair and not options.guardian_model:
+        parser.error("--check-pair requires --guardian-model")
+    for identity in (options.model, options.guardian_model):
+        if identity is not None and not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}/[A-Za-z0-9_.-]{1,128}", identity):
+            parser.error("invalid model identity")
     options.output = options.output.resolve()
     if options.output.suffix != ".json" or not options.output.parent.is_dir() or any(
             path.exists() for path in (options.output, options.output.with_suffix(".md"))):
@@ -387,6 +448,7 @@ def main():
         for path in reserved:
             path.unlink()
         parser.error("cannot create the local report files; account state was not changed")
+    prepare_agent_state(options, parser)
     signal.signal(signal.SIGTERM, interrupted)
     with reports[0], reports[1]:
         return qualify(options, reports)

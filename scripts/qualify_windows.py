@@ -17,7 +17,7 @@ import time
 from types import SimpleNamespace
 
 import live_compat
-from qualify_macos import Failure, STAGES, REPOSITORY, file_state, save_report, vault_refs
+from qualify_macos import Failure, STAGES, REPOSITORY, file_state, save_report, vault_refs, prepare_agent_state, onboarding_command
 from release import prerelease
 import windows_process
 
@@ -146,17 +146,26 @@ def vault_absent(refs):
 
 def download(options, directory, supervisor, evidence):
     def run(args): return command(args, supervisor, options.timeout)[0]
-    metadata = json.loads(run(["gh", "api", f"repos/{REPOSITORY}/releases/tags/{options.version}"]))
+    metadata = (json.loads((options.downloaded_assets / 'release.json').read_text()) if options.downloaded_assets
+                else json.loads(run(["gh", "api", f"repos/{REPOSITORY}/releases/tags/{options.version}"])))
     if metadata.get("tag_name") != options.version or metadata.get("draft") is not False or metadata.get("prerelease") is not True:
         raise Failure("not_a_published_prerelease")
-    commit = json.loads(run(["gh", "api", f"repos/{REPOSITORY}/commits/{options.version}"])).get("sha", "")
+    commit = (json.loads((options.downloaded_assets / 'commit.json').read_text()) if options.downloaded_assets
+              else json.loads(run(["gh", "api", f"repos/{REPOSITORY}/commits/{options.version}"]))).get("sha", "")
     if not re.fullmatch(r"[0-9a-f]{40}", commit): raise Failure("invalid_candidate_commit")
     evidence["candidate"]["commit"] = commit
     asset = f"tofa_{options.version}_windows_{windows_process.architecture()}.exe"
     names = (asset, "install.ps1", "uninstall.ps1")
     args = ["gh", "release", "download", options.version, "--repo", REPOSITORY, "--dir", str(directory)]
     for name in (*names, "SHA256SUMS"): args.extend(["--pattern", name])
-    run(args)
+    if options.downloaded_assets:
+        for name in (*names, 'SHA256SUMS'):
+            source = options.downloaded_assets / name
+            if source.is_symlink() or not source.is_file(): raise Failure('invalid_downloaded_asset')
+            shutil.copyfile(source, directory / name)
+    else:
+        run(args)
+    evidence['candidate']['download_boundary'] = 'host-downloaded transfer' if options.downloaded_assets else 'authenticated gh'
     sums = {}
     for line in (directory / "SHA256SUMS").read_text().splitlines():
         match = re.fullmatch(r"([0-9a-fA-F]{64})  (\S+)", line)
@@ -180,7 +189,8 @@ def qualify(options, reports):
     install_owned = {"bin/tofa.exe", ".path-owned", ".tofa-install"}
     evidence = {"schema_version": 1, "candidate": {"tag": options.version},
                 "host": {"os": platform.system(), "arch": platform.machine(), "release": platform.version()},
-                "client": {}, "backend": "unknown", "model": live_compat.MODEL,
+                "operator": "agent" if options.agent_state_root else "human",
+                "client": {}, "backend": "unknown", "model": options.model, "guardian_model": options.guardian_model,
                 "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "stages": [{"name": name, "status": "pending"} for name in STAGES],
                 "preservation": {name: None for name in ("baseline_recorded", "codex_config", "codex_auth", "unrelated_config", "unrelated_installation", "user_path", "machine_path")},
@@ -218,7 +228,7 @@ def qualify(options, reports):
             raise Failure("unsafe_or_busy_existing_state")
         if bin_path.lower() in [entry.lower() for entry in user_before] and not (install / ".path-owned").is_file():
             raise Failure("unowned_installation_path")
-        for program in ("gh", "powershell.exe"):
+        for program in (("gh",) if not options.downloaded_assets else ()) + ("powershell.exe",):
             if not shutil.which(program): raise Failure("missing_prerequisite")
         options.codex = windows_process.resolve_codex(options.codex)
         supervisor = windows_process.build_supervisor(Path(scratch.name))
@@ -236,6 +246,10 @@ def qualify(options, reports):
     def discovery(removed=False):
         persistent = persistent_path(True) + persistent_path()
         env = dict(os.environ, PATH=os.path.expandvars(";".join(persistent)))
+        if options.agent_state_root and not removed:
+            # Apply the installer's documented session activation to the new child.
+            # The persistent-entry assertions below remain independent.
+            env['PATH'] = bin_path + ';' + ';'.join(entry for entry in persistent if entry.lower() != bin_path.lower())
         found = shutil.which("tofa.exe", path=env["PATH"])
         if removed:
             if any(entry.lower() == bin_path.lower() for entry in persistent) or (found and Path(found) == binary):
@@ -256,8 +270,8 @@ def qualify(options, reports):
     def login():
         nonlocal refs
         print("Enter Token Factory credentials in the launcher. Respond to any OS prompts.", flush=True)
-        args = [str(binary), "auth", "login"]
-        if options.storage: args += ["--storage", options.storage]
+        args = onboarding_command(binary, options) if options.agent_state_root else [str(binary), "auth", "login"]
+        if options.storage and not options.agent_state_root: args += ["--storage", options.storage]
         command(args, supervisor, options.human_timeout, interactive=True)
         match = re.search(r"^Credential backend: (file|keyring) \(", run([str(binary), "doctor"]), re.M)
         if not match: raise Failure("credential_backend_unknown")
@@ -268,15 +282,20 @@ def qualify(options, reports):
 
     def live(name):
         with tempfile.TemporaryDirectory(prefix="live-", dir=scratch.name) as directory:
-            result = live_compat.run_one(SimpleNamespace(launcher=str(binary), codex=options.codex, timeout=options.timeout,
-                                                       supervisor=supervisor), Path(directory).resolve())
+            settings = SimpleNamespace(launcher=str(binary), codex=options.codex, timeout=options.timeout,
+                                                       supervisor=supervisor, model=options.model, guardian_model=options.guardian_model)
+            if options.check_pair:
+                import qualification_pair
+                result = qualification_pair.run(settings, Path(directory).resolve())
+            else:
+                result = live_compat.run_one(settings, Path(directory).resolve())
         evidence[name] = result
         if any(before[name] != file_state(path) for name, path in watched.items()): raise Failure("preservation_failed")
         if not result["passed"]: raise Failure("live_assertions_failed")
 
     def uninstall(purge=False):
         nonlocal helpers_completed
-        if purge:
+        if purge and not options.agent_state_root:
             confirm("Purge removes local tofa preferences and credentials, without revoking remote tokens. Confirm recovery is ready.", "PURGE", options.human_timeout)
         saved = {name: file_state(config / name) for name in ("config.yml", "credentials.yml")}
         saved_refs = vault_refs(config)
@@ -305,11 +324,12 @@ def qualify(options, reports):
         downloads = Path(scratch.name) / "download"
         downloads.mkdir()
         stage("preflight", preflight)
-        stage("recovery", lambda: confirm("This run replaces launcher/login, then preserves, reinstalls and explicitly purges local tofa state. Existing state: " + json.dumps(evidence["existing_state"]) + ". Prepare credential recovery yourself and close other sessions.", "READY", options.human_timeout))
+        stage("recovery", lambda: None if options.agent_state_root else confirm("This run replaces launcher/login, then preserves, reinstalls and explicitly purges local tofa state. Existing state: " + json.dumps(evidence["existing_state"]) + ". Prepare credential recovery yourself and close other sessions.", "READY", options.human_timeout))
         asset = stage("download", lambda: download(options, downloads, supervisor, evidence))
         stage("install", install_candidate)
+        if options.agent_state_root: install_candidate()
         stage("login", login)
-        stage("fresh_terminal", lambda: confirm("Open a NEW terminal. Run `Get-Command tofa` and `tofa --version`; confirm " + str(binary) + " and tofa " + options.version + ". Record any OS prompts separately.", "FOUND", options.human_timeout))
+        stage("fresh_terminal", lambda: discovery() if options.agent_state_root else confirm("Open a NEW terminal. Run `Get-Command tofa` and `tofa --version`; confirm " + str(binary) + " and tofa " + options.version + ". Record any OS prompts separately.", "FOUND", options.human_timeout))
         stage("live", lambda: live("live"))
         stage("uninstall", uninstall)
         stage("reinstall", install_candidate)
@@ -355,11 +375,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True, type=prerelease)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--downloaded-assets", type=Path, help="trusted host-downloaded release assets plus release.json and commit.json; checksums are reverified locally")
+    parser.add_argument("--agent-state-root", type=Path, help="authorize automated lifecycle/purge only in this NEW disposable directory; login remains interactive")
     parser.add_argument("--codex", default=shutil.which("codex"))
+    parser.add_argument("--check-pair", action="store_true", help="bounded coding plus native Guardian allow/deny checks; requires --guardian-model")
+    parser.add_argument("--model", default=live_compat.MODEL, help="exact main model; remains Experimental")
+    parser.add_argument("--guardian-model", help="exact Guardian model; no implicit substitution")
     parser.add_argument("--storage", choices=("file", "keyring"))
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--human-timeout", type=int, default=900)
     options = parser.parse_args()
+    if options.check_pair and not options.guardian_model:
+        parser.error("--check-pair requires --guardian-model")
+    for identity in (options.model, options.guardian_model):
+        if identity is not None and not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}/[A-Za-z0-9_.-]{1,128}", identity):
+            parser.error("invalid model identity")
     if os.name != "nt": parser.error("native Windows is required")
     options.output = options.output.resolve()
     if options.output.suffix != ".json" or not options.output.parent.is_dir() or any(p.exists() for p in (options.output, options.output.with_suffix(".md"))):
@@ -375,6 +405,7 @@ def main():
         for stream in reports: stream.close()
         for path in reserved: path.unlink()
         parser.error("cannot create reports; account state was not changed")
+    prepare_agent_state(options, parser)
     def interrupt(*unused): raise KeyboardInterrupt
     signal.signal(signal.SIGTERM, interrupt)
     signal.signal(signal.SIGBREAK, interrupt)

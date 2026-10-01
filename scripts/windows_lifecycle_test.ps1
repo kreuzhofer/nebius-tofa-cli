@@ -2,12 +2,13 @@
 # All files/credentials are synthetic. User PATH and process environment are restored.
 param(
  [Parameter(Mandatory=$true)][string]$Dist,
- [Parameter(Mandatory=$true)][string]$Version
+ [Parameter(Mandatory=$true)][string]$Version,
+ [switch]$DisposableVM
 )
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 if ([Environment]::OSVersion.Platform -ne 'Win32NT') {throw 'Native Windows is required'}
-if ($env:GITHUB_ACTIONS -ne 'true') {throw 'Run on a disposable GitHub Actions Windows runner; this check temporarily changes user PATH'}
+if ($env:GITHUB_ACTIONS -ne 'true' -and !$DisposableVM) {throw 'Use disposable CI or explicitly authorize -DisposableVM; this check restores user PATH and uses synthetic state'}
 if ($Version -notmatch '^[A-Za-z0-9._-]+$' -or $Version -eq 'latest') {throw 'An explicit candidate version is required'}
 $Dist=(Resolve-Path -LiteralPath $Dist).Path
 # Independent expected artifact for the actual-host lifecycle assertion.
@@ -99,8 +100,10 @@ function Run-Process([string]$File,[string[]]$Arguments) {
  $Err=Join-Path $Temp "$Sequence.err"
  $Process=Start-Process -FilePath $File -ArgumentList $Arguments -PassThru -NoNewWindow -RedirectStandardOutput $Out -RedirectStandardError $Err
  try {
+  # Windows PowerShell 5 may lose ExitCode unless the native handle is retained.
+  $null=$Process.Handle
   Assert ($Process.WaitForExit(10000)) "Process timeout: $File"
-  Assert ($Process.ExitCode -eq 0) "Process failed: $File $(Read-Log $Err)"
+  Assert ($Process.ExitCode -eq 0) "Process failed (exit=$($Process.ExitCode)): $File $Arguments stdout=$(Read-Log $Out) stderr=$(Read-Log $Err)"
   return @{Out=$Out;Err=$Err;Text=(Read-Log $Out)}
  } finally {
   if(!$Process.HasExited){$Process.Kill();$Process.WaitForExit(5000) | Out-Null}
@@ -121,6 +124,9 @@ function Fresh-Probe([switch]$Removed) {
  # as a new login would, before launching a new Windows PowerShell process.
  $env:Path=[Environment]::ExpandEnvironmentVariables(
   [Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User'))
+ # The installer's documented session activation isolates a custom test install
+ # when this non-CI account already has an ordinary tofa earlier in user PATH.
+ if($DisposableVM -and !$Removed){$env:Path=$Bin+';'+(($env:Path -split ';' | Where-Object {$_ -ne $Bin}) -join ';')}
  try {
   $Arguments=@('-NoProfile','-File',('"'+(Join-Path $Temp 'probe.ps1')+'"'),'-ExpectedBinary',('"'+$Binary+'"'),'-Version',$Version)
   if($Removed){$Arguments+='-Removed'}
@@ -172,7 +178,7 @@ if($Removed){
  if($Count -ne 0 -or @($Found | Where-Object {$_.Source -eq $ExpectedBinary}).Count){throw 'Removed candidate is still discoverable'}
  exit 0
 }
-if($Count -ne 1 -or !$Found.Count -or $Found[0].Source -ne $ExpectedBinary){throw 'Fresh environment did not resolve candidate exactly once'}
+if($Count -ne 1 -or !$Found.Count -or $Found[0].Source -ne $ExpectedBinary){throw "Fresh environment did not resolve candidate exactly once: count=$Count; found=$($Found.Source -join '|'); expected=$ExpectedBinary"}
 $Actual=& tofa --version
 if($LASTEXITCODE -ne 0 -or $Actual -cne "tofa $Version"){throw "Wrong candidate version: $Actual"}
 $Help=& tofa --help
