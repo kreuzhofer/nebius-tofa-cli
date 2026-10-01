@@ -319,11 +319,17 @@ def qualify(options, reports):
         if not result["passed"]:
             raise Failure("live_assertions_failed")
 
+    def owned_path_blocks_remain():
+        paths = shells
+        if options.agent_state_root:
+            paths = {path for path in shells if path.resolve().is_relative_to(options.agent_state_root.resolve())}
+        return any(b"# >>> tofa >>>" in path.read_bytes() for path in paths if path.is_file())
+
     def uninstall():
         saved = {name: file_state(config / name) for name in ("config.yml", "credentials.yml")}
         saved_refs = vault_refs(config)
         command([str(binary), "uninstall"], options.timeout)
-        if binary.exists() or any(b"# >>> tofa >>>" in path.read_bytes() for path in shells if path.is_file()):
+        if binary.exists() or owned_path_blocks_remain():
             raise Failure("uninstall_cleanup_incomplete")
         if saved != {name: file_state(config / name) for name in saved} or saved_refs != vault_refs(config):
             raise Failure("saved_state_changed")
@@ -376,8 +382,7 @@ def qualify(options, reports):
             evidence["cleanup"]["scratch_removed"] = True
             evidence["cleanup"]["binary_removed"] = not binary.exists()
             evidence["cleanup"]["ownership_removed"] = not (install / ".tofa-install").exists()
-            evidence["cleanup"]["path_entries_removed"] = not (install / ".path-files").exists() and all(
-                b"# >>> tofa >>>" not in path.read_bytes() for path in shells if path.is_file())
+            evidence["cleanup"]["path_entries_removed"] = not (install / ".path-files").exists() and not owned_path_blocks_remain()
             evidence["cleanup"]["configuration_removed"] = not (config / "config.yml").exists()
             evidence["cleanup"]["file_credentials_removed"] = not (config / "credentials.yml").exists()
             evidence["cleanup"]["vault_credentials_removed"] = vault_absent(refs, options.timeout) and not vault_refs(config)

@@ -198,6 +198,8 @@ sys.exit(0 if (pathlib.Path(os.environ['HOME'])/'synthetic-vault').exists() else
         self.assertFalse((self.home/'login-count').exists())
 
     def test_agent_runs_disposable_lifecycle_without_fabricated_confirmations(self):
+        ordinary_shell = '# ordinary settings\n# >>> tofa >>>\nexport PATH=ordinary-install:$PATH\n# <<< tofa <<<\n'
+        (self.home/'.zshrc').write_text(ordinary_shell)
         candidate = self.assets / self.asset
         candidate.write_text(candidate.read_text().replace(
             "config = home/'.config/tofa'", "config = pathlib.Path(os.environ['XDG_CONFIG_HOME'])/'tofa'").replace(
@@ -207,6 +209,7 @@ sys.exit(0 if (pathlib.Path(os.environ['HOME'])/'synthetic-vault').exists() else
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertTrue(all(report['cleanup'].values()))
         self.assertEqual(report['operator'], 'agent')
+        self.assertEqual((self.home/'.zshrc').read_text(), ordinary_shell)
         self.assertNotIn('Type READY', result.stdout)
         self.assertNotIn('Type FOUND', result.stdout)
         self.assertNotIn('Type PURGE', result.stdout)
