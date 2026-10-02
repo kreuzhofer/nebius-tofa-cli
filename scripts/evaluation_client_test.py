@@ -138,15 +138,6 @@ class InstalledEvaluationTests(unittest.TestCase):
                     '--output', str(output)] + (['--model', model] if explicit else []) + (['--guardian-model', guardian] if guardian else []), env=env, capture_output=True, text=True, timeout=120)
                 self.assertTrue(output.is_file(), result.stderr)
                 report = json.loads(output.read_text())
-                if program == 'qualification_pair.py':
-                    self.assertEqual(result.returncode, 0, json.dumps(report))
-                    self.assertTrue(report['passed'], json.dumps(report))
-                    self.assertTrue(report['coding']['passed'])
-                    self.assertEqual([case['decisions'] for case in report['approvals']], [['allow'], ['deny']])
-                    self.assertEqual([case['command_executed'] for case in report['approvals']], [True, False])
-                    self.assertEqual(set(seen), {('coding', model), ('review', reviewer)})
-                    self.assertLessEqual(report['used_requests'], report['request_limit'])
-                    return
                 # Optional sanitized evidence capture also retains failed attempts.
                 evidence_dir = os.environ.get('TOFA_TEST_EVIDENCE_DIR')
                 if evidence_dir:
@@ -158,6 +149,19 @@ class InstalledEvaluationTests(unittest.TestCase):
                             'provider_observed_roles': seen, 'provider_count': 1,
                             'temporary_catalogs_remaining': len(list(scratch.glob('tofa-model-catalog-*'))),
                             'report': report}, saved, indent=2)
+                if program == 'qualification_pair.py':
+                    self.assertEqual(result.returncode, 0, json.dumps(report))
+                    self.assertTrue(report['passed'], json.dumps(report))
+                    self.assertTrue(report['coding']['passed'])
+                    self.assertEqual([case['decisions'] for case in report['approvals']], [['allow'], ['deny']])
+                    self.assertEqual([case['command_executed'] for case in report['approvals']], [True, False])
+                    self.assertEqual(set(seen), {('coding', model), ('review', reviewer)})
+                    self.assertLessEqual(report['used_requests'], report['request_limit'])
+                    if os.environ.get('TOFA_NATIVE_WINDOWS_CODEX_HOME'):
+                        self.assertTrue(report['native_config_auth_preserved'])
+                        self.assertTrue(report['owned_native_sessions_removed'])
+                        self.assertEqual(report['owned_native_session_count'], 3)
+                    return
                 self.assertEqual(result.returncode, 0 if coding_pass and guardian_pass and not disappear and not unreadable_settings else 1, json.dumps(report))
                 self.assertEqual(list(scratch.glob('tofa-model-catalog-*')), [])
                 if unreadable_settings:

@@ -37,6 +37,9 @@ def observe(args):
         env = live.client_environment(Path(os.environ['TOFA_LIVE_HOME']), Path(os.environ['TOFA_LIVE_CODEX_HOME']))
         env['TOFA_API_KEY'] = token
         client = json.loads(os.environ['TOFA_LIVE_CODEX']) if os.name == 'nt' else [os.environ['TOFA_LIVE_CODEX']]
+        if os.name == 'nt':
+            import windows_sandbox_state
+            args = windows_sandbox_state.client_arguments(args)
         return subprocess.call(client + args, env=env)
 
 
@@ -46,7 +49,9 @@ def approval(options, root, case):
     config = root / 'codex' / 'config.toml'
     config.write_text('allow_login_shell = false\napproval_policy = "on-request"\napprovals_reviewer = "auto_review"\n[features]\nplugins = false\n')
     if os.name == 'nt':
-        with config.open('a') as stream: stream.write('\n[windows]\nsandbox = "unelevated"\n')
+        import windows_sandbox_state
+        mode = 'elevated' if windows_sandbox_state.native_home() is not None else 'unelevated'
+        with config.open('a') as stream: stream.write('\n[windows]\nsandbox = ' + json.dumps(mode) + '\n')
     before = live.digest(config)
     if os.name == 'nt':
         import windows_process

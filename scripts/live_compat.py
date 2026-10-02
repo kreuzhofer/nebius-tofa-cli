@@ -74,6 +74,10 @@ def client_environment(home, codex_home):
             path = home / suffix
             path.mkdir(parents=True, exist_ok=True)
             env[name] = str(path)
+    if os.name == 'nt':
+        import windows_sandbox_state
+        native = windows_sandbox_state.native_home()
+        if native is not None: env['CODEX_HOME'] = str(native)
     return env
 
 
@@ -218,6 +222,9 @@ def observe(args):
     env["TOFA_API_KEY"] = token
     client = json.loads(os.environ["TOFA_LIVE_CODEX"]) if os.name == "nt" else [os.environ["TOFA_LIVE_CODEX"]]
     try:
+        if os.name == 'nt':
+            import windows_sandbox_state
+            args = windows_sandbox_state.client_arguments(args)
         result = subprocess.call(client + args, env=env)
     finally:
         server.shutdown()
@@ -311,12 +318,19 @@ def turn(command, env, workspace, prompt, timeout):
         process.stderr.close()
     summary["exit_code"] = process.returncode
     summary["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 3)
+    if os.name == 'nt':
+        import windows_sandbox_state
+        windows_sandbox_state.record_sessions(thread_ids)
     return summary, thread_ids
 
 
 def run_one(options, root):
     workspace = root / "workspace"
     workspace.mkdir()
+    if os.name == 'nt':
+        import windows_sandbox_state
+        if windows_sandbox_state.native_home() is not None:
+            windows_sandbox_state.prepare_workspace(workspace)
     client_home = root / "codex-home"
     client_home.mkdir()
     scratch_home = root / "home"
@@ -326,7 +340,8 @@ def run_one(options, root):
                       + ']\ntrust_level = "trusted"\n')
     if os.name == 'nt':
         # A new isolated client home has no selected native sandbox backend.
-        with config.open('a') as stream: stream.write('\n[windows]\nsandbox = "unelevated"\n[sandbox_workspace_write]\nexclude_slash_tmp = true\nexclude_tmpdir_env_var = true\n')
+        mode = 'elevated' if windows_sandbox_state.native_home() is not None else 'unelevated'
+        with config.open('a') as stream: stream.write('\n[windows]\nsandbox = ' + json.dumps(mode) + '\n[sandbox_workspace_write]\nexclude_slash_tmp = true\nexclude_tmpdir_env_var = true\n')
     before = digest(config)
     (workspace / "input.json").write_text('{"numbers":[4,-2,7,9]}\n')
     original_input = digest(workspace / "input.json")

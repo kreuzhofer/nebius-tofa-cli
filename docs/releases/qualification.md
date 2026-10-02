@@ -236,6 +236,35 @@ PATH and saved file/vault credentials. A CLI exit before its helper finishes, a
 failed helper, cancellation, or retained state cannot pass. Failure leaves account
 state for deliberate recovery instead of automatically purging it.
 
+## Reusing an initialized native Windows sandbox
+
+For `--check-pair` on Windows, the explicit environment variable
+`TOFA_NATIVE_WINDOWS_CODEX_HOME` may name the already-configured native Codex home.
+This requires Python 3.11+ and a sandbox that is ready in that home. A newly
+created `CODEX_HOME` does not inherit native sandbox setup; repeatedly creating
+private homes can request administrator setup even when the normal home is ready.
+
+```powershell
+$env:TOFA_NATIVE_WINDOWS_CODEX_HOME = Join-Path $env:USERPROFILE '.codex'
+# Run qualify_windows.py with --check-pair and the other pinned-candidate arguments.
+```
+
+This option shares existing sandbox runtime state; it does not initialize a
+sandbox, copy credentials, or edit the native config/auth files. Test settings
+are argv overrides. Unrelated MCP servers, plugins, hooks, memory and project
+instructions are disabled for these test invocations. Log/SQLite state stays in
+the disposable tree. Only session/snapshot files with IDs emitted by these test
+invocations are removed afterward. The report records native config/auth
+preservation, the number of owned sessions and cleanup; failures fail acceptance.
+Ordinary Codex sessions and settings remain in place.
+
+The disposable coding workspace explicitly grants its current user inheritable
+Modify access. Python's private Windows temporary directories otherwise inherit
+OWNER RIGHTS: files created by a sandbox account can be unreadable by the runner.
+The rule applies only to the owned workspace and does not grant another user or
+change sandbox policy. Expected output is still independently read and checked
+by the ordinary account.
+
 ## Shared report v1
 
 Windows qualification uses the same top-level fields and stage semantics. Platform

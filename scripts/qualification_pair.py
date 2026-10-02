@@ -28,7 +28,11 @@ def run(options, root):
     report = {'model': options.model, 'guardian_model': options.guardian_model,
               'support_status': 'Experimental', 'request_limit': 12, 'output_tokens_per_request': 4096,
               'coding_turn_seconds': 180, 'guardian_turn_seconds': 120, 'approvals': [], 'passed': False}
+    native_state = None
     try:
+        if os.name == 'nt':
+            import windows_sandbox_state
+            native_state = windows_sandbox_state.NativeState(root)
         coding_root = root / 'coding'; coding_root.mkdir()
         settings = SimpleNamespace(**vars(options))
         settings.timeout = 180
@@ -48,6 +52,8 @@ def run(options, root):
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
         report['failure'] = 'qualification_harness_failure'
     finally:
+        if native_state is not None:
+            native_state.finish(report)
         report['used_requests'] = json.loads(budget.read_text())['used']
         for name, value in before.items():
             if value is None: os.environ.pop(name, None)
