@@ -1,0 +1,15 @@
+{
+  "runner_commit": "045c57958be83e536fc6c4817fcdf222914968f1",
+  "candidate": "v0.1.0-rc.14",
+  "candidate_commit": "14134d43df4cca00bcdf10e49b3dc5ef3122f8d7",
+  "harness": {
+    "qualify_windows.py": "77367f7410ae5cab08e9f9cbf220013a3006a71dc481ca728aaada9833552fa0",
+    "qualification_pair.py": "6e5de700dba7858b8f916d76152dba21b49ce88172fa5f9fb053db9606807a5f",
+    "live_compat.py": "ea536e963dcef69bba0038ab8cb8cf0e6e589609c3db40b35ef237f802589f93",
+    "model_evaluation.py": "6e455a6e79ac2ea3a6bdd1236916ce5664fd92f3080f4e53c9987f3e5f2b8084",
+    "evaluation_proxy.py": "577219a184dc72a72127974553282fb49afc7da6abb97e68c476a4d80e621762",
+    "windows_sandbox_state.py": "f884499f49162a84ad0d6d95f4637556fc438577978f5e5c8c5476c3988b4e8c",
+    "windows_process.py": "2cfd5d132feecdb23beefc2ca6285ddc0673cff70432d7d7159272edc8d5b8dd",
+    "windows_process.cs": "2d82a8a187bb1461c12ef4ec7aea23f143eda67581ea7c625ce592677980de2c"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "operation": "readiness",
+  "success": true,
+  "readiness_before": "ready",
+  "probe": {
+    "exitCode": 0,
+    "stdout": "sandbox-probe-ok\r\n",
+    "stderr": ""
+  }
+}

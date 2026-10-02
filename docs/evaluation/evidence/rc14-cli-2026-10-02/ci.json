@@ -1,0 +1,38 @@
+{
+  "conclusion": "success",
+  "headSha": "045c57958be83e536fc6c4817fcdf222914968f1",
+  "jobs": [
+    {
+      "conclusion": "success",
+      "name": "artifacts",
+      "status": "completed",
+      "url": "https://github.com/kreuzhofer/tofa-launcher/actions/runs/36979462779/job/110750446459"
+    },
+    {
+      "conclusion": "success",
+      "name": "native (ubuntu-latest)",
+      "status": "completed",
+      "url": "https://github.com/kreuzhofer/tofa-launcher/actions/runs/36979462779/job/110750655394"
+    },
+    {
+      "conclusion": "success",
+      "name": "native (macos-latest)",
+      "status": "completed",
+      "url": "https://github.com/kreuzhofer/tofa-launcher/actions/runs/36979462779/job/110750655431"
+    },
+    {
+      "conclusion": "success",
+      "name": "native (windows-latest)",
+      "status": "completed",
+      "url": "https://github.com/kreuzhofer/tofa-launcher/actions/runs/36979462779/job/110750655459"
+    },
+    {
+      "conclusion": "skipped",
+      "name": "publish",
+      "status": "completed",
+      "url": "https://github.com/kreuzhofer/tofa-launcher/actions/runs/36979462779/job/110753793320"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/kreuzhofer/tofa-launcher/actions/runs/36979462779"
+}

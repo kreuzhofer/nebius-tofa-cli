@@ -1,0 +1,6 @@
+{
+  "operation": "readiness",
+  "success": false,
+  "readiness_before": "updateRequired",
+  "error": "Sandbox is not ready; probe will not request setup"
+}
