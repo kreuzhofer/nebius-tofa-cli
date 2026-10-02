@@ -206,7 +206,7 @@ sys.exit(0 if (pathlib.Path(os.environ['HOME'])/'synthetic-vault').exists() else
             "sys.argv[1:3] == ['auth','login']", "sys.argv[1:2] == ['--model']"))
         self.checksums()
         result, report = self.run_runner(answers='', extra=('--agent-state-root', str(self.home/'agent-state')))
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr + json.dumps(report))
         self.assertTrue(all(report['cleanup'].values()))
         self.assertEqual(report['operator'], 'agent')
         self.assertEqual((self.home/'.zshrc').read_text(), ordinary_shell)

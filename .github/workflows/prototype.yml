@@ -32,6 +32,12 @@ jobs:
           runner_user="$(id -un)"
           sudo chsh -s /bin/zsh "$runner_user"
           test "$(/usr/bin/dscl /Search -read "/Users/$runner_user" UserShell)" = "UserShell: /bin/zsh"
+      - name: Install shell used by disposable qualification
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes zsh
+          test -x /bin/zsh
       - run: go test -race ./...
       - run: go vet ./...
       - run: python3 scripts/install_test.py
